@@ -153,11 +153,44 @@ function openImageModal(displaySrc, filePath) {
                 .map(tag => `<span class="tag">${tag}</span>`)
                 .join('');
             
-            // Display collections
-            const collectionsContainer = document.getElementById('modalCollections');
-            collectionsContainer.innerHTML = data.collections
-                .map(collection => `<span class="modal-collection">${collection}</span>`)
-                .join('');
+            // Fetch all collections and create checkboxes
+            fetch('/collections')
+                .then(response => response.json())
+                .then(collectionsData => {
+                    const checkboxesContainer = document.querySelector('.collection-checkboxes');
+                    checkboxesContainer.innerHTML = collectionsData.collections
+                        .map(collection => `
+                            <div class="collection-checkbox">
+                                <input type="checkbox" 
+                                       id="collection-${collection.name}" 
+                                       value="${collection.name}"
+                                       ${data.collections.includes(collection.name) ? 'checked' : ''}>
+                                <label for="collection-${collection.name}">${collection.name}</label>
+                            </div>
+                        `).join('');
+                    
+                    // Add save button event listener
+                    document.getElementById('saveCollections').onclick = () => {
+                        const selectedCollections = Array.from(checkboxesContainer.querySelectorAll('input[type="checkbox"]:checked'))
+                            .map(checkbox => checkbox.value);
+                            
+                        fetch(`/image${filePath}/update_collections`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ collections: selectedCollections })
+                        })
+                        .then(response => response.json())
+                        .then(result => {
+                            if (result.success) {
+                                // Refresh collections display
+                                fetchCollections();
+                                closeModal();
+                            }
+                        });
+                    };
+                });
         });
     
     modal.style.display = 'block';

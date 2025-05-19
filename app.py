@@ -168,5 +168,30 @@ def view_collection(name):
     return render_template("collection.html", collection=collection)
 
 
+@app.route("/image/<path:filename>/update_collections", methods=["POST"])
+def update_image_collections(filename):
+    data = request.json
+    collection_names = data.get("collections", [])
+
+    img_name = os.path.basename(filename)
+    image = next((img for img in images if img.filename == img_name), None)
+
+    if not image:
+        return jsonify({"error": "Image not found"}), 404
+
+    # Remove image from all collections first
+    for collection in collections:
+        if image in collection.images:
+            collection.remove_image(image)
+
+    # Add image to selected collections
+    for collection_name in collection_names:
+        collection = next((c for c in collections if c.name == collection_name), None)
+        if collection:
+            collection.add_image(image)
+
+    return jsonify({"success": True})
+
+
 if __name__ == "__main__":
     app.run(debug=True)
