@@ -98,5 +98,22 @@ def list_collections():
         ]
     })
 
+@app.route('/image/<path:filename>/details')
+def get_image_details(filename):
+    # Find the image in our list
+    image = next((img for img in images if img.path == '/' + filename), None)
+    if not image:
+        return jsonify({"error": "Image not found"}), 404
+    
+    # Find collections containing this image
+    image_collections = [c.name for c in collections if image in c.images]
+    
+    return jsonify({
+        "filename": image.filename,
+        "path": image.path,
+        "tags": image.get_tags(),
+        "collections": image_collections
+    })
+
 if __name__ == '__main__':
     app.run(debug=True)

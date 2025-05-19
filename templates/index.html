@@ -39,6 +39,24 @@
 
     <button class="process-button" onclick="processImages()">Process Images</button>
 
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <img id="modalImage" src="" alt="">
+            <div class="modal-info">
+                <div class="modal-tags">
+                    <h3>Tags:</h3>
+                    <div id="modalTags" class="tag-list"></div>
+                </div>
+                <div class="modal-collections">
+                    <h3>Collections:</h3>
+                    <div id="modalCollections" class="collection-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

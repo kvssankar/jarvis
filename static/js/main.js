@@ -79,4 +79,63 @@ function fetchCollections() {
 }
 
 // Load collections on page load
-document.addEventListener('DOMContentLoaded', fetchCollections);
+document.addEventListener('DOMContentLoaded', () => {
+    fetchCollections();
+    setupModal();
+});
+
+// Modal functionality
+function setupModal() {
+    const modal = document.getElementById('imageModal');
+    const closeBtn = document.querySelector('.close');
+    
+    // Add click listeners to all image tiles
+    const imageTiles = document.querySelectorAll('.image-tile');
+    imageTiles.forEach(tile => {
+        tile.addEventListener('click', function() {
+            const img = this.querySelector('img');
+            openImageModal(img.src, img.getAttribute('src'));
+        });
+    });
+    
+    // Close modal when clicking the X
+    closeBtn.addEventListener('click', closeModal);
+    
+    // Close modal when clicking outside
+    window.addEventListener('click', (event) => {
+        if (event.target === modal) {
+            closeModal();
+        }
+    });
+}
+
+function openImageModal(displaySrc, filePath) {
+    const modal = document.getElementById('imageModal');
+    const modalImg = document.getElementById('modalImage');
+    
+    modalImg.src = displaySrc;
+    
+    // Fetch and display image details
+    fetch(`/image${filePath}/details`)
+        .then(response => response.json())
+        .then(data => {
+            // Display tags
+            const tagsContainer = document.getElementById('modalTags');
+            tagsContainer.innerHTML = data.tags
+                .map(tag => `<span class="tag">${tag}</span>`)
+                .join('');
+            
+            // Display collections
+            const collectionsContainer = document.getElementById('modalCollections');
+            collectionsContainer.innerHTML = data.collections
+                .map(collection => `<span class="modal-collection">${collection}</span>`)
+                .join('');
+        });
+    
+    modal.style.display = 'block';
+}
+
+function closeModal() {
+    const modal = document.getElementById('imageModal');
+    modal.style.display = 'none';
+}
