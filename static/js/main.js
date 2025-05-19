@@ -79,29 +79,32 @@ function submitCollection() {
 }
 
 function fetchCollections() {
-    fetch('/collections')
-    .then(response => response.json())
-    .then(data => {
-        const collectionsDiv = document.getElementById('collections');
-        let html = '<div class="create-collection" onclick="openCollectionModal()">' +
-                  '<div class="plus">+</div>' +
-                  '<span>Create new collection</span>' +
-                  '</div>';
-        
-        data.collections.forEach(collection => {
-            html += `
-            <div class="collection" onclick="window.location.href='/collections/${encodeURIComponent(collection.name)}'">
-                <div class="collection-preview">
-                    ${collection.preview ? `<img src="${collection.preview}" alt="${collection.name}">` : ''}
-                </div>
-                <div class="collection-info">
-                    <h3>${collection.name}</h3>
-                    <p>${collection.count} images</p>
-                </div>
-            </div>`;
+    const collectionsDiv = document.getElementById('collections');
+    // Only fetch collections if we're on a page with the collections div
+    if (collectionsDiv) {
+        fetch('/collections')
+        .then(response => response.json())
+        .then(data => {
+            let html = '<div class="create-collection" onclick="openCollectionModal()">' +
+                      '<div class="plus">+</div>' +
+                      '<span>Create new collection</span>' +
+                      '</div>';
+            
+            data.collections.forEach(collection => {
+                html += `
+                <div class="collection" onclick="window.location.href='/collections/${encodeURIComponent(collection.name)}'">
+                    <div class="collection-preview">
+                        ${collection.preview ? `<img src="${collection.preview}" alt="${collection.name}">` : ''}
+                    </div>
+                    <div class="collection-info">
+                        <h3>${collection.name}</h3>
+                        <p>${collection.count} images</p>
+                    </div>
+                </div>`;
+            });
+            collectionsDiv.innerHTML = html;
         });
-        collectionsDiv.innerHTML = html;
-    });
+    }
 }
 
 // Load collections on page load
@@ -145,7 +148,6 @@ function openImageModal(displaySrc, filePath) {
     fetch(`/image${filePath}/details`)
         .then(response => response.json())
         .then(data => {
-            // Display tags
             const tagsContainer = document.getElementById('modalTags');
             tagsContainer.innerHTML = data.tags
                 .map(tag => `<span class="tag">${tag}</span>`)

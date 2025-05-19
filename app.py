@@ -62,14 +62,14 @@ def process_images():
     global images, collections
 
     # # Process each image
-    # for image in images:
-    #     if not image.processed:
-    #         # Randomly assign 2-4 tags to each image
-    #         num_tags = random.randint(2, 4)
-    #         selected_tags = random.sample(SAMPLE_TAGS, num_tags)
-    #         for tag in selected_tags:
-    #             image.add_tag(tag)
-    #         image.processed = True
+    for image in images:
+        if not image.processed:
+            # Randomly assign 2-4 tags to each image
+            num_tags = random.randint(2, 4)
+            selected_tags = random.sample(SAMPLE_TAGS, num_tags)
+            for tag in selected_tags:
+                image.add_tag(tag)
+            image.processed = True
 
     #         for tag in image.get_tags():
     #             collection = next((c for c in collections if c.name == tag), None)
@@ -141,7 +141,9 @@ def create_collection():
 
 @app.route("/image/<path:filename>/details")
 def get_image_details(filename):
-    image = next((img for img in images if img.path == "/" + filename), None)
+    img_name = os.path.basename(filename)
+    image = next((img for img in images if img.filename == img_name), None)
+
     if not image:
         return jsonify({"error": "Image not found"}), 404
 
