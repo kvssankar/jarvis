@@ -92,6 +92,8 @@ def process_images():
         data = model.extract_command(result)
         json_result = data
 
+        print("\n\n Got the response")
+
         for image in json_result:
             filename = image.get("filename")
             desc = image.get("desc")
@@ -104,7 +106,7 @@ def process_images():
                 img.add_tags(tags)
                 # img.other = other
                 img.processed = True
-                print(f"\n\nProcessed image: {filename}")
+                print(f"\n\n\n\nProcessed image: {filename}")
             else:
                 print(f"Image {filename} already processed, skipping.")
 

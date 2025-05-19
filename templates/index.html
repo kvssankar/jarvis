@@ -31,8 +31,11 @@
     </div>
     <div class="image-grid">
         {% for image in images %}
-        <div class="image-tile">
+        <div class="image-tile {% if image.processed %}processed{% endif %}">
             <img src="{{ url_for('serve_user_file', filename=image.path) }}" alt="{{ image.filename }}">
+            {% if image.processed %}
+            <div class="processed-indicator">✓</div>
+            {% endif %}
         </div>
         {% endfor %}
     </div>

@@ -160,10 +160,6 @@ class GeminiModel:
         request_data = {"contents": [{"parts": content_parts}]}
         headers = {"Content-Type": "application/json"}
 
-        # write final request data to a file for debugging
-        with open("request_data.json", "w") as f:
-            json.dump(request_data, f, indent=4)
-
         return request_data, headers
 
     def convert_image_to_base64(self, image_path):
