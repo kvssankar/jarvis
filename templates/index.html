@@ -57,6 +57,26 @@
         </div>
     </div>
 
+    <!-- Collection Creation Modal -->
+    <div id="collectionModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeCollectionModal()">&times;</span>
+            <h2>Create New Collection</h2>
+            <div class="form-group">
+                <label for="collectionName">Name:</label>
+                <input type="text" id="collectionName" placeholder="Enter collection name">
+            </div>
+            <div class="form-group">
+                <label for="collectionDescription">Description:</label>
+                <textarea id="collectionDescription" placeholder="Enter collection description" rows="4"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-cancel" onclick="closeCollectionModal()">Cancel</button>
+                <button class="btn-create" onclick="submitCollection()">Create Collection</button>
+            </div>
+        </div>
+    </div>
+
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

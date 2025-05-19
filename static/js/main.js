@@ -33,23 +33,49 @@ function scanDirectory() {
     });
 }
 
-function createCollection() {
-    const name = prompt("Enter collection name:");
-    if (name) {
-        fetch('/collections/create', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ name: name })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                fetchCollections();
-            }
-        });
+function openCollectionModal() {
+    const modal = document.getElementById('collectionModal');
+    modal.style.display = 'block';
+    
+    // Clear previous values
+    document.getElementById('collectionName').value = '';
+    document.getElementById('collectionDescription').value = '';
+}
+
+function closeCollectionModal() {
+    const modal = document.getElementById('collectionModal');
+    modal.style.display = 'none';
+}
+
+function submitCollection() {
+    const name = document.getElementById('collectionName').value.trim();
+    const description = document.getElementById('collectionDescription').value.trim();
+    
+    if (!name) {
+        alert('Please enter a collection name');
+        return;
     }
+    
+    fetch('/collections/create', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ name: name, description: description })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeCollectionModal();
+            fetchCollections();
+        } else {
+            alert(data.error || 'Failed to create collection');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Failed to create collection');
+    });
 }
 
 function fetchCollections() {
@@ -57,7 +83,7 @@ function fetchCollections() {
     .then(response => response.json())
     .then(data => {
         const collectionsDiv = document.getElementById('collections');
-        let html = '<div class="create-collection" onclick="createCollection()">' +
+        let html = '<div class="create-collection" onclick="openCollectionModal()">' +
                   '<div class="plus">+</div>' +
                   '<span>Create new collection</span>' +
                   '</div>';

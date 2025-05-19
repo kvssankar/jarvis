@@ -47,6 +47,8 @@ class Collection:
         self.name = name
         self.images = []
         self.created_at = datetime.datetime.now()
+        self.description = ""
+        self.last_updated = datetime.datetime.now()
         
     def add_image(self, image: Image):
         if image not in self.images:
@@ -61,3 +63,10 @@ class Collection:
         
     def get_preview_image(self):
         return self.images[0] if self.images else None
+    
+    def set_description(self, description: str):
+        self.description = description
+        self.update_metadata()
+
+    def update_metadata(self):
+        self.last_updated = datetime.datetime.now()
