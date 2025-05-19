@@ -33,6 +33,8 @@ class Image:
             "created_at": self.created_at,
             "modified_at": self.modified_at,
             "tags": self.tags,
+            "description": self.description,
+            "collections": [c.name for c in self.collections],
         }
 
     def update_metadata(self):
@@ -42,9 +44,26 @@ class Image:
     def add_tag(self, tag: str):
         self.tags.append(tag)
         self.update_metadata()
+    
+    def add_tags(self, tags: list):
+        for tag in tags:
+            if tag not in self.tags:
+                self.tags.append(tag)
+        self.update_metadata()
 
     def get_tags(self):
         return self.tags
+    
+    def set_description(self, description: str):
+        self.description = description
+        self.update_metadata()
+    
+    def get_description(self):
+        return self.description
+    
+    def get_collections(self):
+        return self.collections
+    
 
 
 class Collection:
@@ -159,8 +178,34 @@ class GeminiModel:
             "For each image, generate a short description and 3-5 relevant tags "
             "with which users can search and find later with ease.\n"
             "Respond strictly in this JSON format:\n"
-            "[{filename: '', desc: '', tags: [], other: []}, ...]"
+            "{filename: '', desc: '', tags: [], other: []}, ..."
         )
+    
+    def extract_command(self, query: str) -> tuple:
+        """
+        Extract text and commands from a text structure in valid JSON format:
+
+        {
+          "text": "<NORMAL_TEXT>",
+          "commands": ["<bash command 1>", "<bash command 2>", ...]
+        }
+
+        Returns:
+            tuple of (text, [list of commands])
+        """
+        query = query.strip()
+        if not query.startswith("```json"):
+            return query, []
+        query = query.replace("```json", "").replace("```", "").strip()
+
+        try:
+            data = json.loads(query)
+
+            return data
+
+        except Exception as e:
+            print(f"Error processing query: {e}")
+            return "", []
 
 
 if __name__ == "__main__":

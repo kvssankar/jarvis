@@ -1,9 +1,11 @@
 import os
+import json
 import random
 from flask import Flask, render_template, request, send_from_directory, jsonify
-from core import Image, Collection
+from core import Image, Collection, GeminiModel
 
 app = Flask(__name__)
+model = GeminiModel()
 
 # Sample tags for demonstration
 SAMPLE_TAGS = [
@@ -59,26 +61,61 @@ def scan_directory():
 
 @app.route("/process", methods=["POST"])
 def process_images():
+    """
+    Example JSON response from process_images:
+    [
+        {
+            'filename': 'test/Screenshot from 2025-05-15 17-11-28.png',
+            'desc': "This screenshot shows a signature with the name 'XXXX' and the date 15/05/2025.",
+            'tags': ['signature', 'date', '2025', 'handwritten'],
+            'other': []
+        },
+        {
+            'filename': 'test/Screenshot from 2025-04-02 17-26-09.png',
+            'desc': 'A black and white portrait of Jennie Kim.',
+            'tags': ['Jennie Kim', 'portrait', 'black and white', 'kpop', 'singer'],
+            'other': []
+        }
+    ]
+    """
     global images, collections
 
-    # # Process each image
-    for image in images:
-        if not image.processed:
-            # Randomly assign 2-4 tags to each image
-            num_tags = random.randint(2, 4)
-            selected_tags = random.sample(SAMPLE_TAGS, num_tags)
-            for tag in selected_tags:
-                image.add_tag(tag)
-            image.processed = True
+    try:
+        result, status_code = model.process_images(images)
 
-    #         for tag in image.get_tags():
-    #             collection = next((c for c in collections if c.name == tag), None)
-    #             if not collection:
-    #                 collection = Collection(tag)
-    #                 collections.append(collection)
-    #             collection.add_image(image)
+        if status_code != 200:
+            return (
+                jsonify({"success": False, "error": "Processing failed"}),
+                status_code,
+            )
 
-    return jsonify({"success": True})
+        data = model.extract_command(result)
+        json_result = data
+
+        for image in json_result:
+            filename = image.get("filename")
+            desc = image.get("desc")
+            tags = image.get("tags", [])
+            other = image.get("other", [])
+
+            img = next((img for img in images if img.filename == filename), None)
+            if img and not img.processed:
+                img.set_description(desc)
+                img.add_tags(tags)
+                # img.other = other
+                img.processed = True
+                print(f"\n\nProcessed image: {filename}")
+            else:
+                print(f"Image {filename} already processed, skipping.")
+
+        return jsonify({"success": True})
+
+    except json.JSONDecodeError:
+        print("Error parsing JSON response:", result)
+        return jsonify({"success": False, "error": "Error parsing JSON response"}), 500
+    except Exception as e:
+        print("Unexpected error:", str(e))
+        return jsonify({"success": False, "error": f"some unknown error occured"}), 500
 
 
 @app.route("/user_files/<path:filename>")
