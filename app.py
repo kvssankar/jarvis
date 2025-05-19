@@ -45,7 +45,7 @@ def scan_directory():
 @app.route('/process', methods=['POST'])
 def process_images():
     global images, collections
-    collections.clear()  # Clear existing collections
+    collections.clear()
     
     # Process each image
     for image in images:
@@ -57,9 +57,7 @@ def process_images():
                 image.add_tag(tag)
             image.processed = True
             
-            # Create or update collections based on tags
             for tag in image.get_tags():
-                # Find existing collection or create new one
                 collection = next((c for c in collections if c.name == tag), None)
                 if not collection:
                     collection = Collection(tag)
