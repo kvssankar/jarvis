@@ -15,6 +15,8 @@ class Image:
         self.created_at = datetime.datetime.now()
         self.modified_at = datetime.datetime.now()
         self.tags = []
+        self.description = ""
+        self.collections = []
 
         self.processed = False
 

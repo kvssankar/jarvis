@@ -183,12 +183,14 @@ def update_image_collections(filename):
     for collection in collections:
         if image in collection.images:
             collection.remove_image(image)
+            image.collections.remove(collection)
 
     # Add image to selected collections
     for collection_name in collection_names:
         collection = next((c for c in collections if c.name == collection_name), None)
         if collection:
             collection.add_image(image)
+            image.collections.append(collection)
 
     return jsonify({"success": True})
 
