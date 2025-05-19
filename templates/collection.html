@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ collection.name }} - GemSort</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="header">
+        <button class="back-button" onclick="window.location.href='/'">← Back</button>
+        GemSort
+    </div>
+
+    <div class="collection-header">
+        <h1>{{ collection.name }}</h1>
+        {% if collection.description %}
+        <p class="collection-description">{{ collection.description }}</p>
+        {% endif %}
+    </div>
+
+    <div class="section">
+        <h2>Images</h2>
+        <span class="arrow">›</span>
+    </div>
+
+    <div class="image-grid">
+        {% for image in collection.images %}
+        <div class="image-tile">
+            <img src="{{ url_for('serve_user_file', filename=image.path) }}" alt="{{ image.filename }}">
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Image Modal -->
+    <div id="imageModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <img id="modalImage" src="" alt="">
+            <div class="modal-info">
+                <div class="modal-tags">
+                    <h3>Tags:</h3>
+                    <div id="modalTags" class="tag-list"></div>
+                </div>
+                <div class="modal-collections">
+                    <h3>Collections:</h3>
+                    <div id="modalCollections" class="collection-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

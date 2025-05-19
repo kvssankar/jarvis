@@ -90,7 +90,7 @@ function fetchCollections() {
         
         data.collections.forEach(collection => {
             html += `
-            <div class="collection">
+            <div class="collection" onclick="window.location.href='/collections/${encodeURIComponent(collection.name)}'">
                 <div class="collection-preview">
                     ${collection.preview ? `<img src="${collection.preview}" alt="${collection.name}">` : ''}
                 </div>

@@ -158,5 +158,13 @@ def get_image_details(filename):
     )
 
 
+@app.route("/collections/<name>")
+def view_collection(name):
+    collection = next((c for c in collections if c.name == name), None)
+    if not collection:
+        return "Collection not found", 404
+    return render_template("collection.html", collection=collection)
+
+
 if __name__ == "__main__":
     app.run(debug=True)
