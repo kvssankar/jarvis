@@ -1,7 +1,11 @@
+import 'package:flutter/foundation.dart' show kIsWeb; // Import kIsWeb
 import 'package:flutter/material.dart';
-import 'package:shots_studio/details.dart';
+import 'package:shots_studio/screens/details_screen.dart'; // Updated import
 import 'package:image_picker/image_picker.dart';
-import 'dart:io';
+import 'package:shots_studio/widgets/screenshot_card.dart'; // New import
+import 'dart:typed_data'; // Import for Uint8List
+import 'package:shots_studio/models/screenshot_model.dart'; // Import Screenshot model
+import 'package:uuid/uuid.dart'; // Import Uuid for generating IDs
 
 void main() {
   runApp(const MyApp());
@@ -41,15 +45,43 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<String> _imagePaths = [];
+  final List<Screenshot> _screenshots = []; // Changed to List<Screenshot>
   final ImagePicker _picker = ImagePicker();
+  final Uuid _uuid = const Uuid(); // Uuid instance
 
   Future<void> _takeScreenshot() async {
     try {
       final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
       if (image != null) {
+        String id = _uuid.v4();
+        DateTime now = DateTime.now();
+        Screenshot newScreenshot;
+
+        if (kIsWeb) {
+          final Uint8List imageBytes = await image.readAsBytes();
+          newScreenshot = Screenshot(
+            id: id,
+            bytes: imageBytes,
+            title: 'Screenshot ${id.substring(0, 8)}', // Default title
+            description: '', // Default empty description
+            tags: [], // Default empty tags list
+            aiProcessed: false, // Default AI processed status
+            addedOn: now,
+          );
+        } else {
+          newScreenshot = Screenshot(
+            id: id,
+            path: image.path,
+            title:
+                'Screenshot ${image.path.split('/').last}', // Default title from path
+            description: '', // Default empty description
+            tags: [], // Default empty tags list
+            aiProcessed: false, // Default AI processed status
+            addedOn: now,
+          );
+        }
         setState(() {
-          _imagePaths.add(image.path);
+          _screenshots.add(newScreenshot);
         });
       }
     } catch (e) {
@@ -166,9 +198,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
               ),
-              itemCount: _imagePaths.length,
+              itemCount: _screenshots.length, // Updated to _screenshots.length
               itemBuilder: (context, index) {
-                return _buildScreenshotCard(_imagePaths[index]);
+                return ScreenshotCard(
+                  screenshot: _screenshots[index], // Pass Screenshot object
+                  onTap: () => _showScreenshotDetail(_screenshots[index]),
+                );
               },
             ),
             const SizedBox(height: 80), // Space for FAB
@@ -178,27 +213,14 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildScreenshotCard(String imagePath) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          _showScreenshotDetail(imagePath);
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(child: Image.file(File(imagePath), fit: BoxFit.cover)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showScreenshotDetail(String imagePath) {
+  void _showScreenshotDetail(Screenshot screenshot) {
+    // Parameter is now Screenshot
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => ScreenshotDetailScreen(imagePath: imagePath),
+        builder:
+            (context) => ScreenshotDetailScreen(
+              screenshot: screenshot,
+            ), // Pass Screenshot object
       ),
     );
   }

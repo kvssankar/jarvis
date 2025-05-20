@@ -1,13 +1,32 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'dart:typed_data';
+import 'package:shots_studio/models/screenshot_model.dart'; // Import Screenshot model
 
 class ScreenshotDetailScreen extends StatelessWidget {
-  final String imagePath;
+  final Screenshot screenshot; // Changed from imageData to screenshot
 
-  const ScreenshotDetailScreen({super.key, required this.imagePath});
+  const ScreenshotDetailScreen({
+    super.key,
+    required this.screenshot,
+  }); // Updated parameter
 
   @override
   Widget build(BuildContext context) {
+    Widget imageWidget;
+    String imageName =
+        screenshot.title ?? 'Screenshot'; // Use title from model or default
+
+    if (screenshot.path != null) {
+      imageWidget = Image.file(File(screenshot.path!), fit: BoxFit.cover);
+    } else if (screenshot.bytes != null) {
+      imageWidget = Image.memory(screenshot.bytes!, fit: BoxFit.cover);
+    } else {
+      imageWidget = const Center(child: Icon(Icons.broken_image));
+      imageName = 'Invalid Image';
+    }
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -31,7 +50,7 @@ class ScreenshotDetailScreen extends StatelessWidget {
               ),
               margin: const EdgeInsets.all(16),
               clipBehavior: Clip.antiAlias,
-              child: Image.file(File(imagePath), fit: BoxFit.cover),
+              child: imageWidget,
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -39,7 +58,7 @@ class ScreenshotDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Screenshot ${imagePath.split('/').last}',
+                    imageName, // Use imageName derived from screenshot.title
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -48,6 +67,9 @@ class ScreenshotDetailScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
                   TextField(
+                    controller: TextEditingController(
+                      text: screenshot.description,
+                    ), // Use description from model
                     decoration: InputDecoration(
                       hintText: 'Add a description...',
                       filled: true,
@@ -59,6 +81,10 @@ class ScreenshotDetailScreen extends StatelessWidget {
                     ),
                     style: const TextStyle(color: Colors.white70),
                     maxLines: 3,
+                    onChanged: (value) {
+                      // Here you would typically update the model and persist changes
+                      screenshot.description = value;
+                    },
                   ),
                   const SizedBox(height: 24),
                   const Text(
@@ -74,9 +100,12 @@ class ScreenshotDetailScreen extends StatelessWidget {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      _buildTag('Screenshot'),
-                      _buildTag('Image'),
-                      _buildTag('+ Add Tag'),
+                      ...screenshot.tags
+                          .map((tag) => _buildTag(tag))
+                          .toList(), // Use tags from model
+                      _buildTag(
+                        '+ Add Tag',
+                      ), // This could be a button to add new tags
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -93,7 +122,12 @@ class ScreenshotDetailScreen extends StatelessWidget {
                           style: TextStyle(fontSize: 16, color: Colors.white70),
                         ),
                         const Spacer(),
-                        Icon(Icons.check_circle, color: Colors.amber[200]),
+                        Icon(
+                          screenshot.aiProcessed
+                              ? Icons.check_circle
+                              : Icons.hourglass_empty,
+                          color: Colors.amber[200],
+                        ), // Use aiProcessed from model
                       ],
                     ),
                   ),
