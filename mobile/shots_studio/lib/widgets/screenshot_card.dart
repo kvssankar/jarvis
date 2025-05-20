@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:shots_studio/models/screenshot_model.dart'; // Import Screenshot model
 
 class ScreenshotCard extends StatelessWidget {
