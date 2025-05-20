@@ -100,9 +100,9 @@ class ScreenshotDetailScreen extends StatelessWidget {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      ...screenshot.tags
-                          .map((tag) => _buildTag(tag))
-                          .toList(), // Use tags from model
+                      ...screenshot.tags.map(
+                        (tag) => _buildTag(tag),
+                      ), // Use tags from model
                       _buildTag(
                         '+ Add Tag',
                       ), // This could be a button to add new tags

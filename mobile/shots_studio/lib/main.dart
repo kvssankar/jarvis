@@ -45,9 +45,9 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final List<Screenshot> _screenshots = []; // Changed to List<Screenshot>
+  final List<Screenshot> _screenshots = [];
   final ImagePicker _picker = ImagePicker();
-  final Uuid _uuid = const Uuid(); // Uuid instance
+  final Uuid _uuid = const Uuid();
 
   Future<void> _takeScreenshot() async {
     try {
@@ -62,21 +62,20 @@ class _HomeScreenState extends State<HomeScreen> {
           newScreenshot = Screenshot(
             id: id,
             bytes: imageBytes,
-            title: 'Screenshot ${id.substring(0, 8)}', // Default title
-            description: '', // Default empty description
-            tags: [], // Default empty tags list
-            aiProcessed: false, // Default AI processed status
+            title: 'Screenshot ${id.substring(0, 8)}',
+            description: '',
+            tags: [],
+            aiProcessed: false,
             addedOn: now,
           );
         } else {
           newScreenshot = Screenshot(
             id: id,
             path: image.path,
-            title:
-                'Screenshot ${image.path.split('/').last}', // Default title from path
-            description: '', // Default empty description
-            tags: [], // Default empty tags list
-            aiProcessed: false, // Default AI processed status
+            title: 'Screenshot ${image.path.split('/').last}',
+            description: '',
+            tags: [],
+            aiProcessed: false,
             addedOn: now,
           );
         }
@@ -193,7 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
               physics: const NeverScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(horizontal: 16),
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
+                crossAxisCount: 3,
                 childAspectRatio: 1,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
