@@ -1,27 +1,65 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'dart:typed_data';
-import 'package:shots_studio/models/screenshot_model.dart'; // Import Screenshot model
+import 'package:shots_studio/models/screenshot_model.dart';
+import 'package:shots_studio/widgets/tag_input_field.dart';
+import 'package:shots_studio/widgets/tag_chip.dart';
 
-class ScreenshotDetailScreen extends StatelessWidget {
-  final Screenshot screenshot; // Changed from imageData to screenshot
+class ScreenshotDetailScreen extends StatefulWidget {
+  final Screenshot screenshot;
 
-  const ScreenshotDetailScreen({
-    super.key,
-    required this.screenshot,
-  }); // Updated parameter
+  const ScreenshotDetailScreen({super.key, required this.screenshot});
+
+  @override
+  State<ScreenshotDetailScreen> createState() => _ScreenshotDetailScreenState();
+}
+
+class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
+  late List<String> _tags;
+
+  @override
+  void initState() {
+    super.initState();
+    _tags = List.from(widget.screenshot.tags);
+  }
+
+  void _addTag(String tag) {
+    setState(() {
+      if (!_tags.contains(tag)) {
+        _tags.add(tag);
+        widget.screenshot.tags = _tags;
+      }
+    });
+  }
+
+  void _removeTag(String tag) {
+    setState(() {
+      _tags.remove(tag);
+      widget.screenshot.tags = _tags;
+    });
+  }
+
+  Widget _buildTag(String label) {
+    final bool isAddButton = label == '+ Add Tag';
+
+    if (isAddButton) {
+      return TagInputField(onTagAdded: _addTag);
+    }
+
+    return TagChip(label: label, onDelete: () => _removeTag(label));
+  }
 
   @override
   Widget build(BuildContext context) {
     Widget imageWidget;
-    String imageName =
-        screenshot.title ?? 'Screenshot'; // Use title from model or default
+    String imageName = widget.screenshot.title ?? 'Screenshot';
 
-    if (screenshot.path != null) {
-      imageWidget = Image.file(File(screenshot.path!), fit: BoxFit.cover);
-    } else if (screenshot.bytes != null) {
-      imageWidget = Image.memory(screenshot.bytes!, fit: BoxFit.cover);
+    if (widget.screenshot.path != null) {
+      imageWidget = Image.file(
+        File(widget.screenshot.path!),
+        fit: BoxFit.cover,
+      );
+    } else if (widget.screenshot.bytes != null) {
+      imageWidget = Image.memory(widget.screenshot.bytes!, fit: BoxFit.cover);
     } else {
       imageWidget = const Center(child: Icon(Icons.broken_image));
       imageName = 'Invalid Image';
@@ -58,7 +96,7 @@ class ScreenshotDetailScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    imageName, // Use imageName derived from screenshot.title
+                    imageName,
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
@@ -68,8 +106,8 @@ class ScreenshotDetailScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   TextField(
                     controller: TextEditingController(
-                      text: screenshot.description,
-                    ), // Use description from model
+                      text: widget.screenshot.description,
+                    ),
                     decoration: InputDecoration(
                       hintText: 'Add a description...',
                       filled: true,
@@ -82,8 +120,7 @@ class ScreenshotDetailScreen extends StatelessWidget {
                     style: const TextStyle(color: Colors.white70),
                     maxLines: 3,
                     onChanged: (value) {
-                      // Here you would typically update the model and persist changes
-                      screenshot.description = value;
+                      widget.screenshot.description = value;
                     },
                   ),
                   const SizedBox(height: 24),
@@ -100,12 +137,8 @@ class ScreenshotDetailScreen extends StatelessWidget {
                     spacing: 8,
                     runSpacing: 8,
                     children: [
-                      ...screenshot.tags.map(
-                        (tag) => _buildTag(tag),
-                      ), // Use tags from model
-                      _buildTag(
-                        '+ Add Tag',
-                      ), // This could be a button to add new tags
+                      ..._tags.map((tag) => _buildTag(tag)),
+                      _buildTag('+ Add Tag'),
                     ],
                   ),
                   const SizedBox(height: 24),
@@ -123,11 +156,11 @@ class ScreenshotDetailScreen extends StatelessWidget {
                         ),
                         const Spacer(),
                         Icon(
-                          screenshot.aiProcessed
+                          widget.screenshot.aiProcessed
                               ? Icons.check_circle
                               : Icons.hourglass_empty,
                           color: Colors.amber[200],
-                        ), // Use aiProcessed from model
+                        ),
                       ],
                     ),
                   ),
@@ -138,17 +171,6 @@ class ScreenshotDetailScreen extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildTag(String label) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.grey[800],
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(label, style: const TextStyle(color: Colors.white70)),
     );
   }
 }
