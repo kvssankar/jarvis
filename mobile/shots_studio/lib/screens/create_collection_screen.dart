@@ -6,14 +6,14 @@ import 'package:uuid/uuid.dart';
 
 class CreateCollectionScreen extends StatefulWidget {
   final List<Screenshot> availableScreenshots;
-  final Set<String>? initialSelectedIds; // New: For pre-selecting
-  final bool isEditMode; // New: To distinguish behavior
+  final Set<String>? initialSelectedIds;
+  final bool isEditMode;
 
   const CreateCollectionScreen({
     super.key,
     required this.availableScreenshots,
-    this.initialSelectedIds, // New
-    this.isEditMode = false, // New
+    this.initialSelectedIds,
+    this.isEditMode = false,
   });
 
   @override
@@ -23,21 +23,31 @@ class CreateCollectionScreen extends StatefulWidget {
 class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  late Set<String> _selectedScreenshotIds; // Initialize in initState
+  late Set<String> _selectedScreenshotIds;
   final Uuid _uuid = const Uuid();
 
   @override
   void initState() {
     super.initState();
-    // Initialize _selectedScreenshotIds based on initialSelectedIds
     _selectedScreenshotIds =
         widget.initialSelectedIds != null
             ? Set.from(widget.initialSelectedIds!)
             : {};
+    // Add listener to update button state based on title content
+    _titleController.addListener(() {
+      if (!widget.isEditMode) {
+        setState(() {}); // Rebuild to enable/disable save button
+      }
+    });
   }
 
   @override
   void dispose() {
+    _titleController.removeListener(() {
+      if (!widget.isEditMode) {
+        setState(() {});
+      }
+    });
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
@@ -54,19 +64,24 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
   }
 
   void _save() {
-    // Renamed from _saveCollection
     if (widget.isEditMode) {
-      // In edit mode, just pop the selected IDs
       Navigator.of(context).pop(_selectedScreenshotIds.toList());
     } else {
-      // Original behavior: create and pop a new collection
-      if (_titleController.text.trim().isEmpty) {
-        _titleController.text =
-            'Collection ${DateTime.now().toString().substring(0, 10)}';
+      final String title = _titleController.text.trim();
+      // Title empty check is now handled by button state, but good to keep for safety if called directly
+      if (title.isEmpty) {
+        // This part should ideally not be reached if button is properly disabled
+        print(
+          "Save called with empty title, button should have been disabled.",
+        );
+        return;
       }
+
+      // Removed restriction for empty screenshots
+
       final Collection newCollection = Collection(
         id: _uuid.v4(),
-        name: _titleController.text.trim(),
+        name: title,
         description: _descriptionController.text.trim(),
         screenshotIds: _selectedScreenshotIds.toList(),
         lastModified: DateTime.now(),
@@ -78,6 +93,10 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Determine if save button should be enabled
+    final bool isSaveButtonEnabled =
+        widget.isEditMode || _titleController.text.trim().isNotEmpty;
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -93,7 +112,12 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.check),
-            onPressed: _save, // Use the renamed method
+            // Disable button if not in edit mode and title is empty
+            onPressed: isSaveButtonEnabled ? _save : null,
+            color:
+                isSaveButtonEnabled
+                    ? Theme.of(context).colorScheme.primary
+                    : Colors.grey,
           ),
         ],
       ),
@@ -177,7 +201,6 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                             child: Stack(
                               fit: StackFit.expand,
                               children: [
-                                // Screenshot card
                                 ScreenshotCard(
                                   screenshot: screenshot,
                                   onTap:
@@ -186,7 +209,6 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                                       ),
                                 ),
 
-                                // Selection overlay
                                 if (isSelected)
                                   Container(
                                     decoration: BoxDecoration(

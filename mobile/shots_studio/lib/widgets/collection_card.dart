@@ -18,9 +18,12 @@ class CollectionCard extends StatelessWidget {
             Container(
               width: 120,
               padding: const EdgeInsets.all(12.0),
-              decoration: BoxDecoration(color: Colors.blueGrey[800]),
+              // decoration: BoxDecoration(color: Colors.blueGrey[800]), // Removed specific color to use card's theme color
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize:
+                    MainAxisSize
+                        .min, // Ensure column takes minimum necessary height
                 children: [
                   Text(
                     collection.name ?? 'Untitled Collection',

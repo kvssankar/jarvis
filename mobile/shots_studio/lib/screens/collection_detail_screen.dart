@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/widgets/screenshot_card.dart';
-import 'package:shots_studio/screens/create_collection_screen.dart'; // We might reuse or adapt this
+import 'package:shots_studio/screens/create_collection_screen.dart';
 
 class CollectionDetailScreen extends StatefulWidget {
   final Collection collection;
   final List<Screenshot> allScreenshots;
-  final Function(Collection)
-  onUpdateCollection; // Callback to update in HomeScreen
-  final Function(String) onDeleteCollection; // Callback to delete in HomeScreen
+  final Function(Collection) onUpdateCollection;
+  final Function(String) onDeleteCollection;
 
   const CollectionDetailScreen({
     super.key,

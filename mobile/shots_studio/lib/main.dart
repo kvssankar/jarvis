@@ -1,14 +1,14 @@
-import 'package:flutter/foundation.dart' show kIsWeb; // Import kIsWeb
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:shots_studio/screens/details_screen.dart'; // Updated import
+import 'package:shots_studio/screens/screenshot_details_screen.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shots_studio/widgets/home_app_bar.dart'; // New import
-import 'package:shots_studio/widgets/collections_section.dart'; // New import
-import 'package:shots_studio/widgets/screenshots_section.dart'; // New import
-import 'dart:typed_data'; // Import for Uint8List
-import 'package:shots_studio/models/screenshot_model.dart'; // Import Screenshot model
-import 'package:shots_studio/models/collection_model.dart'; // Import Collection model
-import 'package:uuid/uuid.dart'; // Import Uuid for generating IDs
+import 'package:shots_studio/widgets/home_app_bar.dart';
+import 'package:shots_studio/widgets/collections_section.dart';
+import 'package:shots_studio/widgets/screenshots_section.dart';
+import 'dart:typed_data';
+import 'package:shots_studio/models/screenshot_model.dart';
+import 'package:shots_studio/models/collection_model.dart';
+import 'package:uuid/uuid.dart';
 
 void main() {
   runApp(const MyApp());
@@ -132,8 +132,8 @@ class _HomeScreenState extends State<HomeScreen> {
               collections: _collections,
               screenshots: _screenshots,
               onCollectionAdded: _addCollection,
-              onUpdateCollection: _updateCollection, // Pass update callback
-              onDeleteCollection: _deleteCollection, // Pass delete callback
+              onUpdateCollection: _updateCollection,
+              onDeleteCollection: _deleteCollection,
             ), // Use CollectionsSection widget
             ScreenshotsSection(
               screenshots: _screenshots,
@@ -147,13 +147,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showScreenshotDetail(Screenshot screenshot) {
-    // Parameter is now Screenshot
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder:
-            (context) => ScreenshotDetailScreen(
-              screenshot: screenshot,
-            ), // Pass Screenshot object
+        builder: (context) => ScreenshotDetailScreen(screenshot: screenshot),
       ),
     );
   }

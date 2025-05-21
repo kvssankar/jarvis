@@ -3,6 +3,7 @@ import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/screens/create_collection_screen.dart';
 import 'package:shots_studio/screens/collection_detail_screen.dart';
+import 'package:shots_studio/screens/all_collections_screen.dart';
 import 'package:shots_studio/widgets/collection_card.dart';
 import 'package:shots_studio/widgets/add_collection_button.dart';
 
@@ -56,7 +57,17 @@ class CollectionsSection extends StatelessWidget {
                 icon: const Icon(Icons.arrow_forward_ios),
                 color: Colors.amber.shade200,
                 onPressed: () {
-                  // TODO: Implement navigation to collections screen
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder:
+                          (context) => AllCollectionsScreen(
+                            collections: collections,
+                            allScreenshots: screenshots,
+                            onUpdateCollection: onUpdateCollection,
+                            onDeleteCollection: onDeleteCollection,
+                          ),
+                    ),
+                  );
                 },
               ),
             ],
