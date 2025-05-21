@@ -98,6 +98,23 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _updateCollection(Collection updatedCollection) {
+    setState(() {
+      final index = _collections.indexWhere(
+        (c) => c.id == updatedCollection.id,
+      );
+      if (index != -1) {
+        _collections[index] = updatedCollection;
+      }
+    });
+  }
+
+  void _deleteCollection(String collectionId) {
+    setState(() {
+      _collections.removeWhere((c) => c.id == collectionId);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -115,6 +132,8 @@ class _HomeScreenState extends State<HomeScreen> {
               collections: _collections,
               screenshots: _screenshots,
               onCollectionAdded: _addCollection,
+              onUpdateCollection: _updateCollection, // Pass update callback
+              onDeleteCollection: _deleteCollection, // Pass delete callback
             ), // Use CollectionsSection widget
             ScreenshotsSection(
               screenshots: _screenshots,

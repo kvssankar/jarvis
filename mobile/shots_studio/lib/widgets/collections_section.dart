@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/screens/create_collection_screen.dart';
+import 'package:shots_studio/screens/collection_detail_screen.dart';
 import 'package:shots_studio/widgets/collection_card.dart';
 import 'package:shots_studio/widgets/add_collection_button.dart';
 
@@ -9,12 +10,16 @@ class CollectionsSection extends StatelessWidget {
   final List<Collection> collections;
   final List<Screenshot> screenshots;
   final Function(Collection) onCollectionAdded;
+  final Function(Collection) onUpdateCollection; // Add this
+  final Function(String) onDeleteCollection; // Add this
 
   const CollectionsSection({
     super.key,
     required this.collections,
     required this.screenshots,
     required this.onCollectionAdded,
+    required this.onUpdateCollection, // Add this
+    required this.onDeleteCollection, // Add this
   });
 
   Future<void> _createCollection(BuildContext context) async {
@@ -62,7 +67,6 @@ class CollectionsSection extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              // Display existing collections or the "Create first collection" card
               Expanded(
                 child:
                     collections.isEmpty
@@ -75,6 +79,21 @@ class CollectionsSection extends StatelessWidget {
                               padding: const EdgeInsets.only(right: 16.0),
                               child: CollectionCard(
                                 collection: collections[index],
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder:
+                                          (context) => CollectionDetailScreen(
+                                            collection: collections[index],
+                                            allScreenshots: screenshots,
+                                            onUpdateCollection:
+                                                onUpdateCollection, // Pass down
+                                            onDeleteCollection:
+                                                onDeleteCollection, // Pass down
+                                          ),
+                                    ),
+                                  );
+                                },
                               ),
                             );
                           },

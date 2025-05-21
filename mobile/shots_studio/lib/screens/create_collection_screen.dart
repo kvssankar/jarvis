@@ -6,8 +6,15 @@ import 'package:uuid/uuid.dart';
 
 class CreateCollectionScreen extends StatefulWidget {
   final List<Screenshot> availableScreenshots;
+  final Set<String>? initialSelectedIds; // New: For pre-selecting
+  final bool isEditMode; // New: To distinguish behavior
 
-  const CreateCollectionScreen({super.key, required this.availableScreenshots});
+  const CreateCollectionScreen({
+    super.key,
+    required this.availableScreenshots,
+    this.initialSelectedIds, // New
+    this.isEditMode = false, // New
+  });
 
   @override
   State<CreateCollectionScreen> createState() => _CreateCollectionScreenState();
@@ -16,8 +23,18 @@ class CreateCollectionScreen extends StatefulWidget {
 class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  final Set<String> _selectedScreenshotIds = {};
+  late Set<String> _selectedScreenshotIds; // Initialize in initState
   final Uuid _uuid = const Uuid();
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize _selectedScreenshotIds based on initialSelectedIds
+    _selectedScreenshotIds =
+        widget.initialSelectedIds != null
+            ? Set.from(widget.initialSelectedIds!)
+            : {};
+  }
 
   @override
   void dispose() {
@@ -36,23 +53,27 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
     });
   }
 
-  void _saveCollection() {
-    if (_titleController.text.trim().isEmpty) {
-      // Show error or use a default name
-      _titleController.text =
-          'Collection ${DateTime.now().toString().substring(0, 10)}';
+  void _save() {
+    // Renamed from _saveCollection
+    if (widget.isEditMode) {
+      // In edit mode, just pop the selected IDs
+      Navigator.of(context).pop(_selectedScreenshotIds.toList());
+    } else {
+      // Original behavior: create and pop a new collection
+      if (_titleController.text.trim().isEmpty) {
+        _titleController.text =
+            'Collection ${DateTime.now().toString().substring(0, 10)}';
+      }
+      final Collection newCollection = Collection(
+        id: _uuid.v4(),
+        name: _titleController.text.trim(),
+        description: _descriptionController.text.trim(),
+        screenshotIds: _selectedScreenshotIds.toList(),
+        lastModified: DateTime.now(),
+        screenshotCount: _selectedScreenshotIds.length,
+      );
+      Navigator.of(context).pop(newCollection);
     }
-
-    final Collection newCollection = Collection(
-      id: _uuid.v4(),
-      name: _titleController.text.trim(),
-      description: _descriptionController.text.trim(),
-      screenshotIds: _selectedScreenshotIds.toList(),
-      lastModified: DateTime.now(),
-      screenshotCount: _selectedScreenshotIds.length,
-    );
-
-    Navigator.of(context).pop(newCollection);
   }
 
   @override
@@ -66,9 +87,14 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Create Collection'),
+        title: Text(
+          widget.isEditMode ? 'Manage Screenshots' : 'Create Collection',
+        ),
         actions: [
-          IconButton(icon: const Icon(Icons.check), onPressed: _saveCollection),
+          IconButton(
+            icon: const Icon(Icons.check),
+            onPressed: _save, // Use the renamed method
+          ),
         ],
       ),
       body: Padding(
@@ -76,42 +102,43 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title field
-            TextField(
-              controller: _titleController,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-              decoration: const InputDecoration(
-                hintText: 'Collection Title',
-                hintStyle: TextStyle(color: Colors.grey),
-                border: InputBorder.none,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Description field
-            TextField(
-              controller: _descriptionController,
-              style: const TextStyle(color: Colors.white70),
-              decoration: InputDecoration(
-                hintText: 'Add a description...',
-                filled: true,
-                fillColor: Colors.grey[900],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+            // Conditionally show Title and Description fields only if not in edit mode
+            if (!widget.isEditMode) ...[
+              TextField(
+                controller: _titleController,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                decoration: const InputDecoration(
+                  hintText: 'Collection Title',
+                  hintStyle: TextStyle(color: Colors.grey),
+                  border: InputBorder.none,
                 ),
               ),
-              maxLines: 3,
-            ),
-
-            const SizedBox(height: 24),
-            const Text(
-              'Select Screenshots',
-              style: TextStyle(
+              const SizedBox(height: 16),
+              TextField(
+                controller: _descriptionController,
+                style: const TextStyle(color: Colors.white70),
+                decoration: InputDecoration(
+                  hintText: 'Add a description...',
+                  filled: true,
+                  fillColor: Colors.grey[900],
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+                maxLines: 3,
+              ),
+              const SizedBox(height: 24),
+            ],
+            Text(
+              widget.isEditMode
+                  ? 'Select screenshots to include'
+                  : 'Select Screenshots',
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
