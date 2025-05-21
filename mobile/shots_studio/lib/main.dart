@@ -7,6 +7,7 @@ import 'package:shots_studio/widgets/collections_section.dart'; // New import
 import 'package:shots_studio/widgets/screenshots_section.dart'; // New import
 import 'dart:typed_data'; // Import for Uint8List
 import 'package:shots_studio/models/screenshot_model.dart'; // Import Screenshot model
+import 'package:shots_studio/models/collection_model.dart'; // Import Collection model
 import 'package:uuid/uuid.dart'; // Import Uuid for generating IDs
 
 void main() {
@@ -48,6 +49,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   final List<Screenshot> _screenshots = [];
+  final List<Collection> _collections = [];
   final ImagePicker _picker = ImagePicker();
   final Uuid _uuid = const Uuid();
 
@@ -90,6 +92,12 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  void _addCollection(Collection collection) {
+    setState(() {
+      _collections.add(collection);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -103,7 +111,11 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const CollectionsSection(), // Use CollectionsSection widget
+            CollectionsSection(
+              collections: _collections,
+              screenshots: _screenshots,
+              onCollectionAdded: _addCollection,
+            ), // Use CollectionsSection widget
             ScreenshotsSection(
               screenshots: _screenshots,
               onScreenshotTap: _showScreenshotDetail,
