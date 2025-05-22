@@ -135,13 +135,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadAndroidScreenshots() async {
-    print('Loading Android screenshots... ISN"T WORKING');
     if (kIsWeb) return;
+
+    // Clear existing screenshots before loading new ones
+    setState(() {
+      _screenshots.clear();
+    });
 
     try {
       // Request storage permission
-      // TODO: Handle permission request not working
-      var status = await Permission.storage.request();
+      var status = await Permission.photos.request();
       if (!status.isGranted) {
         return;
       }
@@ -153,7 +156,6 @@ class _HomeScreenState extends State<HomeScreen> {
       // Get common Android screenshot directories
       List<String> possibleScreenshotPaths = await _getScreenshotPaths();
       List<FileSystemEntity> allFiles = [];
-      print('Possible screenshot paths: $possibleScreenshotPaths');
       for (String dirPath in possibleScreenshotPaths) {
         final dir = Directory(dirPath);
         if (await dir.exists()) {
@@ -168,9 +170,7 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         }
       }
-      print('Found ${allFiles.length} screenshot files');
 
-      // Sort files by last modified time (newest first)
       allFiles.sort((a, b) {
         return File(
           b.path,
@@ -181,20 +181,31 @@ class _HomeScreenState extends State<HomeScreen> {
       final filesToProcess = allFiles.take(100).toList();
 
       for (var file in filesToProcess) {
-        String id = _uuid.v4();
-        DateTime fileModifiedTime = File(file.path).lastModifiedSync();
+        try {
+          String id = _uuid.v4();
+          DateTime fileModifiedTime = File(file.path).lastModifiedSync();
 
-        Screenshot newScreenshot = Screenshot(
-          id: id,
-          path: file.path,
-          title: 'Screenshot ${file.path.split('/').last}',
-          description: '',
-          tags: [],
-          aiProcessed: false,
-          addedOn: fileModifiedTime,
-        );
+          Screenshot newScreenshot = Screenshot(
+            id: id,
+            path: file.path,
+            title: 'Screenshot ${file.path.split('/').last}',
+            description: '',
+            tags: [],
+            aiProcessed: false,
+            addedOn: fileModifiedTime,
+          );
 
-        _screenshots.add(newScreenshot);
+          // Check if the file path contains ".trashed" and skip if it does
+          if (file.path.contains('.trashed')) {
+            print('Skipping trashed file: ${file.path}');
+            continue;
+          }
+
+          _screenshots.add(newScreenshot);
+        } catch (e) {
+          print('Error processing file ${file.path}: $e');
+          continue;
+        }
       }
 
       setState(() {
@@ -221,8 +232,6 @@ class _HomeScreenState extends State<HomeScreen> {
         paths.addAll([
           '$baseDir/DCIM/Screenshots',
           '$baseDir/Pictures/Screenshots',
-          '$baseDir/Download',
-          '$baseDir/DCIM/Camera',
         ]);
       }
     } catch (e) {
