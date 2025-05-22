@@ -149,7 +149,12 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showScreenshotDetail(Screenshot screenshot) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => ScreenshotDetailScreen(screenshot: screenshot),
+        builder:
+            (context) => ScreenshotDetailScreen(
+              screenshot: screenshot,
+              allCollections: _collections, // Pass all collections
+              onUpdateCollection: _updateCollection, // Pass update callback
+            ),
       ),
     );
   }

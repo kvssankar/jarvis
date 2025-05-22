@@ -1,35 +1,59 @@
 class Collection {
-  String id;
-  String? name;
-  String? description;
-  List<String> screenshotIds; // List of Screenshot IDs
-  DateTime lastModified;
-  int screenshotCount;
+  final String id;
+  final String? name;
+  final String? description;
+  final List<String> screenshotIds;
+  final DateTime lastModified;
+  final int screenshotCount;
 
   Collection({
     required this.id,
     this.name,
     this.description,
-    List<String>? screenshotIds,
-    DateTime? lastModified,
-    this.screenshotCount = 0,
-  }) : screenshotIds = screenshotIds ?? [],
-       lastModified = lastModified ?? DateTime.now();
+    required this.screenshotIds,
+    required this.lastModified,
+    required this.screenshotCount,
+  });
 
-  // Add a screenshot ID to the collection
-  void addScreenshot(String screenshotId) {
+  Collection addScreenshot(String screenshotId) {
     if (!screenshotIds.contains(screenshotId)) {
-      screenshotIds.add(screenshotId);
-      screenshotCount = screenshotIds.length;
-      lastModified = DateTime.now();
+      final newIds = List<String>.from(screenshotIds)..add(screenshotId);
+      return copyWith(
+        screenshotIds: newIds,
+        screenshotCount: newIds.length,
+        lastModified: DateTime.now(),
+      );
     }
+    return this;
   }
 
-  // Remove a screenshot ID from the collection
-  void removeScreenshot(String screenshotId) {
-    if (screenshotIds.remove(screenshotId)) {
-      screenshotCount = screenshotIds.length;
-      lastModified = DateTime.now();
+  Collection removeScreenshot(String screenshotId) {
+    if (screenshotIds.contains(screenshotId)) {
+      final newIds = List<String>.from(screenshotIds)..remove(screenshotId);
+      return copyWith(
+        screenshotIds: newIds,
+        screenshotCount: newIds.length,
+        lastModified: DateTime.now(),
+      );
     }
+    return this;
+  }
+
+  Collection copyWith({
+    String? id,
+    String? name,
+    String? description,
+    List<String>? screenshotIds,
+    DateTime? lastModified,
+    int? screenshotCount,
+  }) {
+    return Collection(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      screenshotIds: screenshotIds ?? this.screenshotIds,
+      lastModified: lastModified ?? this.lastModified,
+      screenshotCount: screenshotCount ?? this.screenshotCount,
+    );
   }
 }
