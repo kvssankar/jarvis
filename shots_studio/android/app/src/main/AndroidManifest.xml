@@ -1,6 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <!-- WRITE_EXTERNAL_STORAGE is requested by Permission.storage on older Android versions.
+         Restrict to maxSdkVersion="28" as newer versions have different storage handling. -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
+    <!-- Required for Android 13 (API level 33) and above to access images
+         when using Permission.storage or Permission.photos -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES"/>
+
     <application
-        android:label="shots_studio"
+        android:label="ScreenShot Studio"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

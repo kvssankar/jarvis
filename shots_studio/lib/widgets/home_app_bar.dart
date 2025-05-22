@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
-  const HomeAppBar({super.key});
+  final VoidCallback? onRefresh;
+
+  const HomeAppBar({super.key, this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
@@ -18,6 +21,15 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           // TODO: Implement menu functionality
         },
       ),
+      actions: [
+        // Only show refresh button on Android/iOS
+        if (!kIsWeb && onRefresh != null)
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh screenshots',
+            onPressed: onRefresh,
+          ),
+      ],
     );
   }
 
