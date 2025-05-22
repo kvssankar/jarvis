@@ -3,6 +3,7 @@ import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/widgets/screenshot_card.dart';
 import 'package:shots_studio/screens/create_collection_screen.dart';
+import 'package:shots_studio/screens/screenshot_details_screen.dart';
 
 class CollectionDetailScreen extends StatefulWidget {
   final Collection collection;
@@ -50,12 +51,10 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
       name: _nameController.text.trim(),
       description: _descriptionController.text.trim(),
       screenshotIds: _currentScreenshotIds,
-      lastModified: DateTime.now(), // Update lastModified timestamp
+      lastModified: DateTime.now(),
       screenshotCount: _currentScreenshotIds.length,
     );
     widget.onUpdateCollection(updatedCollection);
-    // Optionally, pop after saving if you don't want explicit save button
-    // Navigator.of(context).pop();
   }
 
   Future<void> _confirmDelete() async {
@@ -83,11 +82,10 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
 
     if (confirm == true) {
       widget.onDeleteCollection(widget.collection.id);
-      Navigator.of(context).pop(); // Pop back after deletion
+      Navigator.of(context).pop();
     }
   }
 
-  // Placeholder for navigating to add/select screenshots
   Future<void> _addOrManageScreenshots() async {
     final List<String>? newScreenshotIds = await Navigator.of(
       context,
@@ -105,7 +103,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
     if (newScreenshotIds != null) {
       setState(() {
         _currentScreenshotIds = newScreenshotIds;
-        _saveChanges(); // Save changes when screenshots are updated
+        _saveChanges();
       });
     }
   }
@@ -113,7 +111,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
   void _removeScreenshotFromCollection(String screenshotId) {
     setState(() {
       _currentScreenshotIds.remove(screenshotId);
-      _saveChanges(); // Save changes when a screenshot is removed
+      _saveChanges();
     });
   }
 
@@ -135,9 +133,9 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios), // Standard back arrow
+          icon: const Icon(Icons.arrow_back_ios),
           onPressed: () {
-            _saveChanges(); // Save changes on back press
+            _saveChanges();
             Navigator.of(context).pop();
           },
         ),
@@ -165,9 +163,8 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                 hintStyle: TextStyle(color: Colors.grey),
                 border: InputBorder.none,
               ),
-              onChanged:
-                  (value) => setState(() {}), // To update AppBar title live
-              onEditingComplete: _saveChanges, // Save when editing is done
+              onChanged: (value) => setState(() {}),
+              onEditingComplete: _saveChanges,
             ),
             const SizedBox(height: 8),
             TextField(
@@ -196,7 +193,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                 ),
               ),
               maxLines: 3,
-              onEditingComplete: _saveChanges, // Save when editing is done
+              onEditingComplete: _saveChanges,
             ),
             const SizedBox(height: 24),
             Row(
@@ -247,7 +244,17 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                               ScreenshotCard(
                                 screenshot: screenshot,
                                 onTap: () {
-                                  // TODO: Maybe view screenshot details?
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder:
+                                          (context) => ScreenshotDetailScreen(
+                                            screenshot: screenshot,
+                                            allCollections: [widget.collection],
+                                            onUpdateCollection:
+                                                widget.onUpdateCollection,
+                                          ),
+                                    ),
+                                  );
                                 },
                               ),
                               Positioned(
