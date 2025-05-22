@@ -132,13 +132,6 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
         ),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios),
-          onPressed: () {
-            _saveChanges();
-            Navigator.of(context).pop();
-          },
-        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.delete_outline, color: Colors.redAccent),
