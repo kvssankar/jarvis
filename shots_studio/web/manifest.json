@@ -1,6 +1,6 @@
 {
-    "name": "shots_studio",
-    "short_name": "shots_studio",
+    "name": "Screenshots Studio",
+    "short_name": "shots studio",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
