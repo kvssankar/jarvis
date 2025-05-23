@@ -58,9 +58,9 @@ class _HomeScreenState extends State<HomeScreen> {
   final ImagePicker _picker = ImagePicker();
   final Uuid _uuid = const Uuid();
   bool _isLoading = false;
-  bool _isProcessingAI = false; // Added for AI processing state
-  int _aiProcessedCount = 0; // Added for AI processed count
-  int _aiTotalToProcess = 0; // Added for total files for AI processing
+  bool _isProcessingAI = false;
+  int _aiProcessedCount = 0;
+  int _aiTotalToProcess = 0;
 
   String? _apiKey;
   String _selectedModelName = 'gemini-2.0-flash';

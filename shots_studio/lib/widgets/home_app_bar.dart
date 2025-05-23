@@ -36,7 +36,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
             padding: const EdgeInsets.only(right: 8.0),
             child: Center(
               child: Text(
-                'Processing $aiProcessedCount/$aiTotalToProcess',
+                'Analyzed $aiProcessedCount/$aiTotalToProcess',
                 style: const TextStyle(fontSize: 12),
               ),
             ),
@@ -58,8 +58,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
                     )
                     : const Icon(Icons.auto_awesome_outlined),
             tooltip: isProcessingAI ? 'Processing...' : 'Process with AI',
-            onPressed:
-                onProcessWithAI, // This will be null if isProcessingAI is true, disabling it
+            onPressed: onProcessWithAI,
           ),
       ],
     );

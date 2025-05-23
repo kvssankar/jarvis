@@ -6,10 +6,10 @@ class AppDrawer extends StatefulWidget {
   final String currentModelName;
   final Function(String) onApiKeyChanged;
   final Function(String) onModelChanged;
-  final int currentLimit; // New field
-  final Function(int) onLimitChanged; // New callback
-  final int currentMaxParallel; // New field
-  final Function(int) onMaxParallelChanged; // New callback
+  final int currentLimit;
+  final Function(int) onLimitChanged;
+  final int currentMaxParallel;
+  final Function(int) onMaxParallelChanged;
 
   const AppDrawer({
     super.key,
@@ -17,10 +17,10 @@ class AppDrawer extends StatefulWidget {
     required this.currentModelName,
     required this.onApiKeyChanged,
     required this.onModelChanged,
-    required this.currentLimit, // Add to constructor
-    required this.onLimitChanged, // Add to constructor
-    required this.currentMaxParallel, // Add to constructor
-    required this.onMaxParallelChanged, // Add to constructor
+    required this.currentLimit,
+    required this.onLimitChanged,
+    required this.currentMaxParallel,
+    required this.onMaxParallelChanged,
   });
 
   @override
@@ -30,9 +30,8 @@ class AppDrawer extends StatefulWidget {
 class _AppDrawerState extends State<AppDrawer> {
   late TextEditingController _apiKeyController;
   late String _selectedModelName;
-  late TextEditingController _limitController; // Controller for limit
-  late TextEditingController
-  _maxParallelController; // Controller for maxParallel
+  late TextEditingController _limitController;
+  late TextEditingController _maxParallelController;
 
   @override
   void initState() {
