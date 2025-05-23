@@ -9,7 +9,6 @@ import 'package:shots_studio/widgets/app_drawer.dart';
 import 'dart:typed_data';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
@@ -323,9 +322,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 16),
-                    const Text('Loading screenshots...'),
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Loading screenshots...'),
                   ],
                 ),
               )
