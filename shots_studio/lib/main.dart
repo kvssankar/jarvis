@@ -92,16 +92,61 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    // Filter unprocessed screenshots
+    final unprocessedScreenshots =
+        _screenshots.where((s) => !s.aiProcessed).toList();
+
+    if (unprocessedScreenshots.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No unprocessed screenshots found.')),
+      );
+      return;
+    }
+
     final geminiModel = GeminiModel(
-      model_name: _selectedModelName,
-      api_key: _apiKey!,
+      modelName: _selectedModelName,
+      apiKey: _apiKey!,
+      maxParallel: 4,
     );
 
-    final response = geminiModel.ask();
-    print('Gemini says: $response');
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('Gemini says: $response')));
+    // Process screenshots in batches
+    final results = await geminiModel.processBatchedImages(
+      unprocessedScreenshots,
+      (batch, result) {
+        // This callback is called after each batch is processed
+        final updatedScreenshots = geminiModel
+            .parseResponseAndUpdateScreenshots(batch, result);
+
+        // Update the screenshots in the main list
+        setState(() {
+          for (var updatedScreenshot in updatedScreenshots) {
+            final index = _screenshots.indexWhere(
+              (s) => s.id == updatedScreenshot.id,
+            );
+            if (index != -1) {
+              _screenshots[index] = updatedScreenshot;
+            }
+          }
+        });
+
+        // Show a snackbar to inform the user
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Processed ${updatedScreenshots.length} screenshots'),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      },
+    );
+
+    final processedCount = results['processedCount'] as int;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'Completed processing $processedCount of ${unprocessedScreenshots.length} screenshots.',
+        ),
+      ),
+    );
   }
 
   Future<void> _takeScreenshot(ImageSource source) async {
