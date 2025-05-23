@@ -1,8 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class AppDrawer extends StatelessWidget {
-  const AppDrawer({super.key});
+class AppDrawer extends StatefulWidget {
+  final String? currentApiKey;
+  final String currentModelName;
+  final Function(String) onApiKeyChanged;
+  final Function(String) onModelChanged;
+
+  const AppDrawer({
+    super.key,
+    this.currentApiKey,
+    required this.currentModelName,
+    required this.onApiKeyChanged,
+    required this.onModelChanged,
+  });
+
+  @override
+  State<AppDrawer> createState() => _AppDrawerState();
+}
+
+class _AppDrawerState extends State<AppDrawer> {
+  late TextEditingController _apiKeyController;
+  late String _selectedModelName;
+
+  @override
+  void initState() {
+    super.initState();
+    _apiKeyController = TextEditingController(text: widget.currentApiKey);
+    _selectedModelName = widget.currentModelName;
+  }
+
+  @override
+  void didUpdateWidget(covariant AppDrawer oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.currentApiKey != oldWidget.currentApiKey) {
+      if (_apiKeyController.text != (widget.currentApiKey ?? '')) {
+        _apiKeyController.text = widget.currentApiKey ?? '';
+        // Ensure the cursor is at the end of the text after programmatically changing it.
+        _apiKeyController.selection = TextSelection.fromPosition(
+          TextPosition(offset: _apiKeyController.text.length),
+        );
+      }
+    }
+    if (widget.currentModelName != oldWidget.currentModelName) {
+      _selectedModelName = widget.currentModelName;
+    }
+  }
 
   Future<void> _launchURL(String urlString) async {
     final Uri url = Uri.parse(urlString);
@@ -63,13 +106,18 @@ class AppDrawer extends StatelessWidget {
               ),
               title: Text('AI Model', style: TextStyle(color: Colors.white)),
               trailing: DropdownButton<String>(
-                value: 'gemini-2.0-flash',
+                value: _selectedModelName, // Use state variable
                 dropdownColor: theme.cardTheme.color ?? Colors.grey[900],
                 icon: Icon(Icons.arrow_drop_down, color: Colors.white70),
                 style: TextStyle(color: Colors.white),
                 underline: SizedBox.shrink(),
                 onChanged: (String? newValue) {
-                  // TODO: Handle model change
+                  if (newValue != null) {
+                    setState(() {
+                      _selectedModelName = newValue;
+                    });
+                    widget.onModelChanged(newValue);
+                  }
                 },
                 items:
                     <String>[
@@ -92,6 +140,7 @@ class AppDrawer extends StatelessWidget {
                 color: theme.colorScheme.primary,
               ),
               title: TextFormField(
+                controller: _apiKeyController, // Use controller
                 style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   hintText: 'API Key',
@@ -104,6 +153,7 @@ class AppDrawer extends StatelessWidget {
                   ),
                 ),
                 obscureText: true, // Hide API key input
+                onChanged: widget.onApiKeyChanged,
               ),
             ),
             Divider(color: Colors.grey[700]),
@@ -187,5 +237,11 @@ class AppDrawer extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _apiKeyController.dispose();
+    super.dispose();
   }
 }

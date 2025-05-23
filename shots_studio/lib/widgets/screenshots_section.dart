@@ -31,8 +31,8 @@ class ScreenshotsSection extends StatelessWidget {
           gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 3,
             childAspectRatio: 1,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 4,
           ),
           itemCount: screenshots.length,
           itemBuilder: (context, index) {

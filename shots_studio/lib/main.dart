@@ -13,6 +13,7 @@ import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:shots_studio/models/gemini_model.dart'; // Added import
 
 void main() {
   runApp(const MyApp());
@@ -58,13 +59,49 @@ class _HomeScreenState extends State<HomeScreen> {
   final Uuid _uuid = const Uuid();
   bool _isLoading = false;
 
+  String? _apiKey;
+  String _selectedModelName = 'gemini-2.0-flash';
+
   @override
   void initState() {
     super.initState();
-    // Load Android screenshots if on Android platform
     if (!kIsWeb) {
       _loadAndroidScreenshots();
     }
+  }
+
+  void _updateApiKey(String newApiKey) {
+    setState(() {
+      _apiKey = newApiKey;
+    });
+  }
+
+  void _updateModelName(String newModelName) {
+    setState(() {
+      _selectedModelName = newModelName;
+    });
+  }
+
+  Future<void> _processWithGemini() async {
+    if (_apiKey == null || _apiKey!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('API Key is not set. Please set it in the drawer.'),
+        ),
+      );
+      return;
+    }
+
+    final geminiModel = GeminiModel(
+      model_name: _selectedModelName,
+      api_key: _apiKey!,
+    );
+
+    final response = geminiModel.ask();
+    print('Gemini says: $response');
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Gemini says: $response')));
   }
 
   Future<void> _takeScreenshot(ImageSource source) async {
@@ -135,9 +172,15 @@ class _HomeScreenState extends State<HomeScreen> {
     if (kIsWeb) return;
 
     try {
-      // Request storage permission
       var status = await Permission.photos.request();
       if (!status.isGranted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Storage permission not granted to load screenshots.',
+            ),
+          ),
+        );
         return;
       }
 
@@ -265,8 +308,13 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: HomeAppBar(onRefresh: _loadAndroidScreenshots),
-      drawer: const AppDrawer(),
+      appBar: HomeAppBar(onProcessWithAI: _processWithGemini),
+      drawer: AppDrawer(
+        currentApiKey: _apiKey,
+        currentModelName: _selectedModelName,
+        onApiKeyChanged: _updateApiKey,
+        onModelChanged: _updateModelName,
+      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           // Show options for selecting screenshots

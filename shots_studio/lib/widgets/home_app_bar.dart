@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final VoidCallback? onRefresh;
+  final VoidCallback? onProcessWithAI;
 
-  const HomeAppBar({super.key, this.onRefresh});
+  const HomeAppBar({super.key, this.onProcessWithAI});
 
   @override
   Widget build(BuildContext context) {
@@ -22,11 +22,11 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         },
       ),
       actions: [
-        if (!kIsWeb && onRefresh != null)
+        if (onProcessWithAI != null)
           IconButton(
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh screenshots',
-            onPressed: onRefresh,
+            icon: const Icon(Icons.auto_awesome_outlined),
+            tooltip: 'Process with AI',
+            onPressed: onProcessWithAI,
           ),
       ],
     );
