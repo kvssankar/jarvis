@@ -193,10 +193,13 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     if (widget.screenshot.path != null) {
       imageWidget = Image.file(
         File(widget.screenshot.path!),
-        fit: BoxFit.cover,
+        fit: BoxFit.contain, // Changed from BoxFit.cover
       );
     } else if (widget.screenshot.bytes != null) {
-      imageWidget = Image.memory(widget.screenshot.bytes!, fit: BoxFit.cover);
+      imageWidget = Image.memory(
+        widget.screenshot.bytes!,
+        fit: BoxFit.contain,
+      ); // Changed from BoxFit.cover
     } else {
       imageWidget = const Center(child: Icon(Icons.broken_image));
       imageName = 'Invalid Image';
