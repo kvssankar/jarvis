@@ -25,6 +25,7 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   late Set<String> _selectedScreenshotIds;
   final Uuid _uuid = const Uuid();
+  bool _isAutoAddEnabled = false; // Added state for Auto-Add
 
   @override
   void initState() {
@@ -86,6 +87,7 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
         screenshotIds: _selectedScreenshotIds.toList(),
         lastModified: DateTime.now(),
         screenshotCount: _selectedScreenshotIds.length,
+        isAutoAddEnabled: _isAutoAddEnabled, // Pass the state here
       );
       Navigator.of(context).pop(newCollection);
     }
@@ -157,6 +159,72 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                 maxLines: 3,
               ),
               const SizedBox(height: 24),
+              // Auto-Add Switch (only in create mode)
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Tooltip(
+                    message:
+                        'When enabled, AI will automatically add relevant screenshots to this collection',
+                    child: Row(
+                      children: [
+                        const Text(
+                          'Enable Auto-Add Screenshots (AI)',
+                          style: TextStyle(fontSize: 16, color: Colors.white),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(
+                          Icons.info_outline,
+                          size: 16,
+                          color: Colors.amber.shade200,
+                        ),
+                      ],
+                    ),
+                  ),
+                  Switch(
+                    value: _isAutoAddEnabled,
+                    activeColor: Colors.amber.shade200,
+                    onChanged: (bool value) {
+                      setState(() {
+                        _isAutoAddEnabled = value;
+                      });
+                    },
+                  ),
+                ],
+              ),
+              if (_isAutoAddEnabled) // Conditional message based on switch state
+                Container(
+                  margin: const EdgeInsets.only(top: 8, bottom: 16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: Colors.amber.withOpacity(0.3),
+                      width: 0.5,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.auto_awesome,
+                        size: 16,
+                        color: Colors.amber.shade200,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Gemini AI will automatically categorize new screenshots into this collection based on content analysis.',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.amber.shade100,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 8), // Adjusted spacing
             ],
             Text(
               widget.isEditMode

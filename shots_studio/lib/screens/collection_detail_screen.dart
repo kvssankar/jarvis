@@ -224,22 +224,68 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Enable Auto-Add Screenshots (AI)',
-                  style: TextStyle(fontSize: 16, color: Colors.white),
+                Tooltip(
+                  message:
+                      'When enabled, AI will automatically add relevant screenshots to this collection',
+                  child: Row(
+                    children: [
+                      const Text(
+                        'Enable Auto-Add Screenshots (AI)',
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                      ),
+                      const SizedBox(width: 6),
+                      Icon(
+                        Icons.info_outline,
+                        size: 16,
+                        color: Colors.amber.shade200,
+                      ),
+                    ],
+                  ),
                 ),
                 Switch(
                   value: _isAutoAddEnabled,
+                  activeColor: Colors.amber.shade200,
                   onChanged: (bool value) {
                     setState(() {
                       _isAutoAddEnabled = value;
                       _saveChanges();
                     });
                   },
-                  activeColor: Colors.amber.shade200,
                 ),
               ],
             ),
+            if (_isAutoAddEnabled)
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.amber.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Colors.amber.withOpacity(0.3),
+                    width: 0.5,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome,
+                      size: 16,
+                      color: Colors.amber.shade200,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Gemini AI will automatically categorize new screenshots into this collection based on content analysis',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.amber.shade100,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -302,6 +348,44 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                                   );
                                 },
                               ),
+                              // Show AI auto-categorized indicator if processed by AI and collection has auto-add enabled
+                              if (screenshot.aiProcessed && _isAutoAddEnabled)
+                                Positioned(
+                                  bottom: 25,
+                                  right: 4,
+                                  child: Tooltip(
+                                    message: 'Auto-categorized by Gemini AI',
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.6),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.auto_awesome,
+                                            color: Colors.amber.shade200,
+                                            size: 12,
+                                          ),
+                                          const SizedBox(width: 2),
+                                          Text(
+                                            'AI',
+                                            style: TextStyle(
+                                              color: Colors.amber.shade200,
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ),
                               Positioned(
                                 top: 0,
                                 right: 0,

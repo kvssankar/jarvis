@@ -57,6 +57,24 @@ class CollectionCard extends StatelessWidget {
                 ),
               ),
             ),
+            if (collection.isAutoAddEnabled)
+              Positioned(
+                left: 8,
+                bottom: 8,
+                child: Container(
+                  width: 24,
+                  height: 24,
+                  decoration: const BoxDecoration(
+                    color: Colors.amber,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.auto_awesome_outlined,
+                    size: 16,
+                    color: Colors.black,
+                  ),
+                ),
+              ),
           ],
         ),
       ),
