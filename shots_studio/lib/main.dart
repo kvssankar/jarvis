@@ -258,7 +258,8 @@ class _HomeScreenState extends State<HomeScreen> {
       });
 
       // Limit number of screenshots to prevent memory issues (adjust as needed)
-      final filesToProcess = allFiles.take(100).toList();
+      // final filesToProcess = allFiles.take(100).toList();
+      final filesToProcess = allFiles.toList();
 
       for (var file in filesToProcess) {
         try {

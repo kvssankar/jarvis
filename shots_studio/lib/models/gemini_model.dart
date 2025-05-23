@@ -16,8 +16,8 @@ class GeminiModel {
   GeminiModel({
     required this.modelName,
     required this.apiKey,
-    this.timeoutSeconds = 30,
-    this.maxParallel = 8,
+    this.timeoutSeconds = 60,
+    this.maxParallel = 4,
     this.maxRetries,
   }) : baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
 
@@ -115,9 +115,12 @@ class GeminiModel {
       '$baseUrl/${modelName ?? "gemini-pro-vision"}:generateContent?key=$apiKey',
     );
 
+    final requestBody = jsonEncode(requestData);
+    print('Request body size: ${requestBody.length} bytes'); // Added log
+
     try {
       final response = await http
-          .post(url, headers: headers, body: jsonEncode(requestData))
+          .post(url, headers: headers, body: requestBody) // Use requestBody
           .timeout(Duration(seconds: timeoutSeconds));
 
       final responseJson = jsonDecode(response.body);
