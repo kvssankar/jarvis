@@ -123,16 +123,17 @@ class CollectionsSection extends StatelessWidget {
   // Helper widget for the "Create your first collection" card
   Widget _buildCreateFirstCollectionCard(BuildContext context) {
     return Card(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          color: Colors.brown[800],
-        ),
-        child: const Column(
+      color: Colors.brown[800], // Apply color to Card
+      shape: RoundedRectangleBorder(
+        // Apply shape to Card
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+          children: const [
             Text(
               'Create your first collection to',
               style: TextStyle(fontSize: 18, color: Colors.white70),

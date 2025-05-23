@@ -59,13 +59,6 @@ class _HomeScreenState extends State<HomeScreen> {
   final Uuid _uuid = const Uuid();
   bool _isLoading = false;
 
-  Future<void> _launchURL(String urlString) async {
-    final Uri url = Uri.parse(urlString);
-    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      throw Exception('Could not launch $urlString');
-    }
-  }
-
   @override
   void initState() {
     super.initState();
@@ -86,11 +79,7 @@ class _HomeScreenState extends State<HomeScreen> {
           images = [image];
         }
       } else if (kIsWeb) {
-        // For web, we can only pick one image at a time
-        final XFile? image = await _picker.pickImage(source: source);
-        if (image != null) {
-          images = [image];
-        }
+        images = await _picker.pickMultiImage();
       } else {
         // For mobile gallery, allow multiple image selection
         images = await _picker.pickMultiImage();
@@ -146,11 +135,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadAndroidScreenshots() async {
     if (kIsWeb) return;
 
-    // Clear existing screenshots before loading new ones
-    setState(() {
-      _screenshots.clear();
-    });
-
     try {
       // Request storage permission
       var status = await Permission.photos.request();
@@ -191,6 +175,12 @@ class _HomeScreenState extends State<HomeScreen> {
 
       for (var file in filesToProcess) {
         try {
+          // TODO: Optimize this check
+          if (_screenshots.any((s) => s.path == file.path)) {
+            print('Skipping already loaded file: ${file.path}');
+            continue; // Skip if already exists
+          }
+
           String id = _uuid.v4();
           DateTime fileModifiedTime = File(file.path).lastModifiedSync();
 
