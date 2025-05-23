@@ -6,6 +6,10 @@ class AppDrawer extends StatefulWidget {
   final String currentModelName;
   final Function(String) onApiKeyChanged;
   final Function(String) onModelChanged;
+  final int currentLimit; // New field
+  final Function(int) onLimitChanged; // New callback
+  final int currentMaxParallel; // New field
+  final Function(int) onMaxParallelChanged; // New callback
 
   const AppDrawer({
     super.key,
@@ -13,6 +17,10 @@ class AppDrawer extends StatefulWidget {
     required this.currentModelName,
     required this.onApiKeyChanged,
     required this.onModelChanged,
+    required this.currentLimit, // Add to constructor
+    required this.onLimitChanged, // Add to constructor
+    required this.currentMaxParallel, // Add to constructor
+    required this.onMaxParallelChanged, // Add to constructor
   });
 
   @override
@@ -22,12 +30,21 @@ class AppDrawer extends StatefulWidget {
 class _AppDrawerState extends State<AppDrawer> {
   late TextEditingController _apiKeyController;
   late String _selectedModelName;
+  late TextEditingController _limitController; // Controller for limit
+  late TextEditingController
+  _maxParallelController; // Controller for maxParallel
 
   @override
   void initState() {
     super.initState();
     _apiKeyController = TextEditingController(text: widget.currentApiKey);
     _selectedModelName = widget.currentModelName;
+    _limitController = TextEditingController(
+      text: widget.currentLimit.toString(),
+    );
+    _maxParallelController = TextEditingController(
+      text: widget.currentMaxParallel.toString(),
+    );
   }
 
   @override
@@ -44,6 +61,22 @@ class _AppDrawerState extends State<AppDrawer> {
     }
     if (widget.currentModelName != oldWidget.currentModelName) {
       _selectedModelName = widget.currentModelName;
+    }
+    if (widget.currentLimit != oldWidget.currentLimit) {
+      if (_limitController.text != widget.currentLimit.toString()) {
+        _limitController.text = widget.currentLimit.toString();
+        _limitController.selection = TextSelection.fromPosition(
+          TextPosition(offset: _limitController.text.length),
+        );
+      }
+    }
+    if (widget.currentMaxParallel != oldWidget.currentMaxParallel) {
+      if (_maxParallelController.text != widget.currentMaxParallel.toString()) {
+        _maxParallelController.text = widget.currentMaxParallel.toString();
+        _maxParallelController.selection = TextSelection.fromPosition(
+          TextPosition(offset: _maxParallelController.text.length),
+        );
+      }
     }
   }
 
@@ -157,6 +190,83 @@ class _AppDrawerState extends State<AppDrawer> {
               ),
             ),
             Divider(color: Colors.grey[700]),
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              child: Text(
+                'Advanced Settings',
+                style: TextStyle(
+                  color: Colors.grey[400],
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.filter_list, // Example Icon
+                color: theme.colorScheme.primary,
+              ),
+              title: Text(
+                'Screenshot Limit',
+                style: TextStyle(color: Colors.white),
+              ),
+              subtitle: TextFormField(
+                controller: _limitController,
+                style: TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'e.g., 50',
+                  hintStyle: TextStyle(color: Colors.white70),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: theme.colorScheme.primary),
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+                onChanged: (value) {
+                  final intValue = int.tryParse(value);
+                  if (intValue != null) {
+                    widget.onLimitChanged(intValue);
+                  }
+                },
+              ),
+            ),
+            ListTile(
+              leading: Icon(
+                Icons.sync_alt, // Example Icon
+                color: theme.colorScheme.primary,
+              ),
+              title: Text(
+                'Max Parallel AI Processes',
+                style: TextStyle(color: Colors.white),
+              ),
+              subtitle: TextFormField(
+                controller: _maxParallelController,
+                style: TextStyle(color: Colors.white),
+                decoration: InputDecoration(
+                  hintText: 'e.g., 4',
+                  hintStyle: TextStyle(color: Colors.white70),
+                  enabledBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey[700]!),
+                  ),
+                  focusedBorder: UnderlineInputBorder(
+                    borderSide: BorderSide(color: theme.colorScheme.primary),
+                  ),
+                ),
+                keyboardType: TextInputType.number,
+                onChanged: (value) {
+                  final intValue = int.tryParse(value);
+                  if (intValue != null) {
+                    widget.onMaxParallelChanged(intValue);
+                  }
+                },
+              ),
+            ),
+            Divider(color: Colors.grey[700]),
             ListTile(
               leading: Icon(Icons.code, color: theme.colorScheme.primary),
               title: Text('Source Code', style: TextStyle(color: Colors.white)),
@@ -242,6 +352,8 @@ class _AppDrawerState extends State<AppDrawer> {
   @override
   void dispose() {
     _apiKeyController.dispose();
+    _limitController.dispose(); // Dispose new controller
+    _maxParallelController.dispose(); // Dispose new controller
     super.dispose();
   }
 }

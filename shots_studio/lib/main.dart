@@ -58,9 +58,14 @@ class _HomeScreenState extends State<HomeScreen> {
   final ImagePicker _picker = ImagePicker();
   final Uuid _uuid = const Uuid();
   bool _isLoading = false;
+  bool _isProcessingAI = false; // Added for AI processing state
+  int _aiProcessedCount = 0; // Added for AI processed count
+  int _aiTotalToProcess = 0; // Added for total files for AI processing
 
   String? _apiKey;
   String _selectedModelName = 'gemini-2.0-flash';
+  int _screenshotLimit = 50; // Default limit
+  int _maxParallelAI = 4; // Default max parallel
 
   @override
   void initState() {
@@ -79,6 +84,18 @@ class _HomeScreenState extends State<HomeScreen> {
   void _updateModelName(String newModelName) {
     setState(() {
       _selectedModelName = newModelName;
+    });
+  }
+
+  void _updateScreenshotLimit(int newLimit) {
+    setState(() {
+      _screenshotLimit = newLimit;
+    });
+  }
+
+  void _updateMaxParallelAI(int newMaxParallel) {
+    setState(() {
+      _maxParallelAI = newMaxParallel;
     });
   }
 
@@ -103,10 +120,16 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
+    setState(() {
+      _isProcessingAI = true;
+      _aiTotalToProcess = unprocessedScreenshots.length;
+      _aiProcessedCount = 0;
+    });
+
     final geminiModel = GeminiModel(
       modelName: _selectedModelName,
       apiKey: _apiKey!,
-      maxParallel: 4,
+      maxParallel: _maxParallelAI, // Use state variable
     );
 
     // Process screenshots in batches
@@ -119,6 +142,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
         // Update the screenshots in the main list
         setState(() {
+          _aiProcessedCount +=
+              updatedScreenshots.length; // Update processed count
           for (var updatedScreenshot in updatedScreenshots) {
             final index = _screenshots.indexWhere(
               (s) => s.id == updatedScreenshot.id,
@@ -147,6 +172,13 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
     );
+
+    setState(() {
+      _isProcessingAI = false;
+      // Optionally reset counts here or keep them for display until next processing
+      // _aiProcessedCount = 0;
+      // _aiTotalToProcess = 0;
+    });
   }
 
   Future<void> _takeScreenshot(ImageSource source) async {
@@ -258,8 +290,9 @@ class _HomeScreenState extends State<HomeScreen> {
       });
 
       // Limit number of screenshots to prevent memory issues (adjust as needed)
-      // final filesToProcess = allFiles.take(100).toList();
-      final filesToProcess = allFiles.toList();
+      final filesToProcess =
+          allFiles.take(_screenshotLimit).toList(); // Use state variable
+      // final filesToProcess = allFiles.toList();
 
       for (var file in filesToProcess) {
         try {
@@ -354,12 +387,21 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: HomeAppBar(onProcessWithAI: _processWithGemini),
+      appBar: HomeAppBar(
+        onProcessWithAI: _isProcessingAI ? null : _processWithGemini,
+        isProcessingAI: _isProcessingAI, // Pass processing state
+        aiProcessedCount: _aiProcessedCount, // Pass processed count
+        aiTotalToProcess: _aiTotalToProcess, // Pass total to process
+      ),
       drawer: AppDrawer(
         currentApiKey: _apiKey,
         currentModelName: _selectedModelName,
         onApiKeyChanged: _updateApiKey,
         onModelChanged: _updateModelName,
+        currentLimit: _screenshotLimit, // Pass current value
+        onLimitChanged: _updateScreenshotLimit, // Pass callback
+        currentMaxParallel: _maxParallelAI, // Pass current value
+        onMaxParallelChanged: _updateMaxParallelAI, // Pass callback
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
