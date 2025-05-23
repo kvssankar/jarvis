@@ -27,6 +27,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
   late TextEditingController _nameController;
   late TextEditingController _descriptionController;
   late List<String> _currentScreenshotIds;
+  late bool _isAutoAddEnabled;
 
   @override
   void initState() {
@@ -36,6 +37,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
       text: widget.collection.description,
     );
     _currentScreenshotIds = List.from(widget.collection.screenshotIds);
+    _isAutoAddEnabled = widget.collection.isAutoAddEnabled;
   }
 
   @override
@@ -46,13 +48,13 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
   }
 
   void _saveChanges() {
-    final updatedCollection = Collection(
-      id: widget.collection.id,
+    final updatedCollection = widget.collection.copyWith(
       name: _nameController.text.trim(),
       description: _descriptionController.text.trim(),
       screenshotIds: _currentScreenshotIds,
       lastModified: DateTime.now(),
       screenshotCount: _currentScreenshotIds.length,
+      isAutoAddEnabled: _isAutoAddEnabled,
     );
     widget.onUpdateCollection(updatedCollection);
   }
@@ -117,7 +119,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    List<Screenshot> screenshotsInCollection =
+    final screenshotsInCollection =
         widget.allScreenshots
             .where((s) => _currentScreenshotIds.contains(s.id))
             .toList();
@@ -187,6 +189,26 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
               ),
               maxLines: 3,
               onEditingComplete: _saveChanges,
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Enable Auto-Add Screenshots (AI)',
+                  style: TextStyle(fontSize: 16, color: Colors.white),
+                ),
+                Switch(
+                  value: _isAutoAddEnabled,
+                  onChanged: (bool value) {
+                    setState(() {
+                      _isAutoAddEnabled = value;
+                      _saveChanges();
+                    });
+                  },
+                  activeColor: Colors.amber.shade200,
+                ),
+              ],
             ),
             const SizedBox(height: 24),
             Row(

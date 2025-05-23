@@ -5,6 +5,7 @@ class Collection {
   final List<String> screenshotIds;
   final DateTime lastModified;
   final int screenshotCount;
+  final bool isAutoAddEnabled;
 
   Collection({
     required this.id,
@@ -13,6 +14,7 @@ class Collection {
     required this.screenshotIds,
     required this.lastModified,
     required this.screenshotCount,
+    this.isAutoAddEnabled = false,
   });
 
   Collection addScreenshot(String screenshotId) {
@@ -46,6 +48,7 @@ class Collection {
     List<String>? screenshotIds,
     DateTime? lastModified,
     int? screenshotCount,
+    bool? isAutoAddEnabled,
   }) {
     return Collection(
       id: id ?? this.id,
@@ -54,6 +57,7 @@ class Collection {
       screenshotIds: screenshotIds ?? this.screenshotIds,
       lastModified: lastModified ?? this.lastModified,
       screenshotCount: screenshotCount ?? this.screenshotCount,
+      isAutoAddEnabled: isAutoAddEnabled ?? this.isAutoAddEnabled,
     );
   }
 }
