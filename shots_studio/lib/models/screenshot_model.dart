@@ -7,7 +7,7 @@ class Screenshot {
   String? title;
   String? description;
   List<String> tags;
-  String? collectionId;
+  List<String> collectionIds; // Added field
   bool aiProcessed;
   DateTime addedOn;
 
@@ -18,7 +18,7 @@ class Screenshot {
     this.title,
     this.description,
     required this.tags,
-    this.collectionId,
+    this.collectionIds = const [], // Initialize with empty list
     required this.aiProcessed,
     required this.addedOn,
   });

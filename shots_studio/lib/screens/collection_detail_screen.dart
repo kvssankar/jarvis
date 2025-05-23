@@ -89,7 +89,11 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
   }
 
   Future<void> _addOrManageScreenshots() async {
-    final List<String>? newScreenshotIds = await Navigator.of(
+    final Set<String> previousScreenshotIds = Set.from(
+      _currentScreenshotIds,
+    ); // Store current state
+
+    final List<String>? newScreenshotIdsList = await Navigator.of(
       context,
     ).push<List<String>>(
       MaterialPageRoute(
@@ -102,17 +106,43 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
       ),
     );
 
-    if (newScreenshotIds != null) {
+    if (newScreenshotIdsList != null) {
+      final Set<String> newScreenshotIdsSet = Set.from(newScreenshotIdsList);
+
+      // Update Screenshot models' collectionIds
+      for (var screenshot in widget.allScreenshots) {
+        final bool wasInCollection = previousScreenshotIds.contains(
+          screenshot.id,
+        );
+        final bool isInCollection = newScreenshotIdsSet.contains(screenshot.id);
+
+        if (isInCollection && !wasInCollection) {
+          // Screenshot was added to this collection
+          if (!screenshot.collectionIds.contains(widget.collection.id)) {
+            screenshot.collectionIds.add(widget.collection.id);
+          }
+        } else if (!isInCollection && wasInCollection) {
+          // Screenshot was removed from this collection
+          screenshot.collectionIds.remove(widget.collection.id);
+        }
+      }
+
       setState(() {
-        _currentScreenshotIds = newScreenshotIds;
+        _currentScreenshotIds = newScreenshotIdsList;
         _saveChanges();
       });
     }
   }
 
-  void _removeScreenshotFromCollection(String screenshotId) {
+  void _removeScreenshotFromCollection(String screenshotIdToRemove) {
+    final screenshot = widget.allScreenshots.firstWhere(
+      (s) => s.id == screenshotIdToRemove,
+    );
+    screenshot.collectionIds.remove(widget.collection.id);
+    // }
+
     setState(() {
-      _currentScreenshotIds.remove(screenshotId);
+      _currentScreenshotIds.remove(screenshotIdToRemove);
       _saveChanges();
     });
   }

@@ -168,12 +168,21 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       widget.screenshot.id,
     );
     List<String> updatedScreenshotIds = List.from(collection.screenshotIds);
+    List<String> updatedCollectionIdsInScreenshot = List.from(
+      widget.screenshot.collectionIds,
+    ); // New line
 
     if (isCurrentlyIn) {
       updatedScreenshotIds.remove(widget.screenshot.id);
+      updatedCollectionIdsInScreenshot.remove(collection.id); // New line
     } else {
       updatedScreenshotIds.add(widget.screenshot.id);
+      updatedCollectionIdsInScreenshot.add(collection.id); // New line
     }
+
+    // Update the screenshot model
+    widget.screenshot.collectionIds =
+        updatedCollectionIdsInScreenshot; // New line
 
     Collection updatedCollection = collection.copyWith(
       screenshotIds: updatedScreenshotIds,

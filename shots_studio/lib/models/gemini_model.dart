@@ -369,7 +369,7 @@ class GeminiModel {
             tags: List<String>.from(item['tags'] ?? []),
             aiProcessed: true,
             addedOn: screenshot.addedOn,
-            collectionId: screenshot.collectionId,
+            collectionIds: screenshot.collectionIds,
           );
           return [updatedScreenshot];
         }
@@ -417,7 +417,7 @@ class GeminiModel {
               tags: List<String>.from(item['tags'] ?? []),
               aiProcessed: true,
               addedOn: screenshot.addedOn,
-              collectionId: screenshot.collectionId,
+              collectionIds: screenshot.collectionIds,
             );
 
             updatedScreenshots.add(updatedScreenshot);
@@ -440,7 +440,7 @@ class GeminiModel {
               tags: List<String>.from(item['tags'] ?? []),
               aiProcessed: true,
               addedOn: screenshot.addedOn,
-              collectionId: screenshot.collectionId,
+              collectionIds: screenshot.collectionIds,
             );
 
             updatedScreenshots.add(updatedScreenshot);
