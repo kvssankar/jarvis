@@ -10,7 +10,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     return AppBar(
       title: const Text(
-        'PixelShot',
+        'Shots Studio',
         style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
       ),
       backgroundColor: Colors.transparent,
@@ -18,11 +18,10 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
       leading: IconButton(
         icon: const Icon(Icons.menu),
         onPressed: () {
-          // TODO: Implement menu functionality
+          Scaffold.of(context).openDrawer();
         },
       ),
       actions: [
-        // Only show refresh button on Android/iOS
         if (!kIsWeb && onRefresh != null)
           IconButton(
             icon: const Icon(Icons.refresh),

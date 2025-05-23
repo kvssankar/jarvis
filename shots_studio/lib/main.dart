@@ -5,9 +5,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:shots_studio/widgets/home_app_bar.dart';
 import 'package:shots_studio/widgets/collections_section.dart';
 import 'package:shots_studio/widgets/screenshots_section.dart';
+import 'package:shots_studio/widgets/app_drawer.dart';
 import 'dart:typed_data';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
@@ -23,7 +25,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'PixelShot',
+      title: 'Shots Studio',
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: Colors.black,
         colorScheme: ColorScheme.dark(
@@ -56,6 +58,13 @@ class _HomeScreenState extends State<HomeScreen> {
   final ImagePicker _picker = ImagePicker();
   final Uuid _uuid = const Uuid();
   bool _isLoading = false;
+
+  Future<void> _launchURL(String urlString) async {
+    final Uri url = Uri.parse(urlString);
+    if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+      throw Exception('Could not launch $urlString');
+    }
+  }
 
   @override
   void initState() {
@@ -267,9 +276,8 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: HomeAppBar(
-        onRefresh: _loadAndroidScreenshots,
-      ), // Use HomeAppBar widget with refresh functionality
+      appBar: HomeAppBar(onRefresh: _loadAndroidScreenshots),
+      drawer: const AppDrawer(),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           // Show options for selecting screenshots
