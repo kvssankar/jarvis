@@ -11,16 +11,16 @@ class CollectionsSection extends StatelessWidget {
   final List<Collection> collections;
   final List<Screenshot> screenshots;
   final Function(Collection) onCollectionAdded;
-  final Function(Collection) onUpdateCollection; // Add this
-  final Function(String) onDeleteCollection; // Add this
+  final Function(Collection) onUpdateCollection;
+  final Function(String) onDeleteCollection;
 
   const CollectionsSection({
     super.key,
     required this.collections,
     required this.screenshots,
     required this.onCollectionAdded,
-    required this.onUpdateCollection, // Add this
-    required this.onDeleteCollection, // Add this
+    required this.onUpdateCollection,
+    required this.onDeleteCollection,
   });
 
   Future<void> _createCollection(BuildContext context) async {
@@ -111,7 +111,6 @@ class CollectionsSection extends StatelessWidget {
                         ),
               ),
               const SizedBox(width: 16),
-              // Add button for creating new collections
               AddCollectionButton(onTap: () => _createCollection(context)),
             ],
           ),

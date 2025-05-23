@@ -12,18 +12,15 @@ class CollectionCard extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: onTap, // TODO: Implement navigation to collection detail
+        onTap: onTap,
         child: Stack(
           children: [
             Container(
               width: 120,
               padding: const EdgeInsets.all(12.0),
-              // decoration: BoxDecoration(color: Colors.blueGrey[800]), // Removed specific color to use card's theme color
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize:
-                    MainAxisSize
-                        .min, // Ensure column takes minimum necessary height
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     collection.name ?? 'Untitled Collection',
