@@ -27,9 +27,24 @@ class ScreenshotCard extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [Expanded(child: imageWidget)],
+        child: Stack(
+          // Added Stack to overlay the checkmark
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [Expanded(child: imageWidget)],
+            ),
+            if (screenshot.aiProcessed) // Conditionally display the checkmark
+              Positioned(
+                bottom: 4,
+                right: 4,
+                child: Icon(
+                  Icons.check_circle,
+                  color: Colors.amber.shade200,
+                  size: 20,
+                ),
+              ),
+          ],
         ),
       ),
     );
