@@ -44,42 +44,6 @@ class ScreenshotCard extends StatelessWidget {
                   size: 20,
                 ),
               ),
-            // Show collection indicator if screenshot belongs to any collections
-            if (screenshot.collectionIds.isNotEmpty)
-              Positioned(
-                top: 4,
-                left: 4,
-                child: Tooltip(
-                  message:
-                      'Added to ${screenshot.collectionIds.length} collection(s)',
-                  child: Container(
-                    padding: const EdgeInsets.all(4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.6),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.folder,
-                          color: Colors.amber.shade200,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          '${screenshot.collectionIds.length}',
-                          style: TextStyle(
-                            color: Colors.amber.shade200,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
       ),
