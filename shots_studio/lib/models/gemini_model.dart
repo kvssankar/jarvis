@@ -140,7 +140,7 @@ class GeminiModel {
     );
 
     final requestBody = jsonEncode(requestData);
-    print('Request body size: ${requestBody.length} bytes'); // Added log
+    print('Request body size: ${requestBody.length} bytes');
 
     try {
       final response = await http

@@ -7,7 +7,7 @@ class Screenshot {
   String? title;
   String? description;
   List<String> tags;
-  List<String> collectionIds; // Added field
+  List<String> collectionIds;
   bool aiProcessed;
   DateTime addedOn;
 
@@ -18,8 +18,14 @@ class Screenshot {
     this.title,
     this.description,
     required this.tags,
-    this.collectionIds = const [], // Initialize with empty list
+    List<String>? collectionIds,
     required this.aiProcessed,
     required this.addedOn,
-  });
+  }) : collectionIds = collectionIds ?? [];
+
+  void addToCollections(List<String> collections) {
+    collectionIds.addAll(
+      collections.where((id) => !collectionIds.contains(id)),
+    );
+  }
 }

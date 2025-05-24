@@ -165,7 +165,6 @@ class _HomeScreenState extends State<HomeScreen> {
           if (index != -1) {
             _screenshots[index] = updatedScreenshot;
 
-            // Check if there are any suggested collections for this screenshot
             List<String> suggestedCollections = [];
             try {
               if (result['suggestedCollections'] != null) {
@@ -207,10 +206,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
             // Process suggested collections for auto-adding
             if (suggestedCollections.isNotEmpty) {
-              // Track collections that were auto-added for notification purposes
-              List<String> autoAddedCollectionNames = [];
-
-              // First, check and add to existing collections with auto-add enabled
               for (var collection in _collections) {
                 // Check if collection should be auto-added to this screenshot
                 if (collection.isAutoAddEnabled &&
@@ -223,13 +218,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   );
                   _updateCollection(updatedCollection);
 
-                  // Add to the screenshot's collectionIds
                   updatedScreenshot.collectionIds.add(collection.id);
-
-                  // Add to our tracking list for notification
-                  autoAddedCollectionNames.add(
-                    collection.name ?? 'Unnamed Collection',
-                  );
                 }
               }
             }
