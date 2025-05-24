@@ -13,7 +13,7 @@ import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:shots_studio/models/gemini_model.dart'; // Added import
+import 'package:shots_studio/models/gemini_model.dart';
 
 void main() {
   runApp(const MyApp());
@@ -99,12 +99,26 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _showSnackbar({
+    required String message,
+    Color? backgroundColor,
+    Duration? duration,
+  }) {
+    if (!mounted) return; // Check if the widget is still in the tree
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: backgroundColor,
+        duration: duration ?? const Duration(seconds: 4), // Default duration
+      ),
+    );
+  }
+
   Future<void> _processWithGemini() async {
     if (_apiKey == null || _apiKey!.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('API Key is not set. Please set it in the drawer.'),
-        ),
+      _showSnackbar(
+        message: 'API Key is not set. Please set it in the drawer.',
+        backgroundColor: Colors.orange,
       );
       return;
     }
@@ -144,6 +158,7 @@ class _HomeScreenState extends State<HomeScreen> {
       modelName: _selectedModelName,
       apiKey: _apiKey!,
       maxParallel: _maxParallelAI,
+      showMessage: _showSnackbar, // Pass the callback here
     );
 
     final results = await geminiModel.processBatchedImages(unprocessedScreenshots, (

@@ -3,8 +3,16 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'dart:typed_data';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shots_studio/models/screenshot_model.dart';
+
+typedef ShowMessageCallback =
+    void Function({
+      required String message,
+      Color? backgroundColor,
+      Duration? duration,
+    });
 
 class AiMetaData {
   String modelName;
@@ -20,6 +28,7 @@ class GeminiModel {
   int timeoutSeconds;
   int maxParallel;
   int? maxRetries;
+  ShowMessageCallback? showMessage;
 
   GeminiModel({
     required this.modelName,
@@ -27,6 +36,7 @@ class GeminiModel {
     this.timeoutSeconds = 60,
     this.maxParallel = 4,
     this.maxRetries,
+    this.showMessage,
   }) : baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
 
   String getPrompt({List<Map<String, String?>>? autoAddCollections}) {
@@ -101,28 +111,28 @@ class GeminiModel {
 
     for (var image in images) {
       String imageIdentifier = image.id;
+      Map<String, String> imageData;
 
       // Path-based image for mobile
       if (image.path != null && image.path!.isNotEmpty) {
         contentParts.add({'text': '\\nAnalyzing image: $imageIdentifier'});
-
+        imageData = await convertImageToBase64(image.path!);
         try {
-          final imageData = await convertImageToBase64(image.path!);
           contentParts.add({'inline_data': imageData});
         } catch (e) {
-          print("Error converting image ${image.path} to base64: $e");
-          continue; // Skip this image and continue with others
+          print("Error adding path-based image data for ${image.id}: $e");
         }
       } else if (image.bytes != null) {
         // Byte-based image for web
         contentParts.add({'text': '\\nAnalyzing image: $imageIdentifier'});
-
+        imageData = bytesToBase64(
+          image.bytes!,
+          fileName: image.path,
+        ); // Assuming path might hold a filename
         try {
-          final imageData = bytesToBase64(image.bytes!, fileName: image.title);
           contentParts.add({'inline_data': imageData});
         } catch (e) {
-          print("Error converting image bytes to base64: $e");
-          continue; // Skip this image and continue with others
+          print("Error adding byte-based image data for ${image.id}: $e");
         }
       } else {
         print("Warning: Screenshot with id ${image.id} has no path or bytes.");
@@ -247,38 +257,31 @@ class GeminiModel {
 
       try {
         final requestData = await _prepareRequestData(
-          batch,
+          batch, // Pass the current batch
           autoAddCollections: autoAddCollections,
         );
         final headers = {'Content-Type': 'application/json'};
         final result = await _fetchAiResponse(requestData, headers);
 
         (finalResults['batchResults'] as List).add({
-          'batch': (i ~/ maxParallel) + 1,
+          'batch':
+              batch
+                  .map((s) => s.id)
+                  .toList(), // Log which image ids were in this batch
           'result': result,
         });
 
         if (result.containsKey('error')) {
-          print('Error in batch ${(i ~/ maxParallel) + 1}: ${result['error']}');
-          // Even if there's an error, some images might have been processed successfully
-          final updatedScreenshots = parseResponseAndUpdateScreenshots(
-            batch,
-            result,
-          );
-          final successfullyProcessed =
-              updatedScreenshots.where((s) => s.aiProcessed).length;
+          // If there's an error, update processed count for this batch as 0 or handle as needed
           finalResults['processedCount'] =
-              (finalResults['processedCount'] as int) + successfullyProcessed;
-
-          // Call the callback even for partial success
-          onBatchProcessed(batch, result);
+              (finalResults['processedCount'] as int);
+          onBatchProcessed(batch, result); // Call with error
         } else {
-          // All images in this batch were processed successfully
+          // Assuming result['data'] contains info that helps count actual successes if needed
+          // For now, count the batch size as processed if no error at this stage
           finalResults['processedCount'] =
               (finalResults['processedCount'] as int) + batch.length;
-
-          // Call the callback function to update the UI with successful results
-          onBatchProcessed(batch, result);
+          onBatchProcessed(batch, result); // Call with success
         }
 
         // Add a small delay between batches to avoid rate limiting
@@ -287,8 +290,8 @@ class GeminiModel {
         print(
           'Error processing batch ${(i ~/ maxParallel) + 1}: ${e.toString()}',
         );
-        finalResults['batchResults'].add({
-          'batch': (i ~/ maxParallel) + 1,
+        (finalResults['batchResults'] as List).add({
+          'batch': batch.map((s) => s.id).toList(),
           'error': e.toString(),
         });
         // Still call callback so UI can be updated even in case of errors
@@ -304,6 +307,21 @@ class GeminiModel {
     Map<String, dynamic> response,
   ) {
     if (response.containsKey('error') || !response.containsKey('data')) {
+      if (response['error'] != null &&
+          response['error'].toString().contains('API key not valid')) {
+        showMessage?.call(
+          message: 'Invalid API key provided. Please check your API key.',
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        );
+      } else {
+        showMessage?.call(
+          message:
+              'No data found in response or error occurred: ${response['error']}',
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 5),
+        );
+      }
       print('Error in response: ${response['error'] ?? 'No data found'}');
       return screenshots; // Return unchanged if there was an error
     }
