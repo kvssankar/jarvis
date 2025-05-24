@@ -159,7 +159,6 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                 maxLines: 3,
               ),
               const SizedBox(height: 24),
-              // Auto-Add Switch (only in create mode)
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [

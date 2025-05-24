@@ -325,6 +325,39 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                       ],
                     ),
                   ),
+                  const SizedBox(height: 12),
+                  if (widget.screenshot.aiProcessed &&
+                      widget.screenshot.collectionIds.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.amber.shade200.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.auto_awesome,
+                            color: Colors.amber.shade200,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'This screenshot has been automatically categorized by Gemini AI',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Colors.amber.shade100,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   const SizedBox(height: 24),
                   const Text(
                     'Collections',

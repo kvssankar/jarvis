@@ -34,7 +34,7 @@ class ScreenshotCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [Expanded(child: imageWidget)],
             ),
-            if (screenshot.aiProcessed) // Conditionally display the checkmark
+            if (screenshot.aiProcessed)
               Positioned(
                 bottom: 4,
                 right: 4,

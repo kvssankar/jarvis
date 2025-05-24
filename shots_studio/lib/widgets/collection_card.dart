@@ -64,8 +64,8 @@ class CollectionCard extends StatelessWidget {
                 child: Container(
                   width: 24,
                   height: 24,
-                  decoration: const BoxDecoration(
-                    color: Colors.amber,
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade200,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(

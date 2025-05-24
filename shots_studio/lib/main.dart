@@ -126,50 +126,145 @@ class _HomeScreenState extends State<HomeScreen> {
       _aiProcessedCount = 0;
     });
 
+    // Create a list of collections with isAutoAddEnabled set to true
+    // Include both name and description for each collection
+    final autoAddCollections =
+        _collections
+            .where((collection) => collection.isAutoAddEnabled)
+            .map(
+              (collection) => {
+                'name': collection.name,
+                'description': collection.description,
+                'id': collection.id,
+              },
+            )
+            .toList();
+
     final geminiModel = GeminiModel(
       modelName: _selectedModelName,
       apiKey: _apiKey!,
-      maxParallel: _maxParallelAI, // Use state variable
+      maxParallel: _maxParallelAI,
     );
 
-    // Process screenshots in batches
-    final results = await geminiModel.processBatchedImages(
-      unprocessedScreenshots,
-      (batch, result) {
-        // This callback is called after each batch is processed
-        final updatedScreenshots = geminiModel
-            .parseResponseAndUpdateScreenshots(batch, result);
+    final results = await geminiModel.processBatchedImages(unprocessedScreenshots, (
+      batch,
+      result,
+    ) {
+      // This callback is called after each batch is processed
+      final updatedScreenshots = geminiModel.parseResponseAndUpdateScreenshots(
+        batch,
+        result,
+      );
 
-        // Update the screenshots in the main list
-        setState(() {
-          _aiProcessedCount +=
-              updatedScreenshots.length; // Update processed count
-          for (var updatedScreenshot in updatedScreenshots) {
-            final index = _screenshots.indexWhere(
-              (s) => s.id == updatedScreenshot.id,
-            );
-            if (index != -1) {
-              _screenshots[index] = updatedScreenshot;
+      setState(() {
+        _aiProcessedCount += updatedScreenshots.length;
+        for (var updatedScreenshot in updatedScreenshots) {
+          final index = _screenshots.indexWhere(
+            (s) => s.id == updatedScreenshot.id,
+          );
+          if (index != -1) {
+            _screenshots[index] = updatedScreenshot;
+
+            List<String> suggestedCollections = [];
+            try {
+              if (result['suggestedCollections'] != null) {
+                Map<dynamic, dynamic>? suggestionsMap;
+
+                // Handle different types of map that might come from the AI response
+                if (result['suggestedCollections']
+                    is Map<String, List<String>>) {
+                  suggestionsMap =
+                      result['suggestedCollections']
+                          as Map<String, List<String>>;
+                } else if (result['suggestedCollections']
+                    is Map<dynamic, dynamic>) {
+                  suggestionsMap =
+                      result['suggestedCollections'] as Map<dynamic, dynamic>;
+                } else if (result['suggestedCollections'] is Map) {
+                  suggestionsMap = Map<dynamic, dynamic>.from(
+                    result['suggestedCollections'] as Map,
+                  );
+                }
+
+                // Now safely extract the suggestions list
+                if (suggestionsMap != null &&
+                    suggestionsMap.containsKey(updatedScreenshot.id)) {
+                  final suggestions = suggestionsMap[updatedScreenshot.id];
+                  if (suggestions is List) {
+                    suggestedCollections = List<String>.from(
+                      suggestions.whereType<String>(),
+                    );
+                  } else if (suggestions is String) {
+                    // Handle case where a single string might be returned instead of a list
+                    suggestedCollections = [suggestions];
+                  }
+                }
+              }
+            } catch (e) {
+              print('Error accessing suggested collections: $e');
+            }
+
+            // Process suggested collections for auto-adding
+            if (suggestedCollections.isNotEmpty) {
+              for (var collection in _collections) {
+                // Check if collection should be auto-added to this screenshot
+                if (collection.isAutoAddEnabled &&
+                    suggestedCollections.contains(collection.name) &&
+                    !updatedScreenshot.collectionIds.contains(collection.id) &&
+                    !collection.screenshotIds.contains(updatedScreenshot.id)) {
+                  // Auto-add screenshot to this collection
+                  final updatedCollection = collection.addScreenshot(
+                    updatedScreenshot.id,
+                  );
+                  _updateCollection(updatedCollection);
+
+                  updatedScreenshot.collectionIds.add(collection.id);
+                }
+              }
             }
           }
-        });
+        }
+      });
 
-        // Show a snackbar to inform the user
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Processed ${updatedScreenshots.length} screenshots'),
-            duration: const Duration(seconds: 1),
-          ),
-        );
-      },
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Processed ${updatedScreenshots.length} screenshots'),
+          duration: const Duration(seconds: 1),
+        ),
+      );
+    }, autoAddCollections: autoAddCollections);
 
     final processedCount = results['processedCount'] as int;
+
+    // Count how many screenshots were auto-categorized
+    int autoCategorizedCount = 0;
+    for (var screenshot in _screenshots.where((s) => s.aiProcessed)) {
+      if (screenshot.collectionIds.isNotEmpty) {
+        autoCategorizedCount++;
+      }
+    }
+
+    // Show completion message with auto-categorization info
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Completed processing $processedCount of ${unprocessedScreenshots.length} screenshots.',
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Completed processing $processedCount of ${unprocessedScreenshots.length} screenshots.',
+            ),
+            if (autoCategorizedCount > 0)
+              Text(
+                'Auto-categorized $autoCategorizedCount screenshots based on content.',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+          ],
         ),
+        duration: const Duration(seconds: 4),
       ),
     );
 

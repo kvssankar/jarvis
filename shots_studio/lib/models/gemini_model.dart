@@ -1,7 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data'; // Added for Uint8List
+import 'dart:math';
+import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:shots_studio/models/screenshot_model.dart';
 
@@ -21,14 +22,40 @@ class GeminiModel {
     this.maxRetries,
   }) : baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
 
-  String getPrompt() {
-    return """
+  String getPrompt({List<Map<String, String?>>? autoAddCollections}) {
+    String basePrompt = """
       You are a screenshot analyzer. You will be given single or multiple images.
       For each image, generate a title, short description and 3-5 relevant tags
       with which users can search and find later with ease.
-      Respond strictly in this JSON format:
-      [{filename: '', title: '', desc: '', tags: [], other: []}, ...]
+    """;
+
+    // Add collections part to prompt if provided
+    if (autoAddCollections != null && autoAddCollections.isNotEmpty) {
+      basePrompt += """
+      
+      Here are list of collections and their descriptions that these images can potentially fit in.
+      If the image belongs to any of these collections, include them in the response, if not, keep the collections list empty.
+      
+      Available collections:
       """;
+
+      for (var collection in autoAddCollections) {
+        basePrompt += """
+        - Name: "${collection['name'] ?? 'Unnamed'}"
+          Description: "${collection['description'] ?? 'No description'}"
+        """;
+      }
+    }
+
+    basePrompt += """
+      
+      Respond strictly in this JSON format:
+      [{filename: '', title: '', desc: '', tags: [], collections: [], other: []}, ...]
+      
+      The "collections" field should contain names of collections that match the image content.
+    """;
+
+    return basePrompt;
   }
 
   Future<Map<String, String>> convertImageToBase64(String imagePath) async {
@@ -58,20 +85,19 @@ class GeminiModel {
   }
 
   Future<Map<String, dynamic>> _prepareRequestData(
-    List<Screenshot> images,
-  ) async {
+    List<Screenshot> images, {
+    List<Map<String, String?>>? autoAddCollections,
+  }) async {
     List<Map<String, dynamic>> contentParts = [
-      {'text': getPrompt()},
+      {'text': getPrompt(autoAddCollections: autoAddCollections)},
     ];
 
     for (var image in images) {
-      String imageIdentifier = "Image ${image.id}";
+      String imageIdentifier = image.id;
 
-      // Handle path-based images (mobile) and byte-based images (web)
+      // Path-based image for mobile
       if (image.path != null && image.path!.isNotEmpty) {
-        // Path-based image for mobile
-        imageIdentifier = image.path!.split('/').last;
-        contentParts.add({'text': '\\nAnalyzing image: ${imageIdentifier}'});
+        contentParts.add({'text': '\\nAnalyzing image: $imageIdentifier'});
 
         try {
           final imageData = await convertImageToBase64(image.path!);
@@ -82,8 +108,7 @@ class GeminiModel {
         }
       } else if (image.bytes != null) {
         // Byte-based image for web
-        imageIdentifier = image.title ?? "Web image ${image.id}";
-        contentParts.add({'text': '\\nAnalyzing image: ${imageIdentifier}'});
+        contentParts.add({'text': '\\nAnalyzing image: $imageIdentifier'});
 
         try {
           final imageData = bytesToBase64(image.bytes!, fileName: image.title);
@@ -103,7 +128,6 @@ class GeminiModel {
         {'parts': contentParts},
       ],
     };
-    print('Request data prepared: $requestData');
     return requestData;
   }
 
@@ -116,7 +140,7 @@ class GeminiModel {
     );
 
     final requestBody = jsonEncode(requestData);
-    print('Request body size: ${requestBody.length} bytes'); // Added log
+    print('Request body size: ${requestBody.length} bytes');
 
     try {
       final response = await http
@@ -163,14 +187,20 @@ class GeminiModel {
     }
   }
 
-  Future<Map<String, dynamic>> processImages(List<Screenshot> images) async {
+  Future<Map<String, dynamic>> processImages(
+    List<Screenshot> images, {
+    List<Map<String, String?>>? autoAddCollections,
+  }) async {
     if (images.isEmpty) {
       return {'error': 'No images to process', 'statusCode': 400};
     }
 
     print('Processing ${images.length} images...');
     try {
-      final requestData = await _prepareRequestData(images);
+      final requestData = await _prepareRequestData(
+        images,
+        autoAddCollections: autoAddCollections,
+      );
       final headers = {'Content-Type': 'application/json'};
       return await _fetchAiResponse(requestData, headers);
     } catch (e) {
@@ -183,15 +213,15 @@ class GeminiModel {
 
   Future<Map<String, dynamic>> processBatchedImages(
     List<Screenshot> images,
-    Function(List<Screenshot>, Map<String, dynamic>) onBatchProcessed,
-  ) async {
+    Function(List<Screenshot>, Map<String, dynamic>) onBatchProcessed, {
+    List<Map<String, String?>>? autoAddCollections,
+  }) async {
     if (images.isEmpty) {
       return {'error': 'No images to process', 'statusCode': 400};
     }
 
     print('Processing ${images.length} images in batches of $maxParallel...');
 
-    // Final results to be returned when all batches are done
     Map<String, dynamic> finalResults = {
       'batchResults': [],
       'statusCode': 200,
@@ -201,8 +231,7 @@ class GeminiModel {
 
     // Process in batches
     for (int i = 0; i < images.length; i += maxParallel) {
-      int end =
-          (i + maxParallel < images.length) ? i + maxParallel : images.length;
+      int end = min(i + maxParallel, images.length);
       List<Screenshot> batch = images.sublist(i, end);
 
       print(
@@ -210,13 +239,14 @@ class GeminiModel {
       );
 
       try {
-        // Process this batch
-        final requestData = await _prepareRequestData(batch);
+        final requestData = await _prepareRequestData(
+          batch,
+          autoAddCollections: autoAddCollections,
+        );
         final headers = {'Content-Type': 'application/json'};
         final result = await _fetchAiResponse(requestData, headers);
 
-        // Add to final results
-        finalResults['batchResults'].add({
+        (finalResults['batchResults'] as List).add({
           'batch': (i ~/ maxParallel) + 1,
           'result': result,
         });
@@ -262,55 +292,6 @@ class GeminiModel {
     return finalResults;
   }
 
-  Future<Map<String, dynamic>> processImage(Screenshot screenshot) async {
-    if ((screenshot.path == null || screenshot.path!.isEmpty) &&
-        screenshot.bytes == null) {
-      return {
-        'error': 'No image data provided (path or bytes)',
-        'statusCode': 400,
-      };
-    }
-
-    print('Processing image ${screenshot.id}...');
-    try {
-      final List<Screenshot> singleImage = [screenshot];
-      final requestData = await _prepareRequestData(singleImage);
-      final headers = {'Content-Type': 'application/json'};
-      return await _fetchAiResponse(requestData, headers);
-    } catch (e) {
-      return {
-        'error': 'Error processing image: ${e.toString()}',
-        'statusCode': 500,
-      };
-    }
-  }
-
-  Map<String, dynamic> extractCommand(String query) {
-    query = query.trim();
-    if (!query.startsWith("```json")) {
-      return {'text': query, 'commands': <String>[]};
-    }
-    query = query.replaceAll("```json", "").replaceAll("```", "").trim();
-
-    try {
-      final data = jsonDecode(query);
-      if (data is Map<String, dynamic>) {
-        return {
-          'text': data['text'] ?? '',
-          'commands': List<String>.from(data['commands'] ?? []),
-        };
-      }
-      return {
-        'text': '',
-        'commands': <String>[],
-        'error': 'Decoded JSON is not a Map',
-      };
-    } catch (e) {
-      print("Error processing query for command extraction: $e");
-      return {'text': '', 'commands': <String>[], 'error': e.toString()};
-    }
-  }
-
   List<Screenshot> parseResponseAndUpdateScreenshots(
     List<Screenshot> screenshots,
     Map<String, dynamic> response,
@@ -324,33 +305,31 @@ class GeminiModel {
       // Parse JSON response
       final String responseText = response['data'];
       List<dynamic> parsedResponse = [];
-
-      try {
-        // Try to parse the JSON - sometimes the AI might return malformed JSON
-        parsedResponse = jsonDecode(responseText);
-      } catch (e) {
-        print('Failed to parse JSON response: $e');
-        print('Response text: $responseText');
-        // Attempt to extract JSON from text if it's embedded in other content
-        final RegExp jsonRegExp = RegExp(r'\[.*\]', dotAll: true);
-        final match = jsonRegExp.firstMatch(responseText);
-        if (match != null) {
+      final RegExp jsonRegExp = RegExp(r'\[.*\]', dotAll: true);
+      final match = jsonRegExp.firstMatch(responseText);
+      if (match != null) {
+        try {
+          parsedResponse = jsonDecode(match.group(0)!);
+        } catch (e) {
+          print('Failed to parse extracted JSON: $e');
           try {
-            parsedResponse = jsonDecode(match.group(0)!);
+            parsedResponse = jsonDecode(responseText);
           } catch (e) {
-            print('Failed to extract JSON from response: $e');
+            print('Failed to parse full response: $e');
             return screenshots;
           }
-        } else {
-          return screenshots;
         }
+      } else {
+        print('No JSON array found in response');
+        return screenshots;
       }
 
       if (parsedResponse.isEmpty) {
         return screenshots;
       }
 
-      // Match responses to screenshots based on filename/path/index
+      print("\n\n response: $parsedResponse");
+
       List<Screenshot> updatedScreenshots = [];
 
       // If only one screenshot and one response, assume they match
@@ -358,103 +337,121 @@ class GeminiModel {
         var screenshot = screenshots[0];
         var item = parsedResponse[0];
 
-        if (item is Map<String, dynamic>) {
-          final updatedScreenshot = Screenshot(
+        final List<String> collectionNames = List<String>.from(
+          item['collections'] ?? [],
+        );
+
+        final updatedScreenshot = Screenshot(
+          id: screenshot.id,
+          path: screenshot.path,
+          bytes: screenshot.bytes,
+          title: item['title'] ?? screenshot.title,
+          description: item['desc'] ?? screenshot.description,
+          tags: List<String>.from(item['tags'] ?? []),
+          aiProcessed: true,
+          addedOn: screenshot.addedOn,
+          collectionIds: screenshot.collectionIds,
+        );
+
+        // Store collection names for automatic adding later in the main component
+        if (collectionNames.isNotEmpty) {
+          Map<String, List<String>> suggestedCollections = {};
+          suggestedCollections[updatedScreenshot.id] = collectionNames;
+
+          // Make sure we can modify the response
+          try {
+            response['suggestedCollections'] = suggestedCollections;
+          } catch (e) {
+            print('Error storing collection suggestions: $e');
+          }
+        }
+
+        print("\n\n updatedScreenshot: $updatedScreenshot returned here");
+        return [updatedScreenshot];
+      }
+
+      // For multiple screenshots, try to match each one
+      print("multiple screenshots present");
+
+      List<dynamic> availableResponses = List.from(parsedResponse);
+
+      for (var screenshot in screenshots) {
+        String identifier = screenshot.id; // Using ID as the primary identifier
+
+        Map<String, dynamic>? matchedAiItem;
+        int? matchedAiItemIndex;
+
+        // 1. Attempt to match by 'filename' (expected to be screenshot.id)
+        for (int i = 0; i < availableResponses.length; i++) {
+          var currentAiItem = availableResponses[i];
+          if (currentAiItem is Map<String, dynamic>) {
+            String responseFileId = currentAiItem['filename'] ?? '';
+            if (responseFileId.isNotEmpty &&
+                (identifier == responseFileId || // Exact match preferred
+                    identifier.contains(responseFileId) || // Broader for safety
+                    responseFileId.contains(identifier))) {
+              matchedAiItem = currentAiItem;
+              matchedAiItemIndex = i;
+              print(
+                "Matched screenshot id: $identifier with AI response filename: $responseFileId",
+              );
+              break; // Found a match for this screenshot
+            }
+          }
+        }
+
+        if (matchedAiItem != null) {
+          // Update screenshot using the directly matched AI item
+          final List<String> collectionNames = List<String>.from(
+            matchedAiItem['collections'] ?? [],
+          );
+          final updatedSc = Screenshot(
             id: screenshot.id,
             path: screenshot.path,
             bytes: screenshot.bytes,
-            title:
-                item['desc']?.toString().split('.').first ?? screenshot.title,
-            description: item['desc'] ?? screenshot.description,
-            tags: List<String>.from(item['tags'] ?? []),
+            title: matchedAiItem['title'] ?? screenshot.title,
+            description: matchedAiItem['desc'] ?? screenshot.description,
+            tags: List<String>.from(matchedAiItem['tags'] ?? []),
             aiProcessed: true,
             addedOn: screenshot.addedOn,
             collectionIds: screenshot.collectionIds,
           );
-          return [updatedScreenshot];
+
+          // Store collection names for automatic adding later
+          if (collectionNames.isNotEmpty) {
+            try {
+              Map<String, List<String>> suggestedCollections;
+              if (response.containsKey('suggestedCollections') &&
+                  response['suggestedCollections'] is Map) {
+                suggestedCollections = Map<String, List<String>>.from(
+                  response['suggestedCollections'] as Map,
+                );
+              } else {
+                suggestedCollections = {};
+              }
+              suggestedCollections[updatedSc.id] = collectionNames;
+              response['suggestedCollections'] = suggestedCollections;
+            } catch (e) {
+              print(
+                'Error storing collection suggestions for matched item: $e',
+              );
+            }
+          }
+
+          updatedScreenshots.add(updatedSc);
+          if (matchedAiItemIndex != null) {
+            availableResponses.removeAt(
+              matchedAiItemIndex,
+            ); // Consume the matched response
+          }
+        } else {
+          // No direct match by filename, try sequential
+          print(
+            "No AI responses left for sequential fallback for screenshot id: $identifier. Adding original screenshot.",
+          );
+          updatedScreenshots.add(screenshot); // Add original
         }
       }
-
-      // For multiple screenshots, try to match each one
-      for (var screenshot in screenshots) {
-        // Try to get an identifier for matching
-        String identifier = '';
-
-        // Use path for mobile screenshots
-        if (screenshot.path != null && screenshot.path!.isNotEmpty) {
-          identifier = screenshot.path!.split('/').last;
-        }
-        // Use title for web screenshots
-        else if (screenshot.title != null && screenshot.title!.isNotEmpty) {
-          identifier = screenshot.title!;
-        }
-        // Fall back to ID
-        else {
-          identifier = screenshot.id;
-        }
-
-        bool updated = false;
-
-        for (var item in parsedResponse) {
-          if (item is! Map<String, dynamic>) continue;
-
-          String responseFilename = item['filename'] ?? '';
-
-          // Try to match by filename/identifier
-          if (responseFilename.isNotEmpty &&
-              (identifier.contains(responseFilename) ||
-                  responseFilename.contains(identifier) ||
-                  // Fall back to matching the ID or any substring
-                  screenshot.id.contains(responseFilename) ||
-                  responseFilename.contains(screenshot.id))) {
-            // Update the screenshot
-            final updatedScreenshot = Screenshot(
-              id: screenshot.id,
-              path: screenshot.path,
-              bytes: screenshot.bytes,
-              title: item['title'] ?? screenshot.title,
-              description: item['desc'] ?? screenshot.description,
-              tags: List<String>.from(item['tags'] ?? []),
-              aiProcessed: true,
-              addedOn: screenshot.addedOn,
-              collectionIds: screenshot.collectionIds,
-            );
-
-            updatedScreenshots.add(updatedScreenshot);
-            updated = true;
-            break;
-          }
-        }
-
-        // If no match found by name, just update sequentially
-        if (!updated && updatedScreenshots.length < parsedResponse.length) {
-          var item = parsedResponse[updatedScreenshots.length];
-          if (item is Map<String, dynamic>) {
-            final updatedScreenshot = Screenshot(
-              id: screenshot.id,
-              path: screenshot.path,
-              bytes: screenshot.bytes,
-              title:
-                  item['desc']?.toString().split('.').first ?? screenshot.title,
-              description: item['desc'] ?? screenshot.description,
-              tags: List<String>.from(item['tags'] ?? []),
-              aiProcessed: true,
-              addedOn: screenshot.addedOn,
-              collectionIds: screenshot.collectionIds,
-            );
-
-            updatedScreenshots.add(updatedScreenshot);
-          } else {
-            // No valid item to use, keep original
-            updatedScreenshots.add(screenshot);
-          }
-        }
-        // If we run out of responses, keep the original screenshot
-        else if (!updated) {
-          updatedScreenshots.add(screenshot);
-        }
-      }
-
       return updatedScreenshots;
     } catch (e) {
       print('Error parsing response and updating screenshots: $e');
