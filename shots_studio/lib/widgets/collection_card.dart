@@ -9,6 +9,19 @@ class CollectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const double kDefaultInnerPadding = 12.0;
+    const double kDefaultOuterOffset = 8.0;
+    const double kIconContainerSize = 24.0;
+    const double kIconGlyphSize = 16.0;
+    const double kGapBetweenIconAndText = 4.0;
+
+    final double textContainerLeftPadding =
+        collection.isAutoAddEnabled
+            ? kDefaultOuterOffset +
+                kIconContainerSize +
+                kGapBetweenIconAndText // Calculated for icon: 8 (offset) + 24 (size) + 4 (gap) = 36
+            : kDefaultInnerPadding;
+
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
@@ -17,7 +30,12 @@ class CollectionCard extends StatelessWidget {
           children: [
             Container(
               width: 120,
-              padding: const EdgeInsets.all(12.0),
+              padding: EdgeInsets.fromLTRB(
+                textContainerLeftPadding,
+                kDefaultInnerPadding, // top
+                kDefaultInnerPadding, // right
+                kDefaultInnerPadding, // bottom
+              ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
@@ -36,11 +54,11 @@ class CollectionCard extends StatelessWidget {
               ),
             ),
             Positioned(
-              right: 8,
-              bottom: 8,
+              right: kDefaultOuterOffset,
+              bottom: kDefaultOuterOffset,
               child: Container(
-                width: 24,
-                height: 24,
+                width: kIconContainerSize,
+                height: kIconContainerSize,
                 decoration: BoxDecoration(
                   color: Colors.amber.shade200,
                   shape: BoxShape.circle,
@@ -59,18 +77,18 @@ class CollectionCard extends StatelessWidget {
             ),
             if (collection.isAutoAddEnabled)
               Positioned(
-                left: 8,
-                bottom: 8,
+                left: kDefaultOuterOffset,
+                bottom: kDefaultOuterOffset,
                 child: Container(
-                  width: 24,
-                  height: 24,
+                  width: kIconContainerSize,
+                  height: kIconContainerSize,
                   decoration: BoxDecoration(
                     color: Colors.amber.shade200,
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.auto_awesome_outlined,
-                    size: 16,
+                    size: kIconGlyphSize,
                     color: Colors.black,
                   ),
                 ),
