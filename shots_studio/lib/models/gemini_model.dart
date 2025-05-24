@@ -6,6 +6,13 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:shots_studio/models/screenshot_model.dart';
 
+class AiMetaData {
+  String modelName;
+  DateTime processingTime;
+
+  AiMetaData({required this.modelName, required this.processingTime});
+}
+
 class GeminiModel {
   String baseUrl;
   String? modelName;
@@ -332,6 +339,11 @@ class GeminiModel {
 
       List<Screenshot> updatedScreenshots = [];
 
+      AiMetaData aiMetaData = AiMetaData(
+        modelName: modelName ?? 'Unknown Model',
+        processingTime: DateTime.now().add(Duration(seconds: timeoutSeconds)),
+      );
+
       // If only one screenshot and one response, assume they match
       if (screenshots.length == 1 && parsedResponse.length == 1) {
         var screenshot = screenshots[0];
@@ -351,6 +363,7 @@ class GeminiModel {
           aiProcessed: true,
           addedOn: screenshot.addedOn,
           collectionIds: screenshot.collectionIds,
+          aiMetadata: aiMetaData,
         );
 
         // Store collection names for automatic adding later in the main component
@@ -415,6 +428,7 @@ class GeminiModel {
             aiProcessed: true,
             addedOn: screenshot.addedOn,
             collectionIds: screenshot.collectionIds,
+            aiMetadata: aiMetaData,
           );
 
           // Store collection names for automatic adding later
@@ -440,16 +454,13 @@ class GeminiModel {
 
           updatedScreenshots.add(updatedSc);
           if (matchedAiItemIndex != null) {
-            availableResponses.removeAt(
-              matchedAiItemIndex,
-            ); // Consume the matched response
+            availableResponses.removeAt(matchedAiItemIndex);
           }
         } else {
-          // No direct match by filename, try sequential
           print(
             "No AI responses left for sequential fallback for screenshot id: $identifier. Adding original screenshot.",
           );
-          updatedScreenshots.add(screenshot); // Add original
+          updatedScreenshots.add(screenshot);
         }
       }
       return updatedScreenshots;

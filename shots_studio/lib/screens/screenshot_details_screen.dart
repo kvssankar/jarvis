@@ -303,61 +303,60 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                     ],
                   ),
                   const SizedBox(height: 24),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.grey[900],
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        const Text(
-                          'Processed',
-                          style: TextStyle(fontSize: 16, color: Colors.white70),
-                        ),
-                        const Spacer(),
-                        Icon(
-                          widget.screenshot.aiProcessed
-                              ? Icons.check_circle
-                              : Icons.hourglass_empty,
-                          color: Colors.amber[200],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  if (widget.screenshot.aiProcessed &&
-                      widget.screenshot.collectionIds.isNotEmpty)
-                    Container(
+                  Tooltip(
+                    message:
+                        widget.screenshot.aiProcessed
+                            ? 'Processed'
+                            : 'Yet to be processed',
+                    child: Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.amber.withOpacity(0.1),
+                        color: Colors.grey[900],
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.amber.shade200.withOpacity(0.3),
-                          width: 1,
-                        ),
                       ),
                       child: Row(
                         children: [
-                          Icon(
-                            Icons.auto_awesome,
-                            color: Colors.amber.shade200,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
                           Expanded(
-                            child: Text(
-                              'This screenshot has been automatically categorized by Gemini AI',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: Colors.amber.shade100,
-                              ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'AI Analysis Status:',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color: Colors.white70,
+                                  ),
+                                ),
+                                if (widget.screenshot.aiProcessed &&
+                                    widget.screenshot.aiMetadata != null) ...[
+                                  Text(
+                                    'Model: ${widget.screenshot.aiMetadata!.modelName}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[400],
+                                    ),
+                                  ),
+                                  Text(
+                                    'Analyzed on: ${DateFormat('MMM d, yyyy HH:mm a').format(widget.screenshot.aiMetadata!.processingTime)}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.grey[400],
+                                    ),
+                                  ),
+                                ],
+                              ],
                             ),
+                          ),
+                          Icon(
+                            widget.screenshot.aiProcessed
+                                ? Icons.check_circle
+                                : Icons.hourglass_empty,
+                            color: Colors.amber[200],
                           ),
                         ],
                       ),
                     ),
+                  ),
                   const SizedBox(height: 24),
                   const Text(
                     'Collections',

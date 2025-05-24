@@ -348,44 +348,6 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                                   );
                                 },
                               ),
-                              // Show AI auto-categorized indicator if processed by AI and collection has auto-add enabled
-                              if (screenshot.aiProcessed && _isAutoAddEnabled)
-                                Positioned(
-                                  bottom: 25,
-                                  right: 4,
-                                  child: Tooltip(
-                                    message: 'Auto-categorized by Gemini AI',
-                                    child: Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 4,
-                                        vertical: 2,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.6),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.auto_awesome,
-                                            color: Colors.amber.shade200,
-                                            size: 12,
-                                          ),
-                                          const SizedBox(width: 2),
-                                          Text(
-                                            'AI',
-                                            style: TextStyle(
-                                              color: Colors.amber.shade200,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ),
                               Positioned(
                                 top: 0,
                                 right: 0,

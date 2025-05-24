@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'package:shots_studio/models/gemini_model.dart'; // Add this import
 
 class Screenshot {
   String id;
@@ -10,6 +11,7 @@ class Screenshot {
   List<String> collectionIds;
   bool aiProcessed;
   DateTime addedOn;
+  AiMetaData? aiMetadata;
 
   Screenshot({
     required this.id,
@@ -21,6 +23,7 @@ class Screenshot {
     List<String>? collectionIds,
     required this.aiProcessed,
     required this.addedOn,
+    this.aiMetadata,
   }) : collectionIds = collectionIds ?? [];
 
   void addToCollections(List<String> collections) {

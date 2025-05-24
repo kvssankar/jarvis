@@ -322,7 +322,7 @@ class _HomeScreenState extends State<HomeScreen> {
               description: '',
               tags: [],
               aiProcessed: false,
-              addedOn: now,
+              addedOn: File(image.path).lastModifiedSync(),
             );
           }
           _screenshots.add(newScreenshot);
