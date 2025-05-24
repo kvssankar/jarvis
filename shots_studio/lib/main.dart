@@ -14,6 +14,7 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shots_studio/models/gemini_model.dart';
+import 'package:shots_studio/screens/search_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -494,6 +495,19 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _navigateToSearchScreen() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (context) => SearchScreen(
+              allScreenshots: _screenshots,
+              allCollections: _collections,
+              onUpdateCollection: _updateCollection,
+            ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -502,6 +516,7 @@ class _HomeScreenState extends State<HomeScreen> {
         isProcessingAI: _isProcessingAI, // Pass processing state
         aiProcessedCount: _aiProcessedCount, // Pass processed count
         aiTotalToProcess: _aiTotalToProcess, // Pass total to process
+        onSearchPressed: _navigateToSearchScreen, // Add this line
       ),
       drawer: AppDrawer(
         currentApiKey: _apiKey,
