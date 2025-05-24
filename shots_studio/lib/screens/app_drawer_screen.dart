@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Add this import
 import 'package:url_launcher/url_launcher.dart';
 
 class AppDrawer extends StatefulWidget {
@@ -33,17 +34,64 @@ class _AppDrawerState extends State<AppDrawer> {
   late TextEditingController _limitController;
   late TextEditingController _maxParallelController;
 
+  static const String _apiKeyPrefKey = 'apiKey';
+  static const String _modelNamePrefKey = 'modelName';
+  static const String _limitPrefKey = 'limit';
+  static const String _maxParallelPrefKey = 'maxParallel';
+
   @override
   void initState() {
     super.initState();
-    _apiKeyController = TextEditingController(text: widget.currentApiKey);
+    _apiKeyController = TextEditingController();
     _selectedModelName = widget.currentModelName;
-    _limitController = TextEditingController(
-      text: widget.currentLimit.toString(),
-    );
-    _maxParallelController = TextEditingController(
-      text: widget.currentMaxParallel.toString(),
-    );
+    _limitController = TextEditingController();
+    _maxParallelController = TextEditingController();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _apiKeyController.text =
+          prefs.getString(_apiKeyPrefKey) ?? widget.currentApiKey ?? '';
+      _selectedModelName =
+          prefs.getString(_modelNamePrefKey) ?? widget.currentModelName;
+      _limitController.text =
+          (prefs.getInt(_limitPrefKey) ?? widget.currentLimit).toString();
+      _maxParallelController.text =
+          (prefs.getInt(_maxParallelPrefKey) ?? widget.currentMaxParallel)
+              .toString();
+
+      // Initialize widget callbacks with loaded/default values
+      widget.onApiKeyChanged(_apiKeyController.text);
+      widget.onModelChanged(_selectedModelName);
+      widget.onLimitChanged(
+        int.tryParse(_limitController.text) ?? widget.currentLimit,
+      );
+      widget.onMaxParallelChanged(
+        int.tryParse(_maxParallelController.text) ?? widget.currentMaxParallel,
+      );
+    });
+  }
+
+  Future<void> _saveApiKey(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_apiKeyPrefKey, value);
+  }
+
+  Future<void> _saveModelName(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_modelNamePrefKey, value);
+  }
+
+  Future<void> _saveLimit(int value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_limitPrefKey, value);
+  }
+
+  Future<void> _saveMaxParallel(int value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_maxParallelPrefKey, value);
   }
 
   @override
@@ -59,7 +107,9 @@ class _AppDrawerState extends State<AppDrawer> {
       }
     }
     if (widget.currentModelName != oldWidget.currentModelName) {
-      _selectedModelName = widget.currentModelName;
+      if (_selectedModelName != widget.currentModelName) {
+        _selectedModelName = widget.currentModelName;
+      }
     }
     if (widget.currentLimit != oldWidget.currentLimit) {
       if (_limitController.text != widget.currentLimit.toString()) {
@@ -149,6 +199,7 @@ class _AppDrawerState extends State<AppDrawer> {
                       _selectedModelName = newValue;
                     });
                     widget.onModelChanged(newValue);
+                    _saveModelName(newValue);
                   }
                 },
                 items:
@@ -185,7 +236,11 @@ class _AppDrawerState extends State<AppDrawer> {
                   ),
                 ),
                 obscureText: true, // Hide API key input
-                onChanged: widget.onApiKeyChanged,
+                onChanged: (value) {
+                  // Modified
+                  widget.onApiKeyChanged(value);
+                  _saveApiKey(value); // Save on change
+                },
               ),
             ),
             Divider(color: Colors.grey[700]),
@@ -205,7 +260,7 @@ class _AppDrawerState extends State<AppDrawer> {
             ),
             ListTile(
               leading: Icon(
-                Icons.filter_list, // Example Icon
+                Icons.filter_list,
                 color: theme.colorScheme.primary,
               ),
               title: Text(
@@ -230,6 +285,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   final intValue = int.tryParse(value);
                   if (intValue != null) {
                     widget.onLimitChanged(intValue);
+                    _saveLimit(intValue); // Save on change
                   }
                 },
               ),
@@ -261,6 +317,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   final intValue = int.tryParse(value);
                   if (intValue != null) {
                     widget.onMaxParallelChanged(intValue);
+                    _saveMaxParallel(intValue); // Save on change
                   }
                 },
               ),
