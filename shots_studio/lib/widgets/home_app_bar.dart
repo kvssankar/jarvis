@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shots_studio/screens/search_screen.dart'; // Import the search screen
 
 class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onProcessWithAI;
@@ -7,7 +6,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   final int aiProcessedCount;
   final int aiTotalToProcess;
   final VoidCallback? onSearchPressed;
-  final VoidCallback? onStopProcessingAI; // Added new callback
+  final VoidCallback? onStopProcessingAI;
 
   const HomeAppBar({
     super.key,
@@ -16,7 +15,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.aiProcessedCount = 0,
     this.aiTotalToProcess = 0,
     this.onSearchPressed,
-    this.onStopProcessingAI, // Added to constructor
+    this.onStopProcessingAI,
   });
 
   @override

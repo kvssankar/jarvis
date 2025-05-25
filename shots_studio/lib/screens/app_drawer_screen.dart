@@ -408,8 +408,8 @@ class _AppDrawerState extends State<AppDrawer> {
   @override
   void dispose() {
     _apiKeyController.dispose();
-    _limitController.dispose(); // Dispose new controller
-    _maxParallelController.dispose(); // Dispose new controller
+    _limitController.dispose();
+    _maxParallelController.dispose();
     super.dispose();
   }
 }

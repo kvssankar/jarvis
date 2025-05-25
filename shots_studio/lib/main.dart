@@ -15,6 +15,7 @@ import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shots_studio/models/gemini_model.dart';
 import 'package:shots_studio/screens/search_screen.dart';
+import 'package:shots_studio/widgets/privacy_dialog.dart';
 
 void main() {
   runApp(const MyApp());
@@ -66,8 +67,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   String? _apiKey;
   String _selectedModelName = 'gemini-2.0-flash';
-  int _screenshotLimit = 50; // Default limit
-  int _maxParallelAI = 4; // Default max parallel
+  int _screenshotLimit = 50;
+  int _maxParallelAI = 4;
 
   @override
   void initState() {
@@ -75,6 +76,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!kIsWeb) {
       _loadAndroidScreenshots();
     }
+    // Show privacy dialog after the first frame
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => showPrivacyDialogIfNeeded(context),
+    );
   }
 
   void _updateApiKey(String newApiKey) {
