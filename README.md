@@ -77,5 +77,8 @@ Start by checking out `CONTRIBUTING.md` or opening an issue/pull request.
 
 ## License
 
-This project is licensed under [MIT](LICENSE).
+This project is licensed under the Business Source License 1.1 (BSL 1.1).  
+Use of the software is restricted to non-commercial, non-production purposes only until May 25, 2032.  
+After that date, the license will automatically convert to the GNU General Public License v2.0 or later.  
 
+See the [LICENSE](LICENSE) file for full details.
