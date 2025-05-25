@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:intl/intl.dart'; // Import for date formatting
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart'; // Import Collection model
+import 'package:shots_studio/screens/full_screen_image_viewer.dart'; // Import the new screen
 import 'package:shots_studio/widgets/tag_input_field.dart';
 import 'package:shots_studio/widgets/tag_chip.dart';
 
@@ -242,16 +243,30 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              height: 300,
-              width: double.infinity,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: Colors.grey[900],
+            InkWell(
+              // Wrap the image container with InkWell
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => FullScreenImageViewer(
+                          screenshot: widget.screenshot,
+                        ),
+                  ),
+                );
+              },
+              child: Container(
+                height: 300,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.grey[900],
+                ),
+                margin: const EdgeInsets.all(16),
+                clipBehavior: Clip.antiAlias,
+                child: imageWidget,
               ),
-              margin: const EdgeInsets.all(16),
-              clipBehavior: Clip.antiAlias,
-              child: imageWidget,
             ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
