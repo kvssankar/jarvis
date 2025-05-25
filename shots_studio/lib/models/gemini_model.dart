@@ -29,6 +29,7 @@ class GeminiModel {
   int maxParallel;
   int? maxRetries;
   ShowMessageCallback? showMessage;
+  bool _isCancelled = false;
 
   GeminiModel({
     required this.modelName,
@@ -38,6 +39,18 @@ class GeminiModel {
     this.maxRetries,
     this.showMessage,
   }) : baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
+
+  void cancel() {
+    _isCancelled = true;
+    if (showMessage != null) {
+      showMessage!(
+        message: "AI processing cancellation requested.",
+        backgroundColor: Colors.orange,
+        duration: const Duration(seconds: 2),
+      );
+    }
+    print("GeminiModel: Cancellation requested by user.");
+  }
 
   String getPrompt({List<Map<String, String?>>? autoAddCollections}) {
     String basePrompt = """
@@ -152,6 +165,15 @@ class GeminiModel {
     Map<String, dynamic> requestData,
     Map<String, String> headers,
   ) async {
+    if (_isCancelled) {
+      // Check cancellation flag
+      print("GeminiModel: Fetch AI response cancelled before request.");
+      return {
+        'error': 'Request cancelled by user',
+        'statusCode': 499,
+      }; // 499 Client Closed Request
+    }
+
     final url = Uri.parse(
       '$baseUrl/${modelName ?? "gemini-pro-vision"}:generateContent?key=$apiKey',
     );
@@ -233,6 +255,8 @@ class GeminiModel {
     Function(List<Screenshot>, Map<String, dynamic>) onBatchProcessed, {
     List<Map<String, String?>>? autoAddCollections,
   }) async {
+    _isCancelled = false;
+
     if (images.isEmpty) {
       return {'error': 'No images to process', 'statusCode': 400};
     }
@@ -244,10 +268,17 @@ class GeminiModel {
       'statusCode': 200,
       'processedCount': 0,
       'totalCount': images.length,
+      'cancelled': false,
     };
 
     // Process in batches
     for (int i = 0; i < images.length; i += maxParallel) {
+      if (_isCancelled) {
+        print("GeminiModel: Batch processing loop cancelled.");
+        finalResults['cancelled'] = true;
+        break;
+      }
+
       int end = min(i + maxParallel, images.length);
       List<Screenshot> batch = images.sublist(i, end);
 
@@ -256,12 +287,34 @@ class GeminiModel {
       );
 
       try {
+        if (_isCancelled) {
+          print(
+            "GeminiModel: Batch processing cancelled before preparing request data for batch ${(i ~/ maxParallel) + 1}.",
+          );
+          finalResults['cancelled'] = true;
+          // Optionally call onBatchProcessed with a cancellation status for the current batch
+          onBatchProcessed(batch, {
+            'error': 'Processing cancelled by user',
+            'cancelled': true,
+          });
+          break;
+        }
+
         final requestData = await _prepareRequestData(
           batch, // Pass the current batch
           autoAddCollections: autoAddCollections,
         );
         final headers = {'Content-Type': 'application/json'};
         final result = await _fetchAiResponse(requestData, headers);
+
+        if (_isCancelled && result['statusCode'] == 499) {
+          print(
+            "GeminiModel: Batch processing detected cancellation from _fetchAiResponse for batch ${(i ~/ maxParallel) + 1}.",
+          );
+          finalResults['cancelled'] = true;
+          onBatchProcessed(batch, result);
+          break;
+        }
 
         (finalResults['batchResults'] as List).add({
           'batch':
@@ -299,6 +352,11 @@ class GeminiModel {
       }
     }
 
+    if (_isCancelled) {
+      print(
+        "GeminiModel: ProcessBatchedImages completed with cancellation status.",
+      );
+    }
     return finalResults;
   }
 
@@ -312,14 +370,14 @@ class GeminiModel {
         showMessage?.call(
           message: 'Invalid API key provided. Please check your API key.',
           backgroundColor: Colors.red,
-          duration: const Duration(seconds: 5),
+          duration: const Duration(seconds: 3),
         );
       } else {
         showMessage?.call(
           message:
               'No data found in response or error occurred: ${response['error']}',
           backgroundColor: Colors.orange,
-          duration: const Duration(seconds: 5),
+          duration: const Duration(seconds: 2),
         );
       }
       print('Error in response: ${response['error'] ?? 'No data found'}');

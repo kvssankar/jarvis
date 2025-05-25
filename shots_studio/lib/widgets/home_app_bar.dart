@@ -7,6 +7,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   final int aiProcessedCount;
   final int aiTotalToProcess;
   final VoidCallback? onSearchPressed;
+  final VoidCallback? onStopProcessingAI; // Added new callback
 
   const HomeAppBar({
     super.key,
@@ -15,6 +16,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.aiProcessedCount = 0,
     this.aiTotalToProcess = 0,
     this.onSearchPressed,
+    this.onStopProcessingAI, // Added to constructor
   });
 
   @override
@@ -48,23 +50,16 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
           ),
-        if (onProcessWithAI != null ||
-            isProcessingAI) // Show button if callback exists or is processing
+        if (isProcessingAI)
           IconButton(
-            icon:
-                isProcessingAI
-                    ? SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Theme.of(context).iconTheme.color ?? Colors.white,
-                        ),
-                      ),
-                    )
-                    : const Icon(Icons.auto_awesome_outlined),
-            tooltip: isProcessingAI ? 'Processing...' : 'Process with AI',
+            icon: const Icon(Icons.stop_circle_outlined),
+            tooltip: 'Stop Processing',
+            onPressed: onStopProcessingAI,
+          )
+        else if (onProcessWithAI != null)
+          IconButton(
+            icon: const Icon(Icons.auto_awesome_outlined),
+            tooltip: 'Process with AI',
             onPressed: onProcessWithAI,
           ),
       ],

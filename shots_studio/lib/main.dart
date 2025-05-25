@@ -62,6 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
   bool _isProcessingAI = false;
   int _aiProcessedCount = 0;
   int _aiTotalToProcess = 0;
+  GeminiModel? _geminiModelInstance;
 
   String? _apiKey;
   String _selectedModelName = 'gemini-2.0-flash';
@@ -155,100 +156,102 @@ class _HomeScreenState extends State<HomeScreen> {
             )
             .toList();
 
-    final geminiModel = GeminiModel(
+    _geminiModelInstance = GeminiModel(
       modelName: _selectedModelName,
       apiKey: _apiKey!,
       maxParallel: _maxParallelAI,
-      showMessage: _showSnackbar, // Pass the callback here
+      showMessage: _showSnackbar,
     );
 
-    final results = await geminiModel.processBatchedImages(unprocessedScreenshots, (
-      batch,
-      result,
-    ) {
-      // This callback is called after each batch is processed
-      final updatedScreenshots = geminiModel.parseResponseAndUpdateScreenshots(
-        batch,
-        result,
-      );
+    // final results = await geminiModel.processBatchedImages(unprocessedScreenshots, (
+    final results = await _geminiModelInstance!.processBatchedImages(
+      unprocessedScreenshots,
+      (batch, result) {
+        // This callback is called after each batch is processed
+        final updatedScreenshots = _geminiModelInstance!
+            .parseResponseAndUpdateScreenshots(batch, result);
 
-      setState(() {
-        _aiProcessedCount += updatedScreenshots.length;
-        for (var updatedScreenshot in updatedScreenshots) {
-          final index = _screenshots.indexWhere(
-            (s) => s.id == updatedScreenshot.id,
-          );
-          if (index != -1) {
-            _screenshots[index] = updatedScreenshot;
+        setState(() {
+          _aiProcessedCount += updatedScreenshots.length;
+          for (var updatedScreenshot in updatedScreenshots) {
+            final index = _screenshots.indexWhere(
+              (s) => s.id == updatedScreenshot.id,
+            );
+            if (index != -1) {
+              _screenshots[index] = updatedScreenshot;
 
-            List<String> suggestedCollections = [];
-            try {
-              if (result['suggestedCollections'] != null) {
-                Map<dynamic, dynamic>? suggestionsMap;
+              List<String> suggestedCollections = [];
+              try {
+                if (result['suggestedCollections'] != null) {
+                  Map<dynamic, dynamic>? suggestionsMap;
 
-                // Handle different types of map that might come from the AI response
-                if (result['suggestedCollections']
-                    is Map<String, List<String>>) {
-                  suggestionsMap =
-                      result['suggestedCollections']
-                          as Map<String, List<String>>;
-                } else if (result['suggestedCollections']
-                    is Map<dynamic, dynamic>) {
-                  suggestionsMap =
-                      result['suggestedCollections'] as Map<dynamic, dynamic>;
-                } else if (result['suggestedCollections'] is Map) {
-                  suggestionsMap = Map<dynamic, dynamic>.from(
-                    result['suggestedCollections'] as Map,
-                  );
-                }
-
-                // Now safely extract the suggestions list
-                if (suggestionsMap != null &&
-                    suggestionsMap.containsKey(updatedScreenshot.id)) {
-                  final suggestions = suggestionsMap[updatedScreenshot.id];
-                  if (suggestions is List) {
-                    suggestedCollections = List<String>.from(
-                      suggestions.whereType<String>(),
+                  // Handle different types of map that might come from the AI response
+                  if (result['suggestedCollections']
+                      is Map<String, List<String>>) {
+                    suggestionsMap =
+                        result['suggestedCollections']
+                            as Map<String, List<String>>;
+                  } else if (result['suggestedCollections']
+                      is Map<dynamic, dynamic>) {
+                    suggestionsMap =
+                        result['suggestedCollections'] as Map<dynamic, dynamic>;
+                  } else if (result['suggestedCollections'] is Map) {
+                    suggestionsMap = Map<dynamic, dynamic>.from(
+                      result['suggestedCollections'] as Map,
                     );
-                  } else if (suggestions is String) {
-                    // Handle case where a single string might be returned instead of a list
-                    suggestedCollections = [suggestions];
+                  }
+
+                  // Now safely extract the suggestions list
+                  if (suggestionsMap != null &&
+                      suggestionsMap.containsKey(updatedScreenshot.id)) {
+                    final suggestions = suggestionsMap[updatedScreenshot.id];
+                    if (suggestions is List) {
+                      suggestedCollections = List<String>.from(
+                        suggestions.whereType<String>(),
+                      );
+                    } else if (suggestions is String) {
+                      // Handle case where a single string might be returned instead of a list
+                      suggestedCollections = [suggestions];
+                    }
                   }
                 }
+              } catch (e) {
+                print('Error accessing suggested collections: $e');
               }
-            } catch (e) {
-              print('Error accessing suggested collections: $e');
-            }
 
-            // Process suggested collections for auto-adding
-            if (suggestedCollections.isNotEmpty) {
-              for (var collection in _collections) {
-                // Check if collection should be auto-added to this screenshot
-                if (collection.isAutoAddEnabled &&
-                    suggestedCollections.contains(collection.name) &&
-                    !updatedScreenshot.collectionIds.contains(collection.id) &&
-                    !collection.screenshotIds.contains(updatedScreenshot.id)) {
-                  // Auto-add screenshot to this collection
-                  final updatedCollection = collection.addScreenshot(
-                    updatedScreenshot.id,
-                  );
-                  _updateCollection(updatedCollection);
+              if (suggestedCollections.isNotEmpty) {
+                for (var collection in _collections) {
+                  if (collection.isAutoAddEnabled &&
+                      suggestedCollections.contains(collection.name) &&
+                      !updatedScreenshot.collectionIds.contains(
+                        collection.id,
+                      ) &&
+                      !collection.screenshotIds.contains(
+                        updatedScreenshot.id,
+                      )) {
+                    // Auto-add screenshot to this collection
+                    final updatedCollection = collection.addScreenshot(
+                      updatedScreenshot.id,
+                    );
+                    _updateCollection(updatedCollection);
 
-                  updatedScreenshot.collectionIds.add(collection.id);
+                    updatedScreenshot.collectionIds.add(collection.id);
+                  }
                 }
               }
             }
           }
-        }
-      });
+        });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Processed ${updatedScreenshots.length} screenshots'),
-          duration: const Duration(seconds: 1),
-        ),
-      );
-    }, autoAddCollections: autoAddCollections);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Processed ${updatedScreenshots.length} screenshots'),
+            duration: const Duration(seconds: 1),
+          ),
+        );
+      },
+      autoAddCollections: autoAddCollections,
+    );
 
     final processedCount = results['processedCount'] as int;
 
@@ -286,10 +289,27 @@ class _HomeScreenState extends State<HomeScreen> {
 
     setState(() {
       _isProcessingAI = false;
-      // Optionally reset counts here or keep them for display until next processing
+      _geminiModelInstance = null;
       // _aiProcessedCount = 0;
       // _aiTotalToProcess = 0;
     });
+  }
+
+  void _stopProcessingAI() {
+    if (_isProcessingAI) {
+      setState(() {
+        _isProcessingAI = false;
+        _aiProcessedCount = 0;
+        _aiTotalToProcess = 0;
+      });
+      _geminiModelInstance?.cancel();
+      _geminiModelInstance = null;
+
+      _showSnackbar(
+        message: 'AI Processing Cancelled.',
+        backgroundColor: Colors.orange,
+      );
+    }
   }
 
   Future<void> _takeScreenshot(ImageSource source) async {
@@ -513,20 +533,21 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: HomeAppBar(
         onProcessWithAI: _isProcessingAI ? null : _processWithGemini,
-        isProcessingAI: _isProcessingAI, // Pass processing state
-        aiProcessedCount: _aiProcessedCount, // Pass processed count
-        aiTotalToProcess: _aiTotalToProcess, // Pass total to process
-        onSearchPressed: _navigateToSearchScreen, // Add this line
+        isProcessingAI: _isProcessingAI,
+        aiProcessedCount: _aiProcessedCount,
+        aiTotalToProcess: _aiTotalToProcess,
+        onSearchPressed: _navigateToSearchScreen,
+        onStopProcessingAI: _stopProcessingAI,
       ),
       drawer: AppDrawer(
         currentApiKey: _apiKey,
         currentModelName: _selectedModelName,
         onApiKeyChanged: _updateApiKey,
         onModelChanged: _updateModelName,
-        currentLimit: _screenshotLimit, // Pass current value
-        onLimitChanged: _updateScreenshotLimit, // Pass callback
-        currentMaxParallel: _maxParallelAI, // Pass current value
-        onMaxParallelChanged: _updateMaxParallelAI, // Pass callback
+        currentLimit: _screenshotLimit,
+        onLimitChanged: _updateScreenshotLimit,
+        currentMaxParallel: _maxParallelAI,
+        onMaxParallelChanged: _updateMaxParallelAI,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
