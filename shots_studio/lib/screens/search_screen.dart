@@ -1,0 +1,123 @@
+import 'package:flutter/material.dart';
+import 'package:shots_studio/models/collection_model.dart';
+import 'package:shots_studio/models/screenshot_model.dart';
+import 'package:shots_studio/screens/screenshot_details_screen.dart';
+import 'package:shots_studio/widgets/screenshot_card.dart';
+
+class SearchScreen extends StatefulWidget {
+  final List<Screenshot> allScreenshots;
+  final List<Collection> allCollections;
+  final Function(Collection) onUpdateCollection;
+
+  const SearchScreen({
+    super.key,
+    required this.allScreenshots,
+    required this.allCollections,
+    required this.onUpdateCollection,
+  });
+
+  @override
+  State<SearchScreen> createState() => _SearchScreenState();
+}
+
+class _SearchScreenState extends State<SearchScreen> {
+  String _searchQuery = '';
+  List<Screenshot> _filteredScreenshots = [];
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _filteredScreenshots = widget.allScreenshots;
+    _searchController.addListener(_onSearchChanged);
+  }
+
+  @override
+  void dispose() {
+    _searchController.removeListener(_onSearchChanged);
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _onSearchChanged() {
+    setState(() {
+      _searchQuery = _searchController.text.toLowerCase();
+      if (_searchQuery.isEmpty) {
+        _filteredScreenshots = widget.allScreenshots;
+      } else {
+        _filteredScreenshots =
+            widget.allScreenshots.where((screenshot) {
+              final titleMatch =
+                  screenshot.title?.toLowerCase().contains(_searchQuery) ??
+                  false;
+              final descriptionMatch =
+                  screenshot.description?.toLowerCase().contains(
+                    _searchQuery,
+                  ) ??
+                  false;
+              final tagsMatch = screenshot.tags.any(
+                (tag) => tag.toLowerCase().contains(_searchQuery),
+              );
+              return titleMatch || descriptionMatch || tagsMatch;
+            }).toList();
+      }
+    });
+  }
+
+  void _showScreenshotDetail(Screenshot screenshot) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (context) => ScreenshotDetailScreen(
+              screenshot: screenshot,
+              allCollections: widget.allCollections,
+              onUpdateCollection: widget.onUpdateCollection,
+            ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: TextField(
+          controller: _searchController,
+          autofocus: true,
+          decoration: InputDecoration(
+            hintText: 'Search by title, description, tags...',
+            border: InputBorder.none,
+            hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+          ),
+          style: const TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.black, // Match theme
+      ),
+      body:
+          _filteredScreenshots.isEmpty && _searchQuery.isNotEmpty
+              ? Center(
+                child: Text(
+                  'No screenshots found for "$_searchQuery"',
+                  style: const TextStyle(fontSize: 16),
+                ),
+              )
+              : GridView.builder(
+                padding: const EdgeInsets.all(16.0),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 3,
+                  childAspectRatio: 1,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8, // Adjusted for consistency
+                ),
+                itemCount: _filteredScreenshots.length,
+                itemBuilder: (context, index) {
+                  final screenshot = _filteredScreenshots[index];
+                  return ScreenshotCard(
+                    screenshot: screenshot,
+                    onTap: () => _showScreenshotDetail(screenshot),
+                  );
+                },
+              ),
+    );
+  }
+}
