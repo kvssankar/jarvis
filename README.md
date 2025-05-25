@@ -64,9 +64,64 @@ We never store your data. For more about how your data is handled, check out the
 
 ## Getting Started
 
-> *Coming soon*: Step-by-step instructions to build, install, and run Shots Studio on your device.
+Follow these steps to get Shots Studio up and running:
+
+1. **Get a Gemini API key**  
+   Visit https://ai.google.dev/gemini-api/docs/api-key and sign in with your Google account to generate an API key.
+
+2. **Download & install the APK**  
+   - Go to the **Releases** page of this repo and download the latest `*.apk`.  
+   - On your Android device, enable “Install from unknown sources” (or “Install unknown apps”) for your browser or file manager.  
+   - Open the downloaded APK to install Shots Studio.
+
+3. **Grant permissions**  
+   When you first launch the app, allow access to your device’s storage so Screenshots can be discovered and processed.
+
+4. **Configure your API key**  
+   - Tap the ☰ menu icon (top-left) and choose **Settings** → **API Key** (or just **API Key**).  
+   - Paste in the Gemini key you obtained in step 1 and save.
+
+5. **Process screenshots**  
+   Tap the AI ⚡️ button (top-right) to start analyzing your screenshots. The app will extract text, detect objects/topics, and suggest tags.
+
+6. **(Optional) Auto-add to collections**  
+   If you’d like AI to populate a collection automatically:  
+   - Create a new collection  
+   - Toggle **Auto-Add** on  
+   All new screenshots matching that collection’s criteria will be added automatically.
+
+That’s it! You can now search, tag and browse your screenshots with AI-powered superpowers.
 
 ---
+
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="assets/home_page.png" alt="Shots Studio Home Page" width="300"/>
+      <br/>
+      <em>Fig 1: Main screen of Shots Studio, showing a gallery of screenshots.</em>
+    </td>
+    <td align="center">
+      <img src="assets/screenshot_details.png" alt="Screenshot Details View" width="300"/>
+      <br/>
+      <em>Fig 2: Detailed view of a screenshot with its AI-generated tags and description.</em>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/collection_add.png" alt="Adding to Collection" width="300"/>
+      <br/>
+      <em>Fig 3: Adding a screenshot to a new or existing collection.</em>
+    </td>
+    <td align="center">
+      <img src="assets/collection_add2.png" alt="Auto-add to Collection Toggle" width="300"/>
+      <br/>
+      <em>Fig 4: Enabling the "Auto-Add" feature for a collection.</em>
+    </td>
+  </tr>
+</table>
 
 ## Contributing
 

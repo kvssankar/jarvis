@@ -372,6 +372,14 @@ class GeminiModel {
           backgroundColor: Colors.red,
           duration: const Duration(seconds: 3),
         );
+      } else if (response['error'] != null &&
+          response['error'].toString().contains('Network error')) {
+        showMessage?.call(
+          message:
+              'Network issue detected. Please check your internet connection and try again.',
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 3),
+        );
       } else {
         showMessage?.call(
           message:

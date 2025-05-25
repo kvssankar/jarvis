@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart'; // Add this import
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 class AppDrawer extends StatefulWidget {
   final String? currentApiKey;
@@ -33,6 +34,7 @@ class _AppDrawerState extends State<AppDrawer> {
   late String _selectedModelName;
   late TextEditingController _limitController;
   late TextEditingController _maxParallelController;
+  String _appVersion = '...';
 
   static const String _apiKeyPrefKey = 'apiKey';
   static const String _modelNamePrefKey = 'modelName';
@@ -47,6 +49,14 @@ class _AppDrawerState extends State<AppDrawer> {
     _limitController = TextEditingController();
     _maxParallelController = TextEditingController();
     _loadSettings();
+    _loadAppVersion();
+  }
+
+  Future<void> _loadAppVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      _appVersion = packageInfo.version;
+    });
   }
 
   Future<void> _loadSettings() async {
@@ -350,7 +360,7 @@ class _AppDrawerState extends State<AppDrawer> {
                 _launchURL('http://github.com/AnsahMohammad');
               },
             ),
-            Divider(color: Colors.grey[700]), // Subtle divider
+            Divider(color: Colors.grey[700]),
             ListTile(
               leading: Icon(
                 Icons.info_outline,
@@ -358,20 +368,19 @@ class _AppDrawerState extends State<AppDrawer> {
               ), // Use primary color
               title: Text('About', style: TextStyle(color: Colors.white)),
               subtitle: Text(
-                'Version 1.2.0',
+                'Version $_appVersion',
                 style: TextStyle(color: Colors.white70),
               ),
               onTap: () {
-                Navigator.pop(context); // Close drawer
+                Navigator.pop(context);
                 showAboutDialog(
                   context: context,
-                  applicationName: 'Shots Studio', // Consistent App Name
-                  applicationVersion: '1.2.0',
+                  applicationName: 'Shots Studio',
+                  applicationVersion: _appVersion,
                   applicationIcon: Icon(
                     Icons.photo_library,
                     size: 50,
-                    color:
-                        theme.colorScheme.primary, // Use primary color for icon
+                    color: theme.colorScheme.primary,
                   ),
                   children: [
                     Text(
