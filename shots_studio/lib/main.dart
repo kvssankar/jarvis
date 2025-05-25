@@ -330,7 +330,6 @@ class _HomeScreenState extends State<HomeScreen> {
       } else if (kIsWeb) {
         images = await _picker.pickMultiImage();
       } else {
-        // For mobile gallery, allow multiple image selection
         images = await _picker.pickMultiImage();
       }
 
@@ -339,37 +338,38 @@ class _HomeScreenState extends State<HomeScreen> {
           _isLoading = true;
         });
 
+        List<Screenshot> newScreenshots = [];
         for (var image in images) {
-          String id = _uuid.v4();
-          DateTime now = DateTime.now();
-          Screenshot newScreenshot;
+          final id = _uuid.v4();
+          String? imagePath;
+          Uint8List? imageBytes;
+          int? fileSize;
 
           if (kIsWeb) {
-            final Uint8List imageBytes = await image.readAsBytes();
-            newScreenshot = Screenshot(
-              id: id,
-              bytes: imageBytes,
-              title: 'Screenshot ${id.substring(0, 8)}',
-              description: '',
-              tags: [],
-              aiProcessed: false,
-              addedOn: now,
-            );
+            imageBytes = await image.readAsBytes();
+            fileSize = imageBytes.length;
           } else {
-            newScreenshot = Screenshot(
+            imagePath = image.path;
+            final file = File(imagePath);
+            fileSize = await file.length();
+          }
+
+          newScreenshots.add(
+            Screenshot(
               id: id,
-              path: image.path,
-              title: 'Screenshot ${image.path.split('/').last}',
-              description: '',
+              path: imagePath,
+              bytes: imageBytes,
+              title: image.name,
               tags: [],
               aiProcessed: false,
-              addedOn: File(image.path).lastModifiedSync(),
-            );
-          }
-          _screenshots.add(newScreenshot);
+              addedOn: DateTime.now(),
+              fileSize: fileSize, // Assign fileSize
+            ),
+          );
         }
 
         setState(() {
+          _screenshots.addAll(newScreenshots);
           _isLoading = false;
         });
       }
@@ -387,12 +387,10 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       var status = await Permission.photos.request();
       if (!status.isGranted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Storage permission not granted to load screenshots.',
-            ),
-          ),
+        // Handle permission denied
+        _showSnackbar(
+          message: 'Photos permission denied. Cannot load screenshots.',
+          backgroundColor: Colors.redAccent,
         );
         return;
       }
@@ -405,15 +403,14 @@ class _HomeScreenState extends State<HomeScreen> {
       List<String> possibleScreenshotPaths = await _getScreenshotPaths();
       List<FileSystemEntity> allFiles = [];
       for (String dirPath in possibleScreenshotPaths) {
-        final dir = Directory(dirPath);
-        if (await dir.exists()) {
-          final files = await dir.list().toList();
+        final directory = Directory(dirPath);
+        if (await directory.exists()) {
           allFiles.addAll(
-            files.where(
+            directory.listSync().whereType<File>().where(
               (file) =>
+                  file.path.toLowerCase().endsWith('.png') ||
                   file.path.toLowerCase().endsWith('.jpg') ||
-                  file.path.toLowerCase().endsWith('.jpeg') ||
-                  file.path.toLowerCase().endsWith('.png'),
+                  file.path.toLowerCase().endsWith('.jpeg'),
             ),
           );
         }
@@ -426,45 +423,40 @@ class _HomeScreenState extends State<HomeScreen> {
       });
 
       // Limit number of screenshots to prevent memory issues (adjust as needed)
-      final filesToProcess =
-          allFiles.take(_screenshotLimit).toList(); // Use state variable
-      // final filesToProcess = allFiles.toList();
+      final limitedFiles = allFiles.take(_screenshotLimit).toList();
 
-      for (var file in filesToProcess) {
-        try {
-          // TODO: Optimize this check
-          if (_screenshots.any((s) => s.path == file.path)) {
-            print('Skipping already loaded file: ${file.path}');
-            continue; // Skip if already exists
-          }
+      List<Screenshot> loadedScreenshots = [];
+      for (var fileEntity in limitedFiles) {
+        final file = File(fileEntity.path);
 
-          String id = _uuid.v4();
-          DateTime fileModifiedTime = File(file.path).lastModifiedSync();
-
-          Screenshot newScreenshot = Screenshot(
-            id: id,
-            path: file.path,
-            title: 'Screenshot ${file.path.split('/').last}',
-            description: '',
-            tags: [],
-            aiProcessed: false,
-            addedOn: fileModifiedTime,
-          );
-
-          // Check if the file path contains ".trashed" and skip if it does
-          if (file.path.contains('.trashed')) {
-            print('Skipping trashed file: ${file.path}');
-            continue;
-          }
-
-          _screenshots.add(newScreenshot);
-        } catch (e) {
-          print('Error processing file ${file.path}: $e');
+        // Skip if already exists
+        if (_screenshots.any((s) => s.path == file.path)) {
+          print('Skipping already loaded file: ${file.path}');
           continue;
         }
+
+        // Check if the file path contains ".trashed" and skip if it does
+        if (file.path.contains('.trashed')) {
+          print('Skipping trashed file: ${file.path}');
+          continue;
+        }
+
+        final fileSize = await file.length(); // Get file size
+        loadedScreenshots.add(
+          Screenshot(
+            id: _uuid.v4(),
+            path: file.path,
+            title: file.path.split('/').last,
+            tags: [],
+            aiProcessed: false,
+            addedOn: await file.lastModified(),
+            fileSize: fileSize, // Assign fileSize
+          ),
+        );
       }
 
       setState(() {
+        _screenshots.addAll(loadedScreenshots);
         _isLoading = false;
       });
     } catch (e) {

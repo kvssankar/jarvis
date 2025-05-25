@@ -12,6 +12,7 @@ class Screenshot {
   bool aiProcessed;
   DateTime addedOn;
   AiMetaData? aiMetadata;
+  int? fileSize;
 
   Screenshot({
     required this.id,
@@ -24,6 +25,7 @@ class Screenshot {
     required this.aiProcessed,
     required this.addedOn,
     this.aiMetadata,
+    this.fileSize,
   }) : collectionIds = collectionIds ?? [];
 
   void addToCollections(List<String> collections) {

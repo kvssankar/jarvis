@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'package:intl/intl.dart'; // Import for date formatting
+import 'dart:math';
+import 'package:intl/intl.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
-import 'package:shots_studio/models/collection_model.dart'; // Import Collection model
-import 'package:shots_studio/screens/full_screen_image_viewer.dart'; // Import the new screen
+import 'package:shots_studio/models/collection_model.dart';
+import 'package:shots_studio/screens/full_screen_image_viewer.dart';
 import 'package:shots_studio/widgets/tag_input_field.dart';
 import 'package:shots_studio/widgets/tag_chip.dart';
 
 class ScreenshotDetailScreen extends StatefulWidget {
   final Screenshot screenshot;
-  final List<Collection> allCollections; // To list collections
-  final Function(Collection) onUpdateCollection; // To update collections
+  final List<Collection> allCollections;
+  final Function(Collection) onUpdateCollection;
 
   const ScreenshotDetailScreen({
     super.key,
@@ -209,6 +210,17 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     );
   }
 
+  // Helper function to format file size
+  String _formatFileSize(int bytes) {
+    if (bytes <= 0) return "0 B";
+    const suffixes = ["B", "KB", "MB", "GB", "TB"];
+    var i = (log(bytes) / log(1024)).floor();
+    if (i >= suffixes.length) {
+      i = suffixes.length - 1;
+    }
+    return '${(bytes / pow(1024, i)).toStringAsFixed(2)} ${suffixes[i]}';
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget imageWidget;
@@ -289,6 +301,14 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                     ).format(widget.screenshot.addedOn),
                     style: TextStyle(fontSize: 14, color: Colors.grey[400]),
                   ),
+                  if (widget.screenshot.fileSize != null &&
+                      widget.screenshot.fileSize! > 0) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Size: ${_formatFileSize(widget.screenshot.fileSize!)}',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   TextField(
                     controller: _descriptionController, // Use the controller
@@ -325,74 +345,74 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      ..._tags.map((tag) => _buildTag(tag)),
-                      _buildTag('+ Add Tag'),
-                    ],
+                    runSpacing: 4,
+                    children: [..._tags.map(_buildTag).toList()],
                   ),
                   const SizedBox(height: 24),
-                  Tooltip(
-                    message:
-                        widget.screenshot.aiProcessed
-                            ? 'Processed'
-                            : 'Yet to be processed',
-                    child: Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[900],
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'AI Analysis Status:',
+                  const Text(
+                    'AI Details',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[850],
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'AI Analysis Status:',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  color: Colors.white70,
+                                ),
+                              ),
+                              if (widget.screenshot.aiProcessed &&
+                                  widget.screenshot.aiMetadata != null) ...[
+                                Text(
+                                  'Model: ${widget.screenshot.aiMetadata!.modelName}',
                                   style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.white70,
+                                    fontSize: 12,
+                                    color: Colors.grey[400],
                                   ),
                                 ),
-                                if (widget.screenshot.aiProcessed &&
-                                    widget.screenshot.aiMetadata != null) ...[
-                                  Text(
-                                    'Model: ${widget.screenshot.aiMetadata!.modelName}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[400],
-                                    ),
+                                Text(
+                                  'Analyzed on: ${DateFormat('MMM d, yyyy HH:mm a').format(widget.screenshot.aiMetadata!.processingTime)}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey[400],
                                   ),
-                                  Text(
-                                    'Analyzed on: ${DateFormat('MMM d, yyyy HH:mm a').format(widget.screenshot.aiMetadata!.processingTime)}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey[400],
-                                    ),
-                                  ),
-                                ],
+                                ),
                               ],
-                            ),
+                            ],
                           ),
-                          Icon(
-                            widget.screenshot.aiProcessed
-                                ? Icons.check_circle
-                                : Icons.hourglass_empty,
-                            color: Colors.amber[200],
-                          ),
-                          if (widget.screenshot.aiProcessed)
-                            IconButton(
-                              icon: Icon(
-                                Icons.refresh,
-                                color: Colors.orangeAccent,
-                              ),
-                              tooltip: 'Clear AI analysis to re-process',
-                              onPressed: _clearAndRequestAiReprocessing,
+                        ),
+                        Icon(
+                          widget.screenshot.aiProcessed
+                              ? Icons.check_circle
+                              : Icons.hourglass_empty,
+                          color: Colors.amber[200],
+                        ),
+                        if (widget.screenshot.aiProcessed)
+                          IconButton(
+                            icon: Icon(
+                              Icons.refresh,
+                              color: Colors.orangeAccent,
                             ),
-                        ],
-                      ),
+                            tooltip: 'Clear AI analysis to re-process',
+                            onPressed: _clearAndRequestAiReprocessing,
+                          ),
+                      ],
                     ),
                   ),
                   const SizedBox(height: 24),
