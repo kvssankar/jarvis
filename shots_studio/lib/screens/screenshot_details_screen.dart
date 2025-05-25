@@ -194,6 +194,20 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     setState(() {}); // Update the main page UI (e.g., "Part of X collections")
   }
 
+  void _clearAndRequestAiReprocessing() {
+    setState(() {
+      widget.screenshot.aiProcessed = false;
+      // widget.screenshot.aiMetadata = null;
+    });
+    _updateScreenshotDetails(); // If you have persistence logic here
+    // Optionally, show a snackbar or toast
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('AI details cleared. Ready for re-processing.'),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     Widget imageWidget;
@@ -353,6 +367,15 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                                 : Icons.hourglass_empty,
                             color: Colors.amber[200],
                           ),
+                          if (widget.screenshot.aiProcessed)
+                            IconButton(
+                              icon: Icon(
+                                Icons.refresh,
+                                color: Colors.orangeAccent,
+                              ),
+                              tooltip: 'Clear AI analysis to re-process',
+                              onPressed: _clearAndRequestAiReprocessing,
+                            ),
                         ],
                       ),
                     ),

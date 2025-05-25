@@ -6,7 +6,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool isProcessingAI;
   final int aiProcessedCount;
   final int aiTotalToProcess;
-  final VoidCallback? onSearchPressed; // Add callback for search
+  final VoidCallback? onSearchPressed;
 
   const HomeAppBar({
     super.key,
@@ -14,7 +14,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.isProcessingAI = false,
     this.aiProcessedCount = 0,
     this.aiTotalToProcess = 0,
-    this.onSearchPressed, // Add to constructor
+    this.onSearchPressed,
   });
 
   @override
