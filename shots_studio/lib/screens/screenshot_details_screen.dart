@@ -345,8 +345,11 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                   const SizedBox(height: 8),
                   Wrap(
                     spacing: 8,
-                    runSpacing: 4,
-                    children: [..._tags.map(_buildTag).toList()],
+                    runSpacing: 8,
+                    children: [
+                      ..._tags.map((tag) => _buildTag(tag)),
+                      _buildTag('+ Add Tag'),
+                    ],
                   ),
                   const SizedBox(height: 24),
                   const Text(

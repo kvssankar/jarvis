@@ -247,13 +247,6 @@ class _HomeScreenState extends State<HomeScreen> {
             }
           }
         });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Processed ${updatedScreenshots.length} screenshots'),
-            duration: const Duration(seconds: 1),
-          ),
-        );
       },
       autoAddCollections: autoAddCollections,
     );
