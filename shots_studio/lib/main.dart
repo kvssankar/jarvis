@@ -6,7 +6,6 @@ import 'package:shots_studio/widgets/home_app_bar.dart';
 import 'package:shots_studio/widgets/collections_section.dart';
 import 'package:shots_studio/widgets/screenshots_section.dart';
 import 'package:shots_studio/screens/app_drawer_screen.dart';
-import 'dart:typed_data';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:uuid/uuid.dart';
@@ -16,6 +15,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:shots_studio/models/gemini_model.dart';
 import 'package:shots_studio/screens/search_screen.dart';
 import 'package:shots_studio/widgets/privacy_dialog.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 void main() {
   runApp(const MyApp());
@@ -35,7 +36,7 @@ class MyApp extends StatelessWidget {
           secondary: Colors.amber.shade100,
           surface: Colors.black,
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: Colors.grey[900],
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
@@ -73,6 +74,7 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
+    _loadDataFromPrefs();
     if (!kIsWeb) {
       _loadAndroidScreenshots();
     }
@@ -80,6 +82,51 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => showPrivacyDialogIfNeeded(context),
     );
+  }
+
+  Future<void> _saveDataToPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+    final String encodedScreenshots = jsonEncode(
+      _screenshots.map((s) => s.toJson()).toList(),
+    );
+    await prefs.setString('screenshots', encodedScreenshots);
+
+    final String encodedCollections = jsonEncode(
+      _collections.map((c) => c.toJson()).toList(),
+    );
+    await prefs.setString('collections', encodedCollections);
+    print("Data saved to SharedPreferences");
+  }
+
+  Future<void> _loadDataFromPrefs() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    final String? storedScreenshots = prefs.getString('screenshots');
+    if (storedScreenshots != null && storedScreenshots.isNotEmpty) {
+      final List<dynamic> decodedScreenshots = jsonDecode(storedScreenshots);
+      setState(() {
+        _screenshots.clear();
+        _screenshots.addAll(
+          decodedScreenshots.map(
+            (json) => Screenshot.fromJson(json as Map<String, dynamic>),
+          ),
+        );
+      });
+    }
+
+    final String? storedCollections = prefs.getString('collections');
+    if (storedCollections != null && storedCollections.isNotEmpty) {
+      final List<dynamic> decodedCollections = jsonDecode(storedCollections);
+      setState(() {
+        _collections.clear();
+        _collections.addAll(
+          decodedCollections.map(
+            (json) => Collection.fromJson(json as Map<String, dynamic>),
+          ),
+        );
+      });
+    }
+    print("Data loaded from SharedPreferences");
   }
 
   void _updateApiKey(String newApiKey) {
@@ -111,12 +158,12 @@ class _HomeScreenState extends State<HomeScreen> {
     Color? backgroundColor,
     Duration? duration,
   }) {
-    if (!mounted) return; // Check if the widget is still in the tree
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
         backgroundColor: backgroundColor,
-        duration: duration ?? const Duration(seconds: 4), // Default duration
+        duration: duration ?? const Duration(seconds: 2),
       ),
     );
   }
@@ -125,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (_apiKey == null || _apiKey!.isEmpty) {
       _showSnackbar(
         message: 'API Key is not set. Please set it in the drawer.',
-        backgroundColor: Colors.orange,
+        backgroundColor: Colors.redAccent,
       );
       return;
     }
@@ -136,7 +183,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (unprocessedScreenshots.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No unprocessed screenshots found.')),
+        const SnackBar(content: Text('All screenshots are already processed.')),
       );
       return;
     }
@@ -168,7 +215,6 @@ class _HomeScreenState extends State<HomeScreen> {
       showMessage: _showSnackbar,
     );
 
-    // final results = await geminiModel.processBatchedImages(unprocessedScreenshots, (
     final results = await _geminiModelInstance!.processBatchedImages(
       unprocessedScreenshots,
       (batch, result) {
@@ -285,6 +331,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
 
+    // Save data after all processing is done
+    await _saveDataToPrefs();
+
     setState(() {
       _isProcessingAI = false;
       _geminiModelInstance = null;
@@ -293,20 +342,23 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _stopProcessingAI() {
+  Future<void> _stopProcessingAI() async {
     if (_isProcessingAI) {
       setState(() {
-        _isProcessingAI = false;
-        _aiProcessedCount = 0;
         _aiTotalToProcess = 0;
       });
       _geminiModelInstance?.cancel();
       _geminiModelInstance = null;
 
       _showSnackbar(
-        message: 'AI Processing Cancelled.',
+        message: 'AI processing stopped by user.',
         backgroundColor: Colors.orange,
       );
+
+      await _saveDataToPrefs();
+      setState(() {
+        _isProcessingAI = false; // Now set to false
+      });
     }
   }
 
@@ -333,30 +385,37 @@ class _HomeScreenState extends State<HomeScreen> {
 
         List<Screenshot> newScreenshots = [];
         for (var image in images) {
-          final id = _uuid.v4();
-          String? imagePath;
-          Uint8List? imageBytes;
-          int? fileSize;
+          final bytes = await image.readAsBytes();
+          final String imageId = _uuid.v4();
+          final String imageName = image.name;
 
-          if (kIsWeb) {
-            imageBytes = await image.readAsBytes();
-            fileSize = imageBytes.length;
+          // Check if a screenshot with the same path (if available) or bytes already exists
+          // For web, path might be null, so rely on bytes if path is not distinctive
+          bool exists = false;
+          if (!kIsWeb && image.path.isNotEmpty) {
+            exists = _screenshots.any((s) => s.path == image.path);
           } else {
-            imagePath = image.path;
-            final file = File(imagePath);
-            fileSize = await file.length();
+            // for web, check is removed since path is not available
+          }
+
+          if (exists) {
+            print(
+              'Skipping already loaded image: ${image.path.isNotEmpty ? image.path : (imageName ?? "Unknown")}',
+            );
+            continue;
           }
 
           newScreenshots.add(
             Screenshot(
-              id: id,
-              path: imagePath,
-              bytes: imageBytes,
-              title: image.name,
+              id: imageId,
+              path: kIsWeb ? null : image.path,
+              bytes: kIsWeb || !File(image.path).existsSync() ? bytes : null,
+              title:
+                  imageName ?? 'Screenshot ${DateTime.now().toIso8601String()}',
               tags: [],
               aiProcessed: false,
               addedOn: DateTime.now(),
-              fileSize: fileSize, // Assign fileSize
+              fileSize: bytes.length,
             ),
           );
         }
@@ -365,6 +424,7 @@ class _HomeScreenState extends State<HomeScreen> {
           _screenshots.addAll(newScreenshots);
           _isLoading = false;
         });
+        await _saveDataToPrefs();
       }
     } catch (e) {
       setState(() {
@@ -376,6 +436,13 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _loadAndroidScreenshots() async {
     if (kIsWeb) return;
+
+    // Check if screenshots are already loaded to avoid redundant loading on hot reload/restart
+    // This simple check might need refinement based on how often new screenshots are expected
+    // if (_screenshots.isNotEmpty && !_isLoading) { // Basic check
+    //   print("Android screenshots seem already loaded or loading is in progress.");
+    //   return;
+    // }
 
     try {
       var status = await Permission.photos.request();
@@ -421,9 +488,9 @@ class _HomeScreenState extends State<HomeScreen> {
       for (var fileEntity in limitedFiles) {
         final file = File(fileEntity.path);
 
-        // Skip if already exists
+        // Skip if already exists by path
         if (_screenshots.any((s) => s.path == file.path)) {
-          print('Skipping already loaded file: ${file.path}');
+          print('Skipping already loaded file via path check: ${file.path}');
           continue;
         }
 
@@ -433,16 +500,16 @@ class _HomeScreenState extends State<HomeScreen> {
           continue;
         }
 
-        final fileSize = await file.length(); // Get file size
+        final fileSize = await file.length();
         loadedScreenshots.add(
           Screenshot(
-            id: _uuid.v4(),
+            id: _uuid.v4(), // Generate new UUID for each
             path: file.path,
             title: file.path.split('/').last,
             tags: [],
             aiProcessed: false,
             addedOn: await file.lastModified(),
-            fileSize: fileSize, // Assign fileSize
+            fileSize: fileSize,
           ),
         );
       }
@@ -451,6 +518,7 @@ class _HomeScreenState extends State<HomeScreen> {
         _screenshots.addAll(loadedScreenshots);
         _isLoading = false;
       });
+      await _saveDataToPrefs();
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -485,6 +553,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _collections.add(collection);
     });
+    _saveDataToPrefs();
   }
 
   void _updateCollection(Collection updatedCollection) {
@@ -496,12 +565,17 @@ class _HomeScreenState extends State<HomeScreen> {
         _collections[index] = updatedCollection;
       }
     });
+    _saveDataToPrefs();
   }
 
   void _deleteCollection(String collectionId) {
     setState(() {
       _collections.removeWhere((c) => c.id == collectionId);
+      for (var screenshot in _screenshots) {
+        screenshot.collectionIds.remove(collectionId);
+      }
     });
+    _saveDataToPrefs();
   }
 
   void _navigateToSearchScreen() {
@@ -622,15 +696,21 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showScreenshotDetail(Screenshot screenshot) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder:
-            (context) => ScreenshotDetailScreen(
-              screenshot: screenshot,
-              allCollections: _collections, // Pass all collections
-              onUpdateCollection: _updateCollection, // Pass update callback
-            ),
-      ),
-    );
+    Navigator.of(context)
+        .push(
+          MaterialPageRoute(
+            builder:
+                (context) => ScreenshotDetailScreen(
+                  screenshot: screenshot,
+                  allCollections: _collections,
+                  onUpdateCollection: (updatedCollection) {
+                    _updateCollection(updatedCollection);
+                  },
+                ),
+          ),
+        )
+        .then((_) {
+          _saveDataToPrefs();
+        });
   }
 }
