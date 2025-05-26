@@ -13,6 +13,7 @@ class CollectionsSection extends StatelessWidget {
   final Function(Collection) onCollectionAdded;
   final Function(Collection) onUpdateCollection;
   final Function(String) onDeleteCollection;
+  final Function(String) onDeleteScreenshot;
 
   const CollectionsSection({
     super.key,
@@ -21,6 +22,7 @@ class CollectionsSection extends StatelessWidget {
     required this.onCollectionAdded,
     required this.onUpdateCollection,
     required this.onDeleteCollection,
+    required this.onDeleteScreenshot,
   });
 
   Future<void> _createCollection(BuildContext context) async {
@@ -65,6 +67,7 @@ class CollectionsSection extends StatelessWidget {
                             allScreenshots: screenshots,
                             onUpdateCollection: onUpdateCollection,
                             onDeleteCollection: onDeleteCollection,
+                            onDeleteScreenshot: onDeleteScreenshot,
                           ),
                     ),
                   );
@@ -101,6 +104,8 @@ class CollectionsSection extends StatelessWidget {
                                                 onUpdateCollection,
                                             onDeleteCollection:
                                                 onDeleteCollection,
+                                            onDeleteScreenshot:
+                                                onDeleteScreenshot,
                                           ),
                                     ),
                                   );

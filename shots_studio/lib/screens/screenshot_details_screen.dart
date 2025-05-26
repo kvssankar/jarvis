@@ -14,12 +14,14 @@ class ScreenshotDetailScreen extends StatefulWidget {
   final Screenshot screenshot;
   final List<Collection> allCollections;
   final Function(Collection) onUpdateCollection;
+  final Function(String) onDeleteScreenshot;
 
   const ScreenshotDetailScreen({
     super.key,
     required this.screenshot,
     required this.allCollections,
     required this.onUpdateCollection,
+    required this.onDeleteScreenshot,
   });
 
   @override
@@ -207,6 +209,51 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         content: Text('AI details cleared. Ready for re-processing.'),
       ),
     );
+  }
+
+  Future<void> _confirmDeleteScreenshot() async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: const Text(
+            'Delete Screenshot?',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: const Text(
+            'Are you sure you want to delete this screenshot? This action cannot be undone.',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            TextButton(
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      // Call the delete callback
+      widget.onDeleteScreenshot(widget.screenshot.id);
+
+      // Navigate back to the previous screen
+      Navigator.of(context).pop();
+
+      // Show confirmation message
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Screenshot deleted successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
   }
 
   String _formatFileSize(int bytes) {
@@ -510,16 +557,13 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                 }
               },
             ),
-            // IconButton(
-            //   icon: Icon(
-            //     Icons.delete_outline,
-            //     color: Theme.of(context).colorScheme.secondary,
-            //   ),
-            //   onPressed: () {
-            //     // TODO: Implement delete action
-            //     print('Delete button pressed');
-            //   },
-            // ),
+            IconButton(
+              icon: Icon(
+                Icons.delete_outline,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+              onPressed: _confirmDeleteScreenshot,
+            ),
             const SizedBox(width: 48),
           ],
         ),

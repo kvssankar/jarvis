@@ -9,6 +9,7 @@ class AllCollectionsScreen extends StatelessWidget {
   final List<Screenshot> allScreenshots;
   final Function(Collection) onUpdateCollection;
   final Function(String) onDeleteCollection;
+  final Function(String) onDeleteScreenshot;
 
   const AllCollectionsScreen({
     super.key,
@@ -16,6 +17,7 @@ class AllCollectionsScreen extends StatelessWidget {
     required this.allScreenshots,
     required this.onUpdateCollection,
     required this.onDeleteCollection,
+    required this.onDeleteScreenshot,
   });
 
   @override
@@ -59,6 +61,7 @@ class AllCollectionsScreen extends StatelessWidget {
                                   allScreenshots: allScreenshots,
                                   onUpdateCollection: onUpdateCollection,
                                   onDeleteCollection: onDeleteCollection,
+                                  onDeleteScreenshot: onDeleteScreenshot,
                                 ),
                           ),
                         );

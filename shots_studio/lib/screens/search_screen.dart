@@ -8,12 +8,14 @@ class SearchScreen extends StatefulWidget {
   final List<Screenshot> allScreenshots;
   final List<Collection> allCollections;
   final Function(Collection) onUpdateCollection;
+  final Function(String) onDeleteScreenshot;
 
   const SearchScreen({
     super.key,
     required this.allScreenshots,
     required this.allCollections,
     required this.onUpdateCollection,
+    required this.onDeleteScreenshot,
   });
 
   @override
@@ -72,6 +74,7 @@ class _SearchScreenState extends State<SearchScreen> {
               screenshot: screenshot,
               allCollections: widget.allCollections,
               onUpdateCollection: widget.onUpdateCollection,
+              onDeleteScreenshot: widget.onDeleteScreenshot,
             ),
       ),
     );

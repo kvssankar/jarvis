@@ -403,7 +403,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
           if (exists) {
             print(
-              'Skipping already loaded image: ${image.path.isNotEmpty ? image.path : (imageName ?? "Unknown")}',
+              'Skipping already loaded image: ${image.path.isNotEmpty ? image.path : imageName}',
             );
             continue;
           }
@@ -580,6 +580,22 @@ class _HomeScreenState extends State<HomeScreen> {
     _saveDataToPrefs();
   }
 
+  void _deleteScreenshot(String screenshotId) {
+    setState(() {
+      // Remove screenshot from the main list
+      _screenshots.removeWhere((s) => s.id == screenshotId);
+
+      // Remove screenshot from all collections
+      for (var collection in _collections) {
+        if (collection.screenshotIds.contains(screenshotId)) {
+          final updatedCollection = collection.removeScreenshot(screenshotId);
+          _updateCollection(updatedCollection);
+        }
+      }
+    });
+    _saveDataToPrefs();
+  }
+
   void _navigateToSearchScreen() {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -588,6 +604,7 @@ class _HomeScreenState extends State<HomeScreen> {
               allScreenshots: _screenshots,
               allCollections: _collections,
               onUpdateCollection: _updateCollection,
+              onDeleteScreenshot: _deleteScreenshot,
             ),
       ),
     );
@@ -685,6 +702,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       onCollectionAdded: _addCollection,
                       onUpdateCollection: _updateCollection,
                       onDeleteCollection: _deleteCollection,
+                      onDeleteScreenshot: _deleteScreenshot,
                     ), // Use CollectionsSection widget
                     ScreenshotsSection(
                       screenshots: _screenshots,
@@ -708,6 +726,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   onUpdateCollection: (updatedCollection) {
                     _updateCollection(updatedCollection);
                   },
+                  onDeleteScreenshot: _deleteScreenshot,
                 ),
           ),
         )

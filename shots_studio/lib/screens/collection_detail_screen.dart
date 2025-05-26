@@ -10,6 +10,7 @@ class CollectionDetailScreen extends StatefulWidget {
   final List<Screenshot> allScreenshots;
   final Function(Collection) onUpdateCollection;
   final Function(String) onDeleteCollection;
+  final Function(String) onDeleteScreenshot;
 
   const CollectionDetailScreen({
     super.key,
@@ -17,6 +18,7 @@ class CollectionDetailScreen extends StatefulWidget {
     required this.allScreenshots,
     required this.onUpdateCollection,
     required this.onDeleteCollection,
+    required this.onDeleteScreenshot,
   });
 
   @override
@@ -343,6 +345,8 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                                             allCollections: [widget.collection],
                                             onUpdateCollection:
                                                 widget.onUpdateCollection,
+                                            onDeleteScreenshot:
+                                                widget.onDeleteScreenshot,
                                           ),
                                     ),
                                   );
