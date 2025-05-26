@@ -1,0 +1,22 @@
+#!/bin/bash
+# filepath: scripts/git-hooks/post-checkout
+
+# Arguments: $1 = previous HEAD, $2 = new HEAD, $3 = flag (1 for branch checkout, 0 for file checkout)
+PREVIOUS_HEAD=$1
+NEW_HEAD=$2
+IS_BRANCH_CHECKOUT=$3
+
+# Only run on branch checkouts or pulls (which often result in branch checkouts)
+if [ "$IS_BRANCH_CHECKOUT" = "1" ]; then
+  echo "Running post-checkout hook..."
+  # Check if pubspec.yaml changed between previous and new HEAD
+  # Adjust the path to pubspec.yaml according to your project structure
+  if git diff --name-only "$PREVIOUS_HEAD" "$NEW_HEAD" | grep -q "shots_studio/pubspec.yaml"; then
+    echo "shots_studio/pubspec.yaml changed. Running 'flutter pub get' in shots_studio..."
+    (cd shots_studio && flutter pub get)
+  else
+    echo "shots_studio/pubspec.yaml did not change."
+  fi
+fi
+
+exit 0

@@ -1,0 +1,16 @@
+#!/bin/bash
+# filepath: scripts/git-hooks/commit-msg
+
+COMMIT_MSG_FILE=$1
+COMMIT_MSG=$(cat "$COMMIT_MSG_FILE")
+
+CONVENTIONAL_COMMIT_REGEX="^(feat|fix|build|chore|ci|docs|perf|refactor|revert|style|test)(\(.+\))?!?: .+"
+
+if ! [[ "$COMMIT_MSG" =~ $CONVENTIONAL_COMMIT_REGEX ]]; then
+  echo "ERROR: Commit message does not follow the conventional commit format."
+  echo "Example: 'feat: add new login button' or 'fix(auth): resolve login issue'"
+  echo "Allowed types: feat, fix, build, chore, ci, docs, perf, refactor, revert, style, test"
+  exit 1
+fi
+
+exit 0
