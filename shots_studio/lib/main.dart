@@ -410,8 +410,7 @@ class _HomeScreenState extends State<HomeScreen> {
               id: imageId,
               path: kIsWeb ? null : image.path,
               bytes: kIsWeb || !File(image.path).existsSync() ? bytes : null,
-              title:
-                  imageName ?? 'Screenshot ${DateTime.now().toIso8601String()}',
+              title: imageName,
               tags: [],
               aiProcessed: false,
               addedOn: DateTime.now(),

@@ -7,6 +7,8 @@ import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/screens/full_screen_image_viewer.dart';
 import 'package:shots_studio/widgets/tag_input_field.dart';
 import 'package:shots_studio/widgets/tag_chip.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ScreenshotDetailScreen extends StatefulWidget {
   final Screenshot screenshot;
@@ -422,60 +424,89 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 4,
-                    children:
-                        widget.allCollections
-                            .where(
-                              (collection) => collection.screenshotIds.contains(
-                                widget.screenshot.id,
-                              ),
-                            )
-                            .map(
-                              (collection) => Chip(
-                                label: Text(collection.name ?? 'Unnamed'),
-                                backgroundColor: Colors.blueGrey[700],
-                                labelStyle: const TextStyle(
-                                  color: Colors.white,
-                                ),
-                              ),
-                            )
-                            .toList(),
+                    children: [
+                      if (widget.screenshot.collectionIds.isEmpty)
+                        const Text(
+                          "This isn’t in any collection yet. Hit the + button to give it a cozy home 😺",
+                          style: TextStyle(color: Colors.white70),
+                        )
+                      else
+                        ...widget.screenshot.collectionIds.map((collectionId) {
+                          final collection = widget.allCollections.firstWhere(
+                            (c) => c.id == collectionId,
+                          );
+
+                          return Chip(
+                            label: Text(collection.name ?? 'Unnamed'),
+                            backgroundColor: Colors.blueGrey[700],
+                            labelStyle: const TextStyle(color: Colors.white),
+                          );
+                        }),
+                    ],
                   ),
                   const SizedBox(height: 8),
-                  InkWell(
-                    onTap: _showAddToCollectionDialog,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 16,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[800],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.add_circle_outline,
-                            color: Theme.of(context).colorScheme.primary,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Add to / Manage Collections',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                   const SizedBox(height: 32),
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddToCollectionDialog,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        child: const Icon(Icons.add, color: Colors.black),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8.0,
+        color: Colors.grey[900],
+        child: Row(
+          children: <Widget>[
+            IconButton(
+              icon: Icon(
+                Icons.share,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+              onPressed: () async {
+                final file = File(widget.screenshot.path!);
+                if (await file.exists()) {
+                  await SharePlus.instance.share(
+                    ShareParams(
+                      text: 'Check out this screenshot!',
+                      files: [XFile(file.path)],
+                    ),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Screenshot file not found')),
+                  );
+                }
+              },
+            ),
+
+            // IconButton(
+            //   icon: Icon(
+            //     Icons.alarm,
+            //     color: Theme.of(context).colorScheme.secondary,
+            //   ),
+            //   onPressed: () {
+            //     // TODO: Implement reminder action
+            //     print('Reminder button pressed');
+            //   },
+            // ),
+            // IconButton(
+            //   icon: Icon(
+            //     Icons.delete_outline,
+            //     color: Theme.of(context).colorScheme.secondary,
+            //   ),
+            //   onPressed: () {
+            //     // TODO: Implement delete action
+            //     print('Delete button pressed');
+            //   },
+            // ),
+            const SizedBox(width: 48),
           ],
         ),
       ),
