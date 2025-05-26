@@ -396,10 +396,7 @@ class _AppDrawerState extends State<AppDrawer> {
                       child: Text(
                         'Contribute to the project ❤️',
                         style: TextStyle(
-                          color:
-                              theme
-                                  .colorScheme
-                                  .primary, // Use primary color for link
+                          color: theme.colorScheme.primary,
                           decoration: TextDecoration.underline,
                         ),
                       ),

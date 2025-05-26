@@ -191,7 +191,7 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                   ),
                 ],
               ),
-              if (_isAutoAddEnabled) // Conditional message based on switch state
+              if (_isAutoAddEnabled)
                 Container(
                   margin: const EdgeInsets.only(top: 8, bottom: 16),
                   padding: const EdgeInsets.all(12),
@@ -223,7 +223,7 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                     ],
                   ),
                 ),
-              const SizedBox(height: 8), // Adjusted spacing
+              const SizedBox(height: 8),
             ],
             Text(
               widget.isEditMode

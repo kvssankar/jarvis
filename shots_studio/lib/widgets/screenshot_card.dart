@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'package:shots_studio/models/screenshot_model.dart'; // Import Screenshot model
+import 'package:shots_studio/models/screenshot_model.dart';
 
 class ScreenshotCard extends StatelessWidget {
-  final Screenshot screenshot; // Changed from imageData to screenshot
+  final Screenshot screenshot;
   final VoidCallback onTap;
 
   const ScreenshotCard({
     super.key,
-    required this.screenshot, // Updated parameter
+    required this.screenshot,
     required this.onTap,
   });
 
@@ -28,7 +28,6 @@ class ScreenshotCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         child: Stack(
-          // Added Stack to overlay the checkmark
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,

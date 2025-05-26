@@ -91,7 +91,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           style: const TextStyle(color: Colors.white),
         ),
-        backgroundColor: Colors.black, // Match theme
+        backgroundColor: Colors.black,
       ),
       body:
           _filteredScreenshots.isEmpty && _searchQuery.isNotEmpty
@@ -107,7 +107,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   crossAxisCount: 3,
                   childAspectRatio: 1,
                   crossAxisSpacing: 8,
-                  mainAxisSpacing: 8, // Adjusted for consistency
+                  mainAxisSpacing: 8,
                 ),
                 itemCount: _filteredScreenshots.length,
                 itemBuilder: (context, index) {

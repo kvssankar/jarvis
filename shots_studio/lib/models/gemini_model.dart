@@ -34,7 +34,7 @@ class GeminiModel {
   GeminiModel({
     required this.modelName,
     required this.apiKey,
-    this.timeoutSeconds = 60,
+    this.timeoutSeconds = 120,
     this.maxParallel = 4,
     this.maxRetries,
     this.showMessage,
@@ -183,7 +183,7 @@ class GeminiModel {
 
     try {
       final response = await http
-          .post(url, headers: headers, body: requestBody) // Use requestBody
+          .post(url, headers: headers, body: requestBody)
           .timeout(Duration(seconds: timeoutSeconds));
 
       final responseJson = jsonDecode(response.body);
@@ -389,11 +389,10 @@ class GeminiModel {
         );
       }
       print('Error in response: ${response['error'] ?? 'No data found'}');
-      return screenshots; // Return unchanged if there was an error
+      return screenshots;
     }
 
     try {
-      // Parse JSON response
       final String responseText = response['data'];
       List<dynamic> parsedResponse = [];
       final RegExp jsonRegExp = RegExp(r'\[.*\]', dotAll: true);
@@ -428,7 +427,6 @@ class GeminiModel {
         processingTime: DateTime.now().add(Duration(seconds: timeoutSeconds)),
       );
 
-      // If only one screenshot and one response, assume they match
       if (screenshots.length == 1 && parsedResponse.length == 1) {
         var screenshot = screenshots[0];
         var item = parsedResponse[0];
@@ -455,7 +453,6 @@ class GeminiModel {
           Map<String, List<String>> suggestedCollections = {};
           suggestedCollections[updatedScreenshot.id] = collectionNames;
 
-          // Make sure we can modify the response
           try {
             response['suggestedCollections'] = suggestedCollections;
           } catch (e) {
@@ -473,7 +470,7 @@ class GeminiModel {
       List<dynamic> availableResponses = List.from(parsedResponse);
 
       for (var screenshot in screenshots) {
-        String identifier = screenshot.id; // Using ID as the primary identifier
+        String identifier = screenshot.id;
 
         Map<String, dynamic>? matchedAiItem;
         int? matchedAiItemIndex;
@@ -492,13 +489,12 @@ class GeminiModel {
               print(
                 "Matched screenshot id: $identifier with AI response filename: $responseFileId",
               );
-              break; // Found a match for this screenshot
+              break;
             }
           }
         }
 
         if (matchedAiItem != null) {
-          // Update screenshot using the directly matched AI item
           final List<String> collectionNames = List<String>.from(
             matchedAiItem['collections'] ?? [],
           );
@@ -515,7 +511,6 @@ class GeminiModel {
             aiMetadata: aiMetaData,
           );
 
-          // Store collection names for automatic adding later
           if (collectionNames.isNotEmpty) {
             try {
               Map<String, List<String>> suggestedCollections;

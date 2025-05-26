@@ -37,7 +37,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         IconButton(
           icon: const Icon(Icons.search),
           tooltip: 'Search Screenshots',
-          onPressed: onSearchPressed, // Use the callback
+          onPressed: onSearchPressed,
         ),
         if (isProcessingAI)
           Padding(

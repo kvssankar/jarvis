@@ -172,19 +172,17 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     List<String> updatedScreenshotIds = List.from(collection.screenshotIds);
     List<String> updatedCollectionIdsInScreenshot = List.from(
       widget.screenshot.collectionIds,
-    ); // New line
+    );
 
     if (isCurrentlyIn) {
       updatedScreenshotIds.remove(widget.screenshot.id);
-      updatedCollectionIdsInScreenshot.remove(collection.id); // New line
+      updatedCollectionIdsInScreenshot.remove(collection.id);
     } else {
       updatedScreenshotIds.add(widget.screenshot.id);
-      updatedCollectionIdsInScreenshot.add(collection.id); // New line
+      updatedCollectionIdsInScreenshot.add(collection.id);
     }
 
-    // Update the screenshot model
-    widget.screenshot.collectionIds =
-        updatedCollectionIdsInScreenshot; // New line
+    widget.screenshot.collectionIds = updatedCollectionIdsInScreenshot;
 
     Collection updatedCollection = collection.copyWith(
       screenshotIds: updatedScreenshotIds,
@@ -192,17 +190,15 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       lastModified: DateTime.now(),
     );
     widget.onUpdateCollection(updatedCollection);
-    setModalState(() {}); // Update the bottom sheet UI
-    setState(() {}); // Update the main page UI (e.g., "Part of X collections")
+    setModalState(() {});
+    setState(() {});
   }
 
   void _clearAndRequestAiReprocessing() {
     setState(() {
       widget.screenshot.aiProcessed = false;
-      // widget.screenshot.aiMetadata = null;
     });
-    _updateScreenshotDetails(); // If you have persistence logic here
-    // Optionally, show a snackbar or toast
+    _updateScreenshotDetails();
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
         content: Text('AI details cleared. Ready for re-processing.'),
@@ -210,7 +206,6 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     );
   }
 
-  // Helper function to format file size
   String _formatFileSize(int bytes) {
     if (bytes <= 0) return "0 B";
     const suffixes = ["B", "KB", "MB", "GB", "TB"];
@@ -229,13 +224,10 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     if (widget.screenshot.path != null) {
       imageWidget = Image.file(
         File(widget.screenshot.path!),
-        fit: BoxFit.contain, // Changed from BoxFit.cover
+        fit: BoxFit.contain,
       );
     } else if (widget.screenshot.bytes != null) {
-      imageWidget = Image.memory(
-        widget.screenshot.bytes!,
-        fit: BoxFit.contain,
-      ); // Changed from BoxFit.cover
+      imageWidget = Image.memory(widget.screenshot.bytes!, fit: BoxFit.contain);
     } else {
       imageWidget = const Center(child: Icon(Icons.broken_image));
       imageName = 'Invalid Image';
@@ -256,7 +248,6 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             InkWell(
-              // Wrap the image container with InkWell
               onTap: () {
                 Navigator.push(
                   context,
@@ -311,7 +302,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                   ],
                   const SizedBox(height: 16),
                   TextField(
-                    controller: _descriptionController, // Use the controller
+                    controller: _descriptionController,
                     decoration: InputDecoration(
                       hintText: 'Add a description...',
                       filled: true,

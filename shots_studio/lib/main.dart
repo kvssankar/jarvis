@@ -380,7 +380,6 @@ class _HomeScreenState extends State<HomeScreen> {
     try {
       var status = await Permission.photos.request();
       if (!status.isGranted) {
-        // Handle permission denied
         _showSnackbar(
           message: 'Photos permission denied. Cannot load screenshots.',
           backgroundColor: Colors.redAccent,

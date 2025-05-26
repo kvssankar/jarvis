@@ -68,7 +68,8 @@ class PrivacyAcknowledgementDialog extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               "\nShots Studio itself does not permanently store your original images on its own servers after they have been processed by Google Gemini for the aforementioned AI features.\n\n"
-              "Please ensure you review and are comfortable with Google's terms and privacy practices before proceeding. If you do not agree, you may not be able to use the AI-powered features of this application.",
+              "Please ensure you review and are comfortable with Google's terms and privacy practices before proceeding. If you do not agree, you may not be able to use the AI-powered features of this application.\n"
+              "P.S. Don't worry, your cat memes are safe with us. 😺",
               style: TextStyle(color: Colors.white70),
             ),
           ],
