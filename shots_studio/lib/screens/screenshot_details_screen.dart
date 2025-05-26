@@ -8,7 +8,7 @@ import 'package:shots_studio/screens/full_screen_image_viewer.dart';
 import 'package:shots_studio/widgets/tag_input_field.dart';
 import 'package:shots_studio/widgets/tag_chip.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:shots_studio/utils/reminder_utils.dart';
 
 class ScreenshotDetailScreen extends StatefulWidget {
   final Screenshot screenshot;
@@ -29,6 +29,7 @@ class ScreenshotDetailScreen extends StatefulWidget {
 class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   late List<String> _tags;
   late TextEditingController _descriptionController;
+  DateTime? _selectedReminderTime;
 
   @override
   void initState() {
@@ -486,16 +487,29 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
               },
             ),
 
-            // IconButton(
-            //   icon: Icon(
-            //     Icons.alarm,
-            //     color: Theme.of(context).colorScheme.secondary,
-            //   ),
-            //   onPressed: () {
-            //     // TODO: Implement reminder action
-            //     print('Reminder button pressed');
-            //   },
-            // ),
+            IconButton(
+              icon: Icon(
+                Icons.alarm,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+              onPressed: () async {
+                final newReminderTime =
+                    await ReminderUtils.selectReminderDateTime(
+                      context,
+                      _selectedReminderTime,
+                    );
+                if (newReminderTime != null) {
+                  setState(() {
+                    _selectedReminderTime = newReminderTime;
+                  });
+                  ReminderUtils.setReminder(
+                    context,
+                    widget.screenshot,
+                    _selectedReminderTime,
+                  );
+                }
+              },
+            ),
             // IconButton(
             //   icon: Icon(
             //     Icons.delete_outline,
