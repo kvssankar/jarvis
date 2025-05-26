@@ -137,3 +137,13 @@ Use of the software is restricted to non-commercial, non-production purposes onl
 After that date, the license will automatically convert to the GNU General Public License v2.0 or later.  
 
 See the [LICENSE](LICENSE) file for full details.
+
+## Setting Up Git Hooks
+
+This project uses Git hooks to automate certain tasks (e.g., version bumping). To enable these hooks in your local clone, please run the following command from the root of the repository after cloning:
+
+```bash
+git config core.hooksPath scripts/git-hooks
+```
+
+This only needs to be done once per clone.
