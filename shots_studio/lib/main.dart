@@ -18,6 +18,7 @@ import 'package:shots_studio/widgets/privacy_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:shots_studio/services/notification_service.dart';
+import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/utils/memory_utils.dart';
 
 void main() async {
@@ -193,26 +194,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
   }
 
-  void _showSnackbar({
+  void _showSnackbarWrapper({
     required String message,
     Color? backgroundColor,
     Duration? duration,
   }) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: backgroundColor,
-        duration: duration ?? const Duration(seconds: 2),
-      ),
+    SnackbarService().showSnackbar(
+      context,
+      message: message,
+      backgroundColor: backgroundColor,
+      duration: duration,
     );
   }
 
   Future<void> _processWithGemini() async {
     if (_apiKey == null || _apiKey!.isEmpty) {
-      _showSnackbar(
-        message: 'API Key is not set. Please set it in the drawer.',
-        backgroundColor: Colors.redAccent,
+      SnackbarService().showError(
+        context,
+        'API Key is not set. Please set it in the drawer.',
       );
       return;
     }
@@ -222,8 +221,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _screenshots.where((s) => !s.aiProcessed).toList();
 
     if (unprocessedScreenshots.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('All screenshots are already processed.')),
+      SnackbarService().showSnackbar(
+        context,
+        message: 'All screenshots are already processed.',
       );
       return;
     }
@@ -252,7 +252,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       modelName: _selectedModelName,
       apiKey: _apiKey!,
       maxParallel: _maxParallelAI,
-      showMessage: _showSnackbar,
+      showMessage: _showSnackbarWrapper,
     );
 
     final results = await _geminiModelInstance!.processBatchedImages(
@@ -390,10 +390,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _geminiModelInstance?.cancel();
       _geminiModelInstance = null;
 
-      _showSnackbar(
-        message: 'AI processing stopped by user.',
-        backgroundColor: Colors.orange,
-      );
+      SnackbarService().showWarning(context, 'AI processing stopped by user.');
 
       await _saveDataToPrefs();
       setState(() {
@@ -490,9 +487,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     try {
       var status = await Permission.photos.request();
       if (!status.isGranted) {
-        _showSnackbar(
-          message: 'Photos permission denied. Cannot load screenshots.',
-          backgroundColor: Colors.redAccent,
+        SnackbarService().showError(
+          context,
+          'Photos permission denied. Cannot load screenshots.',
         );
         return;
       }

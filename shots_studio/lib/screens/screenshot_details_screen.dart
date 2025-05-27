@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/screens/full_screen_image_viewer.dart';
+import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/widgets/tag_input_field.dart';
 import 'package:shots_studio/widgets/tag_chip.dart';
 import 'package:share_plus/share_plus.dart';
@@ -204,10 +205,9 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       widget.screenshot.aiProcessed = false;
     });
     _updateScreenshotDetails();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('AI details cleared. Ready for re-processing.'),
-      ),
+    SnackbarService().showInfo(
+      context,
+      'AI details cleared. Ready for re-processing.',
     );
   }
 
@@ -247,12 +247,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       Navigator.of(context).pop();
 
       // Show confirmation message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Screenshot deleted successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      SnackbarService().showSuccess(context, 'Screenshot deleted successfully');
     }
   }
 
@@ -527,8 +522,9 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                     ),
                   );
                 } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Screenshot file not found')),
+                  SnackbarService().showError(
+                    context,
+                    'Screenshot file not found',
                   );
                 }
               },

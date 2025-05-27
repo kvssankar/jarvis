@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/utils/memory_utils.dart';
 
 class PerformanceMonitor extends StatefulWidget {
@@ -95,12 +96,7 @@ class _PerformanceMonitorState extends State<PerformanceMonitor> {
                 onPressed: () async {
                   await MemoryUtils.clearImageCacheAndGC();
                   _updateStats();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Image cache cleared'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
+                  SnackbarService().showSuccess(context, 'Image cache cleared');
                 },
                 icon: const Icon(Icons.cleaning_services),
                 label: const Text('Clear Image Cache'),

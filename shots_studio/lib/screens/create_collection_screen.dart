@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/widgets/screenshot_card.dart';
@@ -68,21 +69,9 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
     final String title = _titleController.text.trim();
 
     if (title.isEmpty && !widget.isEditMode) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.info_outline, color: Colors.white),
-              const SizedBox(width: 12),
-              const Text('Please enter a title for your collection'),
-            ],
-          ),
-          behavior: SnackBarBehavior.floating,
-          backgroundColor: Colors.redAccent.withOpacity(0.8),
-          duration: const Duration(seconds: 2),
-          margin: const EdgeInsets.all(16),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
+      SnackbarService().showError(
+        context,
+        'Please enter a title for your collection',
       );
       return;
     }

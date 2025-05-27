@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/services/notification_service.dart';
+import 'package:shots_studio/services/snackbar_service.dart';
 
 class ReminderUtils {
   static Future<DateTime?> selectReminderDateTime(
@@ -47,18 +48,14 @@ class ReminderUtils {
         body: 'Reminder for screenshot: ${screenshot.title ?? 'Untitled'}',
         scheduledTime: selectedReminderTime,
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Reminder set for ${DateFormat('MMM d, yyyy, hh:mm a').format(selectedReminderTime)}',
-          ),
-        ),
+      SnackbarService().showSuccess(
+        context,
+        'Reminder set for ${DateFormat('MMM d, yyyy, hh:mm a').format(selectedReminderTime)}',
       );
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a future time for the reminder.'),
-        ),
+      SnackbarService().showError(
+        context,
+        'Please select a future time for the reminder.',
       );
     }
   }

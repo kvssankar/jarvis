@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PrivacyAcknowledgementDialog extends StatelessWidget {
@@ -16,9 +17,7 @@ class PrivacyAcknowledgementDialog extends StatelessWidget {
   Future<void> _launchURL(BuildContext context, String urlString) async {
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Could not launch \$urlString')));
+      SnackbarService().showError(context, 'Could not launch $urlString');
     }
   }
 
