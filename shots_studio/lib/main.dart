@@ -88,6 +88,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadDataFromPrefs();
+    _loadSettings();
     if (!kIsWeb) {
       _loadAndroidScreenshots();
     }
@@ -156,6 +157,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       });
     }
     print("Data loaded from SharedPreferences");
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _apiKey = prefs.getString('apiKey');
+      _selectedModelName = prefs.getString('modelName') ?? 'gemini-2.0-flash';
+      _screenshotLimit = prefs.getInt('limit') ?? 120;
+      _maxParallelAI = prefs.getInt('maxParallel') ?? 4;
+    });
   }
 
   void _updateApiKey(String newApiKey) {
