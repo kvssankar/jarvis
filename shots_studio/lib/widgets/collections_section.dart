@@ -13,6 +13,7 @@ class CollectionsSection extends StatelessWidget {
   final Function(Collection) onCollectionAdded;
   final Function(Collection) onUpdateCollection;
   final Function(String) onDeleteCollection;
+  final Function(String) onDeleteScreenshot;
 
   const CollectionsSection({
     super.key,
@@ -21,6 +22,7 @@ class CollectionsSection extends StatelessWidget {
     required this.onCollectionAdded,
     required this.onUpdateCollection,
     required this.onDeleteCollection,
+    required this.onDeleteScreenshot,
   });
 
   Future<void> _createCollection(BuildContext context) async {
@@ -65,6 +67,7 @@ class CollectionsSection extends StatelessWidget {
                             allScreenshots: screenshots,
                             onUpdateCollection: onUpdateCollection,
                             onDeleteCollection: onDeleteCollection,
+                            onDeleteScreenshot: onDeleteScreenshot,
                           ),
                     ),
                   );
@@ -98,9 +101,11 @@ class CollectionsSection extends StatelessWidget {
                                             collection: collections[index],
                                             allScreenshots: screenshots,
                                             onUpdateCollection:
-                                                onUpdateCollection, // Pass down
+                                                onUpdateCollection,
                                             onDeleteCollection:
-                                                onDeleteCollection, // Pass down
+                                                onDeleteCollection,
+                                            onDeleteScreenshot:
+                                                onDeleteScreenshot,
                                           ),
                                     ),
                                   );
@@ -119,14 +124,10 @@ class CollectionsSection extends StatelessWidget {
     );
   }
 
-  // Helper widget for the "Create your first collection" card
   Widget _buildCreateFirstCollectionCard(BuildContext context) {
     return Card(
-      color: Colors.brown[800], // Apply color to Card
-      shape: RoundedRectangleBorder(
-        // Apply shape to Card
-        borderRadius: BorderRadius.circular(16),
-      ),
+      color: Colors.brown[800],
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         child: Column(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shots_studio/screens/performance_monitor_screen.dart';
 
 class AppDrawer extends StatefulWidget {
   final String? currentApiKey;
@@ -327,11 +328,54 @@ class _AppDrawerState extends State<AppDrawer> {
                   final intValue = int.tryParse(value);
                   if (intValue != null) {
                     widget.onMaxParallelChanged(intValue);
-                    _saveMaxParallel(intValue); // Save on change
+                    _saveMaxParallel(intValue);
                   }
                 },
               ),
             ),
+            Divider(color: Colors.grey[700]),
+
+            // Performance Settings Section
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16.0,
+                vertical: 8.0,
+              ),
+              child: Text(
+                'Performance',
+                style: TextStyle(
+                  color: Colors.grey[400],
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            ListTile(
+              leading: Icon(Icons.speed, color: theme.colorScheme.primary),
+              title: Text(
+                'Performance Tips',
+                style: TextStyle(color: Colors.white),
+              ),
+              subtitle: Text(
+                'Lower limits improve performance with many screenshots',
+                style: TextStyle(color: Colors.white70, fontSize: 12),
+              ),
+              trailing: Icon(
+                Icons.info_outline,
+                color: Colors.grey[400],
+                size: 16,
+              ),
+              onTap: () {
+                Navigator.pop(context); // Close drawer
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const PerformanceMonitor(),
+                  ),
+                );
+              },
+            ),
+
             Divider(color: Colors.grey[700]),
             ListTile(
               leading: Icon(Icons.code, color: theme.colorScheme.primary),
@@ -396,10 +440,7 @@ class _AppDrawerState extends State<AppDrawer> {
                       child: Text(
                         'Contribute to the project ❤️',
                         style: TextStyle(
-                          color:
-                              theme
-                                  .colorScheme
-                                  .primary, // Use primary color for link
+                          color: theme.colorScheme.primary,
                           decoration: TextDecoration.underline,
                         ),
                       ),

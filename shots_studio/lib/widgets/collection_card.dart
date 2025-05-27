@@ -32,9 +32,9 @@ class CollectionCard extends StatelessWidget {
               width: 120,
               padding: EdgeInsets.fromLTRB(
                 textContainerLeftPadding,
-                kDefaultInnerPadding, // top
-                kDefaultInnerPadding, // right
-                kDefaultInnerPadding, // bottom
+                kDefaultInnerPadding,
+                kDefaultInnerPadding,
+                kDefaultInnerPadding,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,

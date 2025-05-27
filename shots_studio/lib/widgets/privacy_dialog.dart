@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PrivacyAcknowledgementDialog extends StatelessWidget {
@@ -16,9 +17,7 @@ class PrivacyAcknowledgementDialog extends StatelessWidget {
   Future<void> _launchURL(BuildContext context, String urlString) async {
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Could not launch \$urlString')));
+      SnackbarService().showError(context, 'Could not launch $urlString');
     }
   }
 
@@ -68,7 +67,8 @@ class PrivacyAcknowledgementDialog extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               "\nShots Studio itself does not permanently store your original images on its own servers after they have been processed by Google Gemini for the aforementioned AI features.\n\n"
-              "Please ensure you review and are comfortable with Google's terms and privacy practices before proceeding. If you do not agree, you may not be able to use the AI-powered features of this application.",
+              "Please ensure you review and are comfortable with Google's terms and privacy practices before proceeding. If you do not agree, you may not be able to use the AI-powered features of this application.\n"
+              "P.S. Don't worry, your cat memes are safe with us. 😺",
               style: TextStyle(color: Colors.white70),
             ),
           ],

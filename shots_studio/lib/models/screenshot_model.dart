@@ -1,5 +1,6 @@
 import 'dart:typed_data';
-import 'package:shots_studio/models/gemini_model.dart'; // Add this import
+import 'dart:convert';
+import 'package:shots_studio/models/gemini_model.dart';
 
 class Screenshot {
   String id;
@@ -31,6 +32,44 @@ class Screenshot {
   void addToCollections(List<String> collections) {
     collectionIds.addAll(
       collections.where((id) => !collectionIds.contains(id)),
+    );
+  }
+
+  // Method to convert a Screenshot instance to a Map (JSON)
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'path': path,
+      'bytes': bytes != null ? base64Encode(bytes!) : null,
+      'title': title,
+      'description': description,
+      'tags': tags,
+      'collectionIds': collectionIds,
+      'aiProcessed': aiProcessed,
+      'addedOn': addedOn.toIso8601String(),
+      'aiMetadata': aiMetadata?.toJson(),
+      'fileSize': fileSize,
+    };
+  }
+
+  // Factory constructor to create a Screenshot instance from a Map (JSON)
+  factory Screenshot.fromJson(Map<String, dynamic> json) {
+    return Screenshot(
+      id: json['id'] as String,
+      path: json['path'] as String?,
+      bytes:
+          json['bytes'] != null ? base64Decode(json['bytes'] as String) : null,
+      title: json['title'] as String?,
+      description: json['description'] as String?,
+      tags: List<String>.from(json['tags'] as List<dynamic>),
+      collectionIds: List<String>.from(json['collectionIds'] as List<dynamic>),
+      aiProcessed: json['aiProcessed'] as bool,
+      addedOn: DateTime.parse(json['addedOn'] as String),
+      aiMetadata:
+          json['aiMetadata'] != null
+              ? AiMetaData.fromJson(json['aiMetadata'] as Map<String, dynamic>)
+              : null,
+      fileSize: json['fileSize'] as int?,
     );
   }
 }

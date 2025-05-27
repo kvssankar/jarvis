@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/widgets/screenshot_card.dart';
@@ -65,21 +66,19 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
   }
 
   void _save() {
+    final String title = _titleController.text.trim();
+
+    if (title.isEmpty && !widget.isEditMode) {
+      SnackbarService().showError(
+        context,
+        'Please enter a title for your collection',
+      );
+      return;
+    }
+
     if (widget.isEditMode) {
       Navigator.of(context).pop(_selectedScreenshotIds.toList());
     } else {
-      final String title = _titleController.text.trim();
-      // Title empty check is now handled by button state, but good to keep for safety if called directly
-      if (title.isEmpty) {
-        // This part should ideally not be reached if button is properly disabled
-        print(
-          "Save called with empty title, button should have been disabled.",
-        );
-        return;
-      }
-
-      // Removed restriction for empty screenshots
-
       final Collection newCollection = Collection(
         id: _uuid.v4(),
         name: title,
@@ -87,7 +86,7 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
         screenshotIds: _selectedScreenshotIds.toList(),
         lastModified: DateTime.now(),
         screenshotCount: _selectedScreenshotIds.length,
-        isAutoAddEnabled: _isAutoAddEnabled, // Pass the state here
+        isAutoAddEnabled: _isAutoAddEnabled,
       );
       Navigator.of(context).pop(newCollection);
     }
@@ -95,10 +94,6 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Determine if save button should be enabled
-    final bool isSaveButtonEnabled =
-        widget.isEditMode || _titleController.text.trim().isNotEmpty;
-
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -114,12 +109,8 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.check),
-            // Disable button if not in edit mode and title is empty
-            onPressed: isSaveButtonEnabled ? _save : null,
-            color:
-                isSaveButtonEnabled
-                    ? Theme.of(context).colorScheme.primary
-                    : Colors.grey,
+            onPressed: _save,
+            color: Theme.of(context).colorScheme.primary,
           ),
         ],
       ),
@@ -162,22 +153,29 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Tooltip(
-                    message:
-                        'When enabled, AI will automatically add relevant screenshots to this collection',
-                    child: Row(
-                      children: [
-                        const Text(
-                          'Enable Auto-Add Screenshots (AI)',
-                          style: TextStyle(fontSize: 16, color: Colors.white),
-                        ),
-                        const SizedBox(width: 6),
-                        Icon(
-                          Icons.info_outline,
-                          size: 16,
-                          color: Colors.amber.shade200,
-                        ),
-                      ],
+                  Expanded(
+                    child: Tooltip(
+                      message:
+                          'When enabled, AI will automatically add relevant screenshots to this collection',
+                      child: Row(
+                        children: [
+                          const Flexible(
+                            child: Text(
+                              'Enable Auto-Add Screenshots (AI)',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Icon(
+                            Icons.info_outline,
+                            size: 16,
+                            color: Colors.amber.shade200,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   Switch(
@@ -191,7 +189,7 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                   ),
                 ],
               ),
-              if (_isAutoAddEnabled) // Conditional message based on switch state
+              if (_isAutoAddEnabled)
                 Container(
                   margin: const EdgeInsets.only(top: 8, bottom: 16),
                   padding: const EdgeInsets.all(12),
@@ -223,7 +221,7 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                     ],
                   ),
                 ),
-              const SizedBox(height: 8), // Adjusted spacing
+              const SizedBox(height: 8),
             ],
             Text(
               widget.isEditMode
@@ -256,6 +254,7 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                               mainAxisSpacing: 12,
                             ),
                         itemCount: widget.availableScreenshots.length,
+                        cacheExtent: 1200,
                         itemBuilder: (context, index) {
                           final screenshot = widget.availableScreenshots[index];
                           final isSelected = _selectedScreenshotIds.contains(

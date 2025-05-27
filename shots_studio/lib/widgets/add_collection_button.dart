@@ -31,17 +31,12 @@ class _AddCollectionButtonState extends State<AddCollectionButton> {
                 borderRadius: BorderRadius.circular(16),
                 color:
                     isHovered
-                        ? const Color.fromARGB(
-                          255,
-                          255,
-                          236,
-                          179,
-                        ) // Lighter shade when hovered
+                        ? const Color.fromARGB(255, 255, 236, 179)
                         : const Color.fromARGB(255, 252, 224, 140),
               ),
               child: Icon(
                 Icons.add,
-                size: isHovered ? 38 : 32, // Slightly larger when hovered
+                size: isHovered ? 38 : 32,
                 color: Colors.black.withOpacity(isHovered ? 0.8 : 1),
               ),
             ),

@@ -5,19 +5,24 @@ import 'package:intl/intl.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/screens/full_screen_image_viewer.dart';
+import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/widgets/tag_input_field.dart';
 import 'package:shots_studio/widgets/tag_chip.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:shots_studio/utils/reminder_utils.dart';
 
 class ScreenshotDetailScreen extends StatefulWidget {
   final Screenshot screenshot;
   final List<Collection> allCollections;
   final Function(Collection) onUpdateCollection;
+  final Function(String) onDeleteScreenshot;
 
   const ScreenshotDetailScreen({
     super.key,
     required this.screenshot,
     required this.allCollections,
     required this.onUpdateCollection,
+    required this.onDeleteScreenshot,
   });
 
   @override
@@ -27,6 +32,7 @@ class ScreenshotDetailScreen extends StatefulWidget {
 class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   late List<String> _tags;
   late TextEditingController _descriptionController;
+  DateTime? _selectedReminderTime;
 
   @override
   void initState() {
@@ -172,19 +178,17 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     List<String> updatedScreenshotIds = List.from(collection.screenshotIds);
     List<String> updatedCollectionIdsInScreenshot = List.from(
       widget.screenshot.collectionIds,
-    ); // New line
+    );
 
     if (isCurrentlyIn) {
       updatedScreenshotIds.remove(widget.screenshot.id);
-      updatedCollectionIdsInScreenshot.remove(collection.id); // New line
+      updatedCollectionIdsInScreenshot.remove(collection.id);
     } else {
       updatedScreenshotIds.add(widget.screenshot.id);
-      updatedCollectionIdsInScreenshot.add(collection.id); // New line
+      updatedCollectionIdsInScreenshot.add(collection.id);
     }
 
-    // Update the screenshot model
-    widget.screenshot.collectionIds =
-        updatedCollectionIdsInScreenshot; // New line
+    widget.screenshot.collectionIds = updatedCollectionIdsInScreenshot;
 
     Collection updatedCollection = collection.copyWith(
       screenshotIds: updatedScreenshotIds,
@@ -192,25 +196,61 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       lastModified: DateTime.now(),
     );
     widget.onUpdateCollection(updatedCollection);
-    setModalState(() {}); // Update the bottom sheet UI
-    setState(() {}); // Update the main page UI (e.g., "Part of X collections")
+    setModalState(() {});
+    setState(() {});
   }
 
   void _clearAndRequestAiReprocessing() {
     setState(() {
       widget.screenshot.aiProcessed = false;
-      // widget.screenshot.aiMetadata = null;
     });
-    _updateScreenshotDetails(); // If you have persistence logic here
-    // Optionally, show a snackbar or toast
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('AI details cleared. Ready for re-processing.'),
-      ),
+    _updateScreenshotDetails();
+    SnackbarService().showInfo(
+      context,
+      'AI details cleared. Ready for re-processing.',
     );
   }
 
-  // Helper function to format file size
+  Future<void> _confirmDeleteScreenshot() async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Colors.grey[900],
+          title: const Text(
+            'Delete Screenshot?',
+            style: TextStyle(color: Colors.white),
+          ),
+          content: const Text(
+            'Are you sure you want to delete this screenshot? This action cannot be undone.',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            TextButton(
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      // Call the delete callback
+      widget.onDeleteScreenshot(widget.screenshot.id);
+
+      // Navigate back to the previous screen
+      Navigator.of(context).pop();
+
+      // Show confirmation message
+      SnackbarService().showSuccess(context, 'Screenshot deleted successfully');
+    }
+  }
+
   String _formatFileSize(int bytes) {
     if (bytes <= 0) return "0 B";
     const suffixes = ["B", "KB", "MB", "GB", "TB"];
@@ -229,13 +269,10 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     if (widget.screenshot.path != null) {
       imageWidget = Image.file(
         File(widget.screenshot.path!),
-        fit: BoxFit.contain, // Changed from BoxFit.cover
+        fit: BoxFit.contain,
       );
     } else if (widget.screenshot.bytes != null) {
-      imageWidget = Image.memory(
-        widget.screenshot.bytes!,
-        fit: BoxFit.contain,
-      ); // Changed from BoxFit.cover
+      imageWidget = Image.memory(widget.screenshot.bytes!, fit: BoxFit.contain);
     } else {
       imageWidget = const Center(child: Icon(Icons.broken_image));
       imageName = 'Invalid Image';
@@ -256,7 +293,6 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             InkWell(
-              // Wrap the image container with InkWell
               onTap: () {
                 Navigator.push(
                   context,
@@ -311,7 +347,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                   ],
                   const SizedBox(height: 16),
                   TextField(
-                    controller: _descriptionController, // Use the controller
+                    controller: _descriptionController,
                     decoration: InputDecoration(
                       hintText: 'Add a description...',
                       filled: true,
@@ -431,60 +467,100 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                   Wrap(
                     spacing: 8,
                     runSpacing: 4,
-                    children:
-                        widget.allCollections
-                            .where(
-                              (collection) => collection.screenshotIds.contains(
-                                widget.screenshot.id,
-                              ),
-                            )
-                            .map(
-                              (collection) => Chip(
-                                label: Text(collection.name ?? 'Unnamed'),
-                                backgroundColor: Colors.blueGrey[700],
-                                labelStyle: const TextStyle(
-                                  color: Colors.white,
-                                ),
-                              ),
-                            )
-                            .toList(),
+                    children: [
+                      if (widget.screenshot.collectionIds.isEmpty)
+                        const Text(
+                          "This isn’t in any collection yet. Hit the + button to give it a cozy home 😺",
+                          style: TextStyle(color: Colors.white70),
+                        )
+                      else
+                        ...widget.screenshot.collectionIds.map((collectionId) {
+                          final collection = widget.allCollections.firstWhere(
+                            (c) => c.id == collectionId,
+                          );
+
+                          return Chip(
+                            label: Text(collection.name ?? 'Unnamed'),
+                            backgroundColor: Colors.blueGrey[700],
+                            labelStyle: const TextStyle(color: Colors.white),
+                          );
+                        }),
+                    ],
                   ),
                   const SizedBox(height: 8),
-                  InkWell(
-                    onTap: _showAddToCollectionDialog,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 16,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.grey[800],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.add_circle_outline,
-                            color: Theme.of(context).colorScheme.primary,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Add to / Manage Collections',
-                            style: TextStyle(
-                              color: Theme.of(context).colorScheme.primary,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
                   const SizedBox(height: 32),
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddToCollectionDialog,
+        backgroundColor: Theme.of(context).colorScheme.primary,
+        child: const Icon(Icons.add, color: Colors.black),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
+      bottomNavigationBar: BottomAppBar(
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8.0,
+        color: Colors.grey[900],
+        child: Row(
+          children: <Widget>[
+            IconButton(
+              icon: Icon(
+                Icons.share,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+              onPressed: () async {
+                final file = File(widget.screenshot.path!);
+                if (await file.exists()) {
+                  await SharePlus.instance.share(
+                    ShareParams(
+                      text: 'Check out this screenshot!',
+                      files: [XFile(file.path)],
+                    ),
+                  );
+                } else {
+                  SnackbarService().showError(
+                    context,
+                    'Screenshot file not found',
+                  );
+                }
+              },
+            ),
+
+            IconButton(
+              icon: Icon(
+                Icons.alarm,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+              onPressed: () async {
+                final newReminderTime =
+                    await ReminderUtils.selectReminderDateTime(
+                      context,
+                      _selectedReminderTime,
+                    );
+                if (newReminderTime != null) {
+                  setState(() {
+                    _selectedReminderTime = newReminderTime;
+                  });
+                  ReminderUtils.setReminder(
+                    context,
+                    widget.screenshot,
+                    _selectedReminderTime,
+                  );
+                }
+              },
+            ),
+            IconButton(
+              icon: Icon(
+                Icons.delete_outline,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+              onPressed: _confirmDeleteScreenshot,
+            ),
+            const SizedBox(width: 48),
           ],
         ),
       ),

@@ -8,12 +8,14 @@ class SearchScreen extends StatefulWidget {
   final List<Screenshot> allScreenshots;
   final List<Collection> allCollections;
   final Function(Collection) onUpdateCollection;
+  final Function(String) onDeleteScreenshot;
 
   const SearchScreen({
     super.key,
     required this.allScreenshots,
     required this.allCollections,
     required this.onUpdateCollection,
+    required this.onDeleteScreenshot,
   });
 
   @override
@@ -45,19 +47,34 @@ class _SearchScreenState extends State<SearchScreen> {
       if (_searchQuery.isEmpty) {
         _filteredScreenshots = widget.allScreenshots;
       } else {
+        // Match if it's a whole word OR starts with the word OR ends with the word
+        final RegExp wordPattern = RegExp(
+          r'(?:^|[\s.,!?])' +
+              RegExp.escape(_searchQuery) +
+              r'|' + // Whole word or word at start
+              r'\b' +
+              RegExp.escape(_searchQuery) +
+              r'\w*|' + // Word starting with query
+              r'\w*' +
+              RegExp.escape(_searchQuery) +
+              r'(?:[\s.,!?]|$)', // Word ending with query
+          caseSensitive: false,
+        );
+
         _filteredScreenshots =
             widget.allScreenshots.where((screenshot) {
               final titleMatch =
-                  screenshot.title?.toLowerCase().contains(_searchQuery) ??
-                  false;
+                  screenshot.title != null &&
+                  wordPattern.hasMatch(screenshot.title!.toLowerCase());
+
               final descriptionMatch =
-                  screenshot.description?.toLowerCase().contains(
-                    _searchQuery,
-                  ) ??
-                  false;
+                  screenshot.description != null &&
+                  wordPattern.hasMatch(screenshot.description!.toLowerCase());
+
               final tagsMatch = screenshot.tags.any(
-                (tag) => tag.toLowerCase().contains(_searchQuery),
+                (tag) => tag.toLowerCase() == _searchQuery,
               );
+
               return titleMatch || descriptionMatch || tagsMatch;
             }).toList();
       }
@@ -72,6 +89,7 @@ class _SearchScreenState extends State<SearchScreen> {
               screenshot: screenshot,
               allCollections: widget.allCollections,
               onUpdateCollection: widget.onUpdateCollection,
+              onDeleteScreenshot: widget.onDeleteScreenshot,
             ),
       ),
     );
@@ -91,7 +109,7 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           style: const TextStyle(color: Colors.white),
         ),
-        backgroundColor: Colors.black, // Match theme
+        backgroundColor: Colors.black,
       ),
       body:
           _filteredScreenshots.isEmpty && _searchQuery.isNotEmpty
@@ -107,9 +125,10 @@ class _SearchScreenState extends State<SearchScreen> {
                   crossAxisCount: 3,
                   childAspectRatio: 1,
                   crossAxisSpacing: 8,
-                  mainAxisSpacing: 8, // Adjusted for consistency
+                  mainAxisSpacing: 8,
                 ),
                 itemCount: _filteredScreenshots.length,
+                cacheExtent: 500,
                 itemBuilder: (context, index) {
                   final screenshot = _filteredScreenshots[index];
                   return ScreenshotCard(

@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# Relative path to pubspec.yaml from the root of the Git repository
+PUBSPEC_FILE="shots_studio/pubspec.yaml"
+
+# Ensure the script exits immediately if a command exits with a non-zero status
+set -e
+
+# Read the current version line from pubspec.yaml
+VERSION_LINE=$(grep '^version: ' "$PUBSPEC_FILE")
+# Extract the version string (e.g., 1.7.0+1)
+CURRENT_VERSION_FULL=$(echo "$VERSION_LINE" | sed 's/version: //')
+
+# Separate version core (e.g., 1.7.0) from build number (e.g., +1)
+VERSION_CORE=$(echo "$CURRENT_VERSION_FULL" | cut -d'+' -f1)
+BUILD_NUMBER_PART=$(echo "$CURRENT_VERSION_FULL" | cut -d'+' -f2)
+
+# Split version core into major, minor, patch
+IFS='.' read -r -a VERSION_PARTS <<< "$VERSION_CORE"
+MAJOR=${VERSION_PARTS[0]}
+MINOR=${VERSION_PARTS[1]}
+PATCH=${VERSION_PARTS[2]}
+
+# Increment patch version
+NEW_PATCH=$((PATCH + 1))
+
+# Construct new version core
+NEW_VERSION_CORE="$MAJOR.$MINOR.$NEW_PATCH"
+
+# Construct new full version string.
+# For this case, we want to keep the build number as +1 or reset it to +1.
+# If there was a build number part (e.g. something after '+'), we'll use +1.
+# If there was no build number part, we'll just use the core.
+# Given the target 1.7.1+1, we'll ensure it's +1.
+NEW_VERSION_FULL="$NEW_VERSION_CORE+1"
+
+echo "Auto-incrementing version: $CURRENT_VERSION_FULL -> $NEW_VERSION_FULL"
+
+# Update pubspec.yaml
+# Using a temporary file for sed to avoid issues with -i on different systems (especially macOS)
+TMP_FILE=$(mktemp)
+sed "s/^version: .*/version: $NEW_VERSION_FULL/" "$PUBSPEC_FILE" > "$TMP_FILE" && mv "$TMP_FILE" "$PUBSPEC_FILE"
+
+# Add pubspec.yaml to the commit so the version change is included
+git add "$PUBSPEC_FILE"
+
+exit 0
