@@ -47,19 +47,34 @@ class _SearchScreenState extends State<SearchScreen> {
       if (_searchQuery.isEmpty) {
         _filteredScreenshots = widget.allScreenshots;
       } else {
+        // Match if it's a whole word OR starts with the word OR ends with the word
+        final RegExp wordPattern = RegExp(
+          r'(?:^|[\s.,!?])' +
+              RegExp.escape(_searchQuery) +
+              r'|' + // Whole word or word at start
+              r'\b' +
+              RegExp.escape(_searchQuery) +
+              r'\w*|' + // Word starting with query
+              r'\w*' +
+              RegExp.escape(_searchQuery) +
+              r'(?:[\s.,!?]|$)', // Word ending with query
+          caseSensitive: false,
+        );
+
         _filteredScreenshots =
             widget.allScreenshots.where((screenshot) {
               final titleMatch =
-                  screenshot.title?.toLowerCase().contains(_searchQuery) ??
-                  false;
+                  screenshot.title != null &&
+                  wordPattern.hasMatch(screenshot.title!.toLowerCase());
+
               final descriptionMatch =
-                  screenshot.description?.toLowerCase().contains(
-                    _searchQuery,
-                  ) ??
-                  false;
+                  screenshot.description != null &&
+                  wordPattern.hasMatch(screenshot.description!.toLowerCase());
+
               final tagsMatch = screenshot.tags.any(
-                (tag) => tag.toLowerCase().contains(_searchQuery),
+                (tag) => tag.toLowerCase() == _searchQuery,
               );
+
               return titleMatch || descriptionMatch || tagsMatch;
             }).toList();
       }
