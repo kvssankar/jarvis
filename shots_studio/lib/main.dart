@@ -593,7 +593,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         // Update UI periodically to show progress
         if (i % batchSize == 0 && loadedScreenshots.isNotEmpty) {
           setState(() {
-            _screenshots.addAll(loadedScreenshots);
+            _screenshots.insertAll(0, loadedScreenshots);
           });
           loadedScreenshots.clear();
           // Small delay to prevent UI blocking
@@ -604,7 +604,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       // Add any remaining screenshots
       if (loadedScreenshots.isNotEmpty) {
         setState(() {
-          _screenshots.addAll(loadedScreenshots);
+          _screenshots.insertAll(0, loadedScreenshots);
         });
       }
 
