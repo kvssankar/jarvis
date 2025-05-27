@@ -256,6 +256,7 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                               mainAxisSpacing: 12,
                             ),
                         itemCount: widget.availableScreenshots.length,
+                        cacheExtent: 1200,
                         itemBuilder: (context, index) {
                           final screenshot = widget.availableScreenshots[index];
                           final isSelected = _selectedScreenshotIds.contains(

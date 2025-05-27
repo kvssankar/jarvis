@@ -113,6 +113,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   mainAxisSpacing: 8,
                 ),
                 itemCount: _filteredScreenshots.length,
+                cacheExtent: 500,
                 itemBuilder: (context, index) {
                   final screenshot = _filteredScreenshots[index];
                   return ScreenshotCard(

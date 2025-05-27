@@ -330,6 +330,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                               mainAxisSpacing: 8,
                             ),
                         itemCount: screenshotsInCollection.length,
+                        cacheExtent: 800,
                         itemBuilder: (context, index) {
                           final screenshot = screenshotsInCollection[index];
                           return Stack(

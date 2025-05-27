@@ -18,9 +18,14 @@ import 'package:shots_studio/widgets/privacy_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:shots_studio/services/notification_service.dart';
+import 'package:shots_studio/utils/memory_utils.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Optimize image cache for better memory management
+  MemoryUtils.optimizeImageCache();
+
   await NotificationService().init();
   runApp(const MyApp());
 }
@@ -58,7 +63,7 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final List<Screenshot> _screenshots = [];
   final List<Collection> _collections = [];
   final ImagePicker _picker = ImagePicker();
@@ -69,14 +74,19 @@ class _HomeScreenState extends State<HomeScreen> {
   int _aiTotalToProcess = 0;
   GeminiModel? _geminiModelInstance;
 
+  // Add loading progress tracking
+  int _loadingProgress = 0;
+  int _totalToLoad = 0;
+
   String? _apiKey;
   String _selectedModelName = 'gemini-2.0-flash';
-  int _screenshotLimit = 50;
+  int _screenshotLimit = 120;
   int _maxParallelAI = 4;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadDataFromPrefs();
     if (!kIsWeb) {
       _loadAndroidScreenshots();
@@ -85,6 +95,22 @@ class _HomeScreenState extends State<HomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback(
       (_) => showPrivacyDialogIfNeeded(context),
     );
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Clear image cache when app goes to background to free memory
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      MemoryUtils.clearImageCache();
+    }
   }
 
   Future<void> _saveDataToPrefs() async {
@@ -425,12 +451,16 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           _screenshots.addAll(newScreenshots);
           _isLoading = false;
+          _loadingProgress = 0;
+          _totalToLoad = 0;
         });
         await _saveDataToPrefs();
       }
     } catch (e) {
       setState(() {
         _isLoading = false;
+        _loadingProgress = 0;
+        _totalToLoad = 0;
       });
       print('Error picking images: $e');
     }
@@ -458,6 +488,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
       setState(() {
         _isLoading = true;
+        _loadingProgress = 0;
+        _totalToLoad = 0;
       });
 
       // Get common Android screenshot directories
@@ -486,44 +518,96 @@ class _HomeScreenState extends State<HomeScreen> {
       // Limit number of screenshots to prevent memory issues (adjust as needed)
       final limitedFiles = allFiles.take(_screenshotLimit).toList();
 
+      setState(() {
+        _totalToLoad = limitedFiles.length;
+      });
+
       List<Screenshot> loadedScreenshots = [];
-      for (var fileEntity in limitedFiles) {
-        final file = File(fileEntity.path);
 
-        // Skip if already exists by path
-        if (_screenshots.any((s) => s.path == file.path)) {
-          print('Skipping already loaded file via path check: ${file.path}');
-          continue;
+      // Process files in batches to avoid memory spikes
+      const int batchSize = 20;
+      for (int i = 0; i < limitedFiles.length; i += batchSize) {
+        final batch = limitedFiles.skip(i).take(batchSize);
+
+        for (var fileEntity in batch) {
+          final file = File(fileEntity.path);
+
+          // Skip if already exists by path
+          if (_screenshots.any((s) => s.path == file.path)) {
+            print('Skipping already loaded file via path check: ${file.path}');
+            setState(() {
+              _loadingProgress++;
+            });
+            continue;
+          }
+
+          // Check if the file path contains ".trashed" and skip if it does
+          if (file.path.contains('.trashed')) {
+            print('Skipping trashed file: ${file.path}');
+            setState(() {
+              _loadingProgress++;
+            });
+            continue;
+          }
+
+          final fileSize = await file.length();
+
+          // Skip very large files to prevent memory issues
+          if (fileSize > 50 * 1024 * 1024) {
+            // Skip files larger than 50MB
+            print('Skipping large file: ${file.path} (${fileSize} bytes)');
+            setState(() {
+              _loadingProgress++;
+            });
+            continue;
+          }
+
+          loadedScreenshots.add(
+            Screenshot(
+              id: _uuid.v4(), // Generate new UUID for each
+              path: file.path,
+              title: file.path.split('/').last,
+              tags: [],
+              aiProcessed: false,
+              addedOn: await file.lastModified(),
+              fileSize: fileSize,
+            ),
+          );
+
+          setState(() {
+            _loadingProgress++;
+          });
         }
 
-        // Check if the file path contains ".trashed" and skip if it does
-        if (file.path.contains('.trashed')) {
-          print('Skipping trashed file: ${file.path}');
-          continue;
+        // Update UI periodically to show progress
+        if (i % batchSize == 0 && loadedScreenshots.isNotEmpty) {
+          setState(() {
+            _screenshots.addAll(loadedScreenshots);
+          });
+          loadedScreenshots.clear();
+          // Small delay to prevent UI blocking
+          await Future.delayed(const Duration(milliseconds: 10));
         }
+      }
 
-        final fileSize = await file.length();
-        loadedScreenshots.add(
-          Screenshot(
-            id: _uuid.v4(), // Generate new UUID for each
-            path: file.path,
-            title: file.path.split('/').last,
-            tags: [],
-            aiProcessed: false,
-            addedOn: await file.lastModified(),
-            fileSize: fileSize,
-          ),
-        );
+      // Add any remaining screenshots
+      if (loadedScreenshots.isNotEmpty) {
+        setState(() {
+          _screenshots.addAll(loadedScreenshots);
+        });
       }
 
       setState(() {
-        _screenshots.addAll(loadedScreenshots);
         _isLoading = false;
+        _loadingProgress = 0;
+        _totalToLoad = 0;
       });
       await _saveDataToPrefs();
     } catch (e) {
       setState(() {
         _isLoading = false;
+        _loadingProgress = 0;
+        _totalToLoad = 0;
       });
       print('Error loading Android screenshots: $e');
     }
@@ -682,35 +766,49 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body:
           _isLoading
-              ? const Center(
+              ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(),
-                    SizedBox(height: 16),
+                    const CircularProgressIndicator(),
+                    const SizedBox(height: 16),
                     Text('Loading screenshots...'),
+                    if (_totalToLoad > 0) ...[
+                      const SizedBox(height: 8),
+                      Text('$_loadingProgress / $_totalToLoad'),
+                      const SizedBox(height: 8),
+                      LinearProgressIndicator(
+                        value:
+                            _totalToLoad > 0
+                                ? _loadingProgress / _totalToLoad
+                                : 0,
+                      ),
+                    ],
                   ],
                 ),
               )
-              : SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    CollectionsSection(
+              : CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: CollectionsSection(
                       collections: _collections,
                       screenshots: _screenshots,
                       onCollectionAdded: _addCollection,
                       onUpdateCollection: _updateCollection,
                       onDeleteCollection: _deleteCollection,
                       onDeleteScreenshot: _deleteScreenshot,
-                    ), // Use CollectionsSection widget
-                    ScreenshotsSection(
+                    ),
+                  ),
+                  SliverToBoxAdapter(
+                    child: ScreenshotsSection(
                       screenshots: _screenshots,
                       onScreenshotTap: _showScreenshotDetail,
-                    ), // Use ScreenshotsSection widget
-                    const SizedBox(height: 80), // Space for FAB
-                  ],
-                ),
+                    ),
+                  ),
+                  const SliverToBoxAdapter(
+                    child: SizedBox(height: 80), // Space for FAB
+                  ),
+                ],
               ),
     );
   }
@@ -732,6 +830,8 @@ class _HomeScreenState extends State<HomeScreen> {
         )
         .then((_) {
           _saveDataToPrefs();
+          // Clear image cache after returning from detail screen to free memory
+          MemoryUtils.clearImageCache();
         });
   }
 }
