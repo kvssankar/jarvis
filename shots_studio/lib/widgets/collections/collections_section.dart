@@ -4,8 +4,8 @@ import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/screens/create_collection_screen.dart';
 import 'package:shots_studio/screens/collection_detail_screen.dart';
 import 'package:shots_studio/screens/all_collections_screen.dart';
-import 'package:shots_studio/widgets/collection_card.dart';
-import 'package:shots_studio/widgets/add_collection_button.dart';
+import 'package:shots_studio/widgets/collections/collection_card.dart';
+import 'package:shots_studio/widgets/collections/add_collection_button.dart';
 
 class CollectionsSection extends StatelessWidget {
   final List<Collection> collections;

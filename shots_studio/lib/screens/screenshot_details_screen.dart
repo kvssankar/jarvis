@@ -6,9 +6,9 @@ import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/screens/full_screen_image_viewer.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
-import 'package:shots_studio/widgets/tag_input_field.dart';
-import 'package:shots_studio/widgets/tag_chip.dart';
-import 'package:shots_studio/widgets/screenshot_collection_dialog.dart';
+import 'package:shots_studio/widgets/screenshots/tags/tag_input_field.dart';
+import 'package:shots_studio/widgets/screenshots/tags/tag_chip.dart';
+import 'package:shots_studio/widgets/screenshots/screenshot_collection_dialog.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shots_studio/utils/reminder_utils.dart';
 

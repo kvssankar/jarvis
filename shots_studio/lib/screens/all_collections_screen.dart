@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/screens/collection_detail_screen.dart';
-import 'package:shots_studio/widgets/collection_list_item.dart';
+import 'package:shots_studio/widgets/collections/collection_list_item.dart';
 
 class AllCollectionsScreen extends StatelessWidget {
   final List<Collection> collections;

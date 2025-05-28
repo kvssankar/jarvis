@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
-import 'package:shots_studio/widgets/screenshot_card.dart';
+import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
 import 'package:uuid/uuid.dart';
 
 class CreateCollectionScreen extends StatefulWidget {

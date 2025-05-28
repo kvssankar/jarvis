@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
-import 'package:shots_studio/widgets/screenshot_card.dart';
+import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
 
 class ScreenshotsSection extends StatefulWidget {
   final List<Screenshot> screenshots;

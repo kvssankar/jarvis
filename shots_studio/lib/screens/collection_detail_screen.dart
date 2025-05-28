@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
-import 'package:shots_studio/widgets/screenshot_card.dart';
+import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
 import 'package:shots_studio/screens/create_collection_screen.dart';
 import 'package:shots_studio/screens/screenshot_details_screen.dart';
 
