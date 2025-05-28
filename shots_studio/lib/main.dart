@@ -20,6 +20,7 @@ import 'dart:convert';
 import 'package:shots_studio/services/notification_service.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/utils/memory_utils.dart';
+import 'package:dynamic_color/dynamic_color.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,23 +37,92 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Shots Studio',
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: Colors.black,
-        colorScheme: ColorScheme.dark(
-          primary: Colors.amber.shade200,
-          secondary: Colors.amber.shade100,
-          surface: Colors.black,
-        ),
-        cardTheme: CardThemeData(
-          color: Colors.grey[900],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+    return DynamicColorBuilder(
+      builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+        ColorScheme lightScheme;
+        ColorScheme darkScheme;
+
+        if (lightDynamic != null && darkDynamic != null) {
+          // Use dynamic colors if available (Material You)
+          lightScheme = lightDynamic.harmonized();
+          darkScheme = darkDynamic.harmonized();
+        } else {
+          // Fallback to custom color schemes if dynamic colors are not available
+          lightScheme = ColorScheme.fromSeed(
+            seedColor: Colors.amber,
+            brightness: Brightness.light,
+          );
+          darkScheme = ColorScheme.fromSeed(
+            seedColor: Colors.amber,
+            brightness: Brightness.dark,
+          );
+        }
+
+        return MaterialApp(
+          title: 'Shots Studio',
+          theme: ThemeData(
+            useMaterial3: true,
+            colorScheme: lightScheme,
+            cardTheme: CardThemeData(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            filledButtonTheme: FilledButtonThemeData(
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            floatingActionButtonTheme: FloatingActionButtonThemeData(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
           ),
-        ),
-      ),
-      home: const HomeScreen(),
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            colorScheme: darkScheme,
+            cardTheme: CardThemeData(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            filledButtonTheme: FilledButtonThemeData(
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            floatingActionButtonTheme: FloatingActionButtonThemeData(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+          themeMode:
+              ThemeMode.system, // Automatically switch between light and dark
+          home: const HomeScreen(),
+        );
+      },
     );
   }
 }
@@ -563,7 +633,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           // Skip very large files to prevent memory issues
           if (fileSize > 50 * 1024 * 1024) {
             // Skip files larger than 50MB
-            print('Skipping large file: ${file.path} (${fileSize} bytes)');
+            print('Skipping large file: ${file.path} ($fileSize bytes)');
             setState(() {
               _loadingProgress++;
             });
@@ -728,7 +798,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           // Show options for selecting screenshots
           showModalBottomSheet(
             context: context,
-            backgroundColor: Colors.grey[900],
+            backgroundColor: Theme.of(context).colorScheme.surface,
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
@@ -770,7 +840,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           );
         },
         backgroundColor: Theme.of(context).colorScheme.primary,
-        child: const Icon(Icons.add_a_photo, color: Colors.black),
+        child: Icon(
+          Icons.add_a_photo,
+          color: Theme.of(context).colorScheme.onPrimary,
+        ),
       ),
       body:
           _isLoading

@@ -159,7 +159,7 @@ class _AppDrawerState extends State<AppDrawer> {
           children: [
             DrawerHeader(
               decoration: BoxDecoration(
-                color: theme.cardTheme.color ?? Colors.grey[900],
+                color: theme.colorScheme.primaryContainer,
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -168,7 +168,7 @@ class _AppDrawerState extends State<AppDrawer> {
                   Text(
                     'Shots Studio',
                     style: TextStyle(
-                      color: Colors.white,
+                      color: theme.colorScheme.onPrimaryContainer,
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
@@ -176,7 +176,12 @@ class _AppDrawerState extends State<AppDrawer> {
                   const SizedBox(height: 8),
                   Text(
                     'Screenshot Manager',
-                    style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                    style: TextStyle(
+                      color: theme.colorScheme.onPrimaryContainer.withValues(
+                        alpha: 0.7,
+                      ),
+                      fontSize: 14,
+                    ),
                   ),
                 ],
               ),
@@ -186,7 +191,7 @@ class _AppDrawerState extends State<AppDrawer> {
               child: Text(
                 'Settings',
                 style: TextStyle(
-                  color: Colors.grey[400],
+                  color: theme.colorScheme.onSurfaceVariant,
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                 ),
@@ -197,12 +202,18 @@ class _AppDrawerState extends State<AppDrawer> {
                 Icons.auto_awesome_outlined,
                 color: theme.colorScheme.primary,
               ),
-              title: Text('AI Model', style: TextStyle(color: Colors.white)),
+              title: Text(
+                'AI Model',
+                style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+              ),
               trailing: DropdownButton<String>(
-                value: _selectedModelName, // Use state variable
-                dropdownColor: theme.cardTheme.color ?? Colors.grey[900],
-                icon: Icon(Icons.arrow_drop_down, color: Colors.white70),
-                style: TextStyle(color: Colors.white),
+                value: _selectedModelName,
+                dropdownColor: theme.colorScheme.secondaryContainer,
+                icon: Icon(
+                  Icons.arrow_drop_down,
+                  color: theme.colorScheme.onSecondaryContainer,
+                ),
+                style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
                 underline: SizedBox.shrink(),
                 onChanged: (String? newValue) {
                   if (newValue != null) {
@@ -222,7 +233,9 @@ class _AppDrawerState extends State<AppDrawer> {
                         value: value,
                         child: Text(
                           value,
-                          style: TextStyle(color: Colors.white),
+                          style: TextStyle(
+                            color: theme.colorScheme.onSecondaryContainer,
+                          ),
                         ),
                       );
                     }).toList(),
@@ -234,27 +247,28 @@ class _AppDrawerState extends State<AppDrawer> {
                 color: theme.colorScheme.primary,
               ),
               title: TextFormField(
-                controller: _apiKeyController, // Use controller
-                style: TextStyle(color: Colors.white),
+                controller: _apiKeyController,
+                style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
                 decoration: InputDecoration(
                   hintText: 'API Key',
-                  hintStyle: TextStyle(color: Colors.white70),
+                  hintStyle: TextStyle(
+                    color: theme.colorScheme.onSecondaryContainer,
+                  ),
                   enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey[700]!),
+                    borderSide: BorderSide(color: theme.colorScheme.outline),
                   ),
                   focusedBorder: UnderlineInputBorder(
                     borderSide: BorderSide(color: theme.colorScheme.primary),
                   ),
                 ),
-                obscureText: true, // Hide API key input
+                obscureText: true,
                 onChanged: (value) {
-                  // Modified
                   widget.onApiKeyChanged(value);
-                  _saveApiKey(value); // Save on change
+                  _saveApiKey(value);
                 },
               ),
             ),
-            Divider(color: Colors.grey[700]),
+            Divider(color: theme.colorScheme.outline),
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 16.0,
@@ -263,7 +277,7 @@ class _AppDrawerState extends State<AppDrawer> {
               child: Text(
                 'Advanced Settings',
                 style: TextStyle(
-                  color: Colors.grey[400],
+                  color: theme.colorScheme.onSurfaceVariant,
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                 ),
@@ -276,16 +290,18 @@ class _AppDrawerState extends State<AppDrawer> {
               ),
               title: Text(
                 'Screenshot Limit',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
               ),
               subtitle: TextFormField(
                 controller: _limitController,
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
                 decoration: InputDecoration(
                   hintText: 'e.g., 50',
-                  hintStyle: TextStyle(color: Colors.white70),
+                  hintStyle: TextStyle(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                   enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey[700]!),
+                    borderSide: BorderSide(color: theme.colorScheme.outline),
                   ),
                   focusedBorder: UnderlineInputBorder(
                     borderSide: BorderSide(color: theme.colorScheme.primary),
@@ -296,28 +312,27 @@ class _AppDrawerState extends State<AppDrawer> {
                   final intValue = int.tryParse(value);
                   if (intValue != null) {
                     widget.onLimitChanged(intValue);
-                    _saveLimit(intValue); // Save on change
+                    _saveLimit(intValue);
                   }
                 },
               ),
             ),
             ListTile(
-              leading: Icon(
-                Icons.sync_alt, // Example Icon
-                color: theme.colorScheme.primary,
-              ),
+              leading: Icon(Icons.sync_alt, color: theme.colorScheme.primary),
               title: Text(
                 'Max Parallel AI Processes',
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
               ),
               subtitle: TextFormField(
                 controller: _maxParallelController,
-                style: TextStyle(color: Colors.white),
+                style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
                 decoration: InputDecoration(
                   hintText: 'e.g., 4',
-                  hintStyle: TextStyle(color: Colors.white70),
+                  hintStyle: TextStyle(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                   enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey[700]!),
+                    borderSide: BorderSide(color: theme.colorScheme.outline),
                   ),
                   focusedBorder: UnderlineInputBorder(
                     borderSide: BorderSide(color: theme.colorScheme.primary),
@@ -333,9 +348,8 @@ class _AppDrawerState extends State<AppDrawer> {
                 },
               ),
             ),
-            Divider(color: Colors.grey[700]),
+            Divider(color: theme.colorScheme.outline),
 
-            // Performance Settings Section
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 16.0,
@@ -344,7 +358,7 @@ class _AppDrawerState extends State<AppDrawer> {
               child: Text(
                 'Performance',
                 style: TextStyle(
-                  color: Colors.grey[400],
+                  color: theme.colorScheme.onSecondaryContainer,
                   fontSize: 15,
                   fontWeight: FontWeight.bold,
                 ),
@@ -353,20 +367,23 @@ class _AppDrawerState extends State<AppDrawer> {
             ListTile(
               leading: Icon(Icons.speed, color: theme.colorScheme.primary),
               title: Text(
-                'Performance Tips',
-                style: TextStyle(color: Colors.white),
+                'Performance Menu',
+                style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
               ),
               subtitle: Text(
                 'Lower limits improve performance with many screenshots',
-                style: TextStyle(color: Colors.white70, fontSize: 12),
+                style: TextStyle(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontSize: 12,
+                ),
               ),
               trailing: Icon(
                 Icons.info_outline,
-                color: Colors.grey[400],
+                color: theme.colorScheme.onSecondaryContainer,
                 size: 16,
               ),
               onTap: () {
-                Navigator.pop(context); // Close drawer
+                Navigator.pop(context);
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -376,44 +393,50 @@ class _AppDrawerState extends State<AppDrawer> {
               },
             ),
 
-            Divider(color: Colors.grey[700]),
+            Divider(color: theme.colorScheme.outline),
             ListTile(
               leading: Icon(Icons.code, color: theme.colorScheme.primary),
-              title: Text('Source Code', style: TextStyle(color: Colors.white)),
+              title: Text(
+                'Source Code',
+                style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+              ),
               subtitle: Text(
                 'View on GitHub',
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
               ),
               onTap: () {
-                Navigator.pop(context); // Close drawer
+                Navigator.pop(context);
                 _launchURL('https://github.com/AnsahMohammad/shots-studio');
               },
             ),
             ListTile(
-              leading: Icon(
-                Icons.favorite,
-                color: Colors.redAccent,
-              ), // Keep red for favorite/contribute
-              title: Text('Contribute', style: TextStyle(color: Colors.white)),
+              leading: Icon(Icons.favorite, color: Colors.redAccent),
+              title: Text(
+                'Contribute',
+                style: TextStyle(color: Colors.greenAccent),
+              ),
               subtitle: Text(
                 'Support the project',
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(color: Colors.greenAccent),
               ),
               onTap: () {
                 Navigator.pop(context); // Close drawer
                 _launchURL('http://github.com/AnsahMohammad');
               },
             ),
-            Divider(color: Colors.grey[700]),
+            Divider(color: theme.colorScheme.outline),
             ListTile(
               leading: Icon(
                 Icons.info_outline,
                 color: theme.colorScheme.primary,
               ), // Use primary color
-              title: Text('About', style: TextStyle(color: Colors.white)),
+              title: Text(
+                'About',
+                style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+              ),
               subtitle: Text(
                 'Version $_appVersion',
-                style: TextStyle(color: Colors.white70),
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
               ),
               onTap: () {
                 Navigator.pop(context);
@@ -429,7 +452,9 @@ class _AppDrawerState extends State<AppDrawer> {
                   children: [
                     Text(
                       'A screenshot management app built with Flutter.',
-                      style: TextStyle(color: Colors.white70),
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     InkWell(

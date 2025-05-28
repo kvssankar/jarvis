@@ -97,6 +97,7 @@ class _SearchScreenState extends State<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: TextField(
@@ -105,18 +106,20 @@ class _SearchScreenState extends State<SearchScreen> {
           decoration: InputDecoration(
             hintText: 'Search by title, description, tags...',
             border: InputBorder.none,
-            hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+            hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
           ),
-          style: const TextStyle(color: Colors.white),
+          style: TextStyle(color: theme.colorScheme.onSurface),
         ),
-        backgroundColor: Colors.black,
       ),
       body:
           _filteredScreenshots.isEmpty && _searchQuery.isNotEmpty
               ? Center(
                 child: Text(
                   'No screenshots found for "$_searchQuery"',
-                  style: const TextStyle(fontSize: 16),
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               )
               : GridView.builder(

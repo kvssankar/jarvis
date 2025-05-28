@@ -86,8 +86,11 @@ class _ScreenshotsSectionState extends State<ScreenshotsSection> {
                 style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
               ),
               Text(
-                '${_visibleScreenshots.length} of ${widget.screenshots.length}',
-                style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+                'Total : ${widget.screenshots.length}',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ),
@@ -106,11 +109,10 @@ class _ScreenshotsSectionState extends State<ScreenshotsSection> {
             itemCount: _visibleScreenshots.length + (_isLoadingMore ? 3 : 0),
             itemBuilder: (context, index) {
               if (index >= _visibleScreenshots.length) {
-                // Show loading placeholders
                 return Card(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.grey[800],
+                      color: Theme.of(context).colorScheme.surface,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: const Center(

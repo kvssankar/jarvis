@@ -26,7 +26,7 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
   final TextEditingController _descriptionController = TextEditingController();
   late Set<String> _selectedScreenshotIds;
   final Uuid _uuid = const Uuid();
-  bool _isAutoAddEnabled = false; // Added state for Auto-Add
+  bool _isAutoAddEnabled = false;
 
   @override
   void initState() {
@@ -35,10 +35,10 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
         widget.initialSelectedIds != null
             ? Set.from(widget.initialSelectedIds!)
             : {};
-    // Add listener to update button state based on title content
+
     _titleController.addListener(() {
       if (!widget.isEditMode) {
-        setState(() {}); // Rebuild to enable/disable save button
+        setState(() {});
       }
     });
   }
@@ -95,9 +95,7 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.close),
@@ -119,29 +117,32 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Conditionally show Title and Description fields only if not in edit mode
             if (!widget.isEditMode) ...[
               TextField(
                 controller: _titleController,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
                 ),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: 'Collection Title',
-                  hintStyle: TextStyle(color: Colors.grey),
+                  hintStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                  ),
                   border: InputBorder.none,
                 ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _descriptionController,
-                style: const TextStyle(color: Colors.white70),
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Add a description...',
                   filled: true,
-                  fillColor: Colors.grey[900],
+                  fillColor: Theme.of(context).colorScheme.secondaryContainer,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide.none,
@@ -159,12 +160,15 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                           'When enabled, AI will automatically add relevant screenshots to this collection',
                       child: Row(
                         children: [
-                          const Flexible(
+                          Flexible(
                             child: Text(
-                              'Enable Auto-Add Screenshots (AI)',
+                              'Enable Auto-Add Screenshots',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.white,
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.onSecondaryContainer,
                               ),
                             ),
                           ),
@@ -172,7 +176,7 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                           Icon(
                             Icons.info_outline,
                             size: 16,
-                            color: Colors.amber.shade200,
+                            color: Theme.of(context).colorScheme.secondary,
                           ),
                         ],
                       ),
@@ -180,7 +184,7 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                   ),
                   Switch(
                     value: _isAutoAddEnabled,
-                    activeColor: Colors.amber.shade200,
+                    activeColor: Theme.of(context).colorScheme.primary,
                     onChanged: (bool value) {
                       setState(() {
                         _isAutoAddEnabled = value;
@@ -194,10 +198,14 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                   margin: const EdgeInsets.only(top: 8, bottom: 16),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.amber.withOpacity(0.1),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.tertiaryContainer.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: Colors.amber.withOpacity(0.3),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.tertiary.withValues(alpha: 0.3),
                       width: 0.5,
                     ),
                   ),
@@ -206,7 +214,7 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                       Icon(
                         Icons.auto_awesome,
                         size: 16,
-                        color: Colors.amber.shade200,
+                        color: Theme.of(context).colorScheme.tertiary,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -214,7 +222,10 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                           'Gemini AI will automatically categorize new screenshots into this collection based on content analysis.',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.amber.shade100,
+                            color:
+                                Theme.of(
+                                  context,
+                                ).colorScheme.onTertiaryContainer,
                           ),
                         ),
                       ),
@@ -227,10 +238,10 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
               widget.isEditMode
                   ? 'Select screenshots to include'
                   : 'Select Screenshots',
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSecondaryContainer,
               ),
             ),
             const SizedBox(height: 16),
@@ -239,10 +250,13 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
             Expanded(
               child:
                   widget.availableScreenshots.isEmpty
-                      ? const Center(
+                      ? Center(
                         child: Text(
                           'No screenshots available',
-                          style: TextStyle(color: Colors.grey),
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
                         ),
                       )
                       : GridView.builder(
@@ -278,7 +292,10 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                                 if (isSelected)
                                   Container(
                                     decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.5),
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .surface
+                                          .withValues(alpha: 0.7),
                                       border: Border.all(
                                         color:
                                             Theme.of(
