@@ -8,13 +8,11 @@ import 'package:uuid/uuid.dart';
 class CreateCollectionScreen extends StatefulWidget {
   final List<Screenshot> availableScreenshots;
   final Set<String>? initialSelectedIds;
-  final bool isEditMode;
 
   const CreateCollectionScreen({
     super.key,
     required this.availableScreenshots,
     this.initialSelectedIds,
-    this.isEditMode = false,
   });
 
   @override
@@ -37,18 +35,14 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
             : {};
 
     _titleController.addListener(() {
-      if (!widget.isEditMode) {
-        setState(() {});
-      }
+      setState(() {});
     });
   }
 
   @override
   void dispose() {
     _titleController.removeListener(() {
-      if (!widget.isEditMode) {
-        setState(() {});
-      }
+      setState(() {});
     });
     _titleController.dispose();
     _descriptionController.dispose();
@@ -68,7 +62,7 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
   void _save() {
     final String title = _titleController.text.trim();
 
-    if (title.isEmpty && !widget.isEditMode) {
+    if (title.isEmpty) {
       SnackbarService().showError(
         context,
         'Please enter a title for your collection',
@@ -76,20 +70,16 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
       return;
     }
 
-    if (widget.isEditMode) {
-      Navigator.of(context).pop(_selectedScreenshotIds.toList());
-    } else {
-      final Collection newCollection = Collection(
-        id: _uuid.v4(),
-        name: title,
-        description: _descriptionController.text.trim(),
-        screenshotIds: _selectedScreenshotIds.toList(),
-        lastModified: DateTime.now(),
-        screenshotCount: _selectedScreenshotIds.length,
-        isAutoAddEnabled: _isAutoAddEnabled,
-      );
-      Navigator.of(context).pop(newCollection);
-    }
+    final Collection newCollection = Collection(
+      id: _uuid.v4(),
+      name: title,
+      description: _descriptionController.text.trim(),
+      screenshotIds: _selectedScreenshotIds.toList(),
+      lastModified: DateTime.now(),
+      screenshotCount: _selectedScreenshotIds.length,
+      isAutoAddEnabled: _isAutoAddEnabled,
+    );
+    Navigator.of(context).pop(newCollection);
   }
 
   @override
@@ -101,9 +91,7 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(
-          widget.isEditMode ? 'Manage Screenshots' : 'Create Collection',
-        ),
+        title: const Text('Create Collection'),
         actions: [
           IconButton(
             icon: const Icon(Icons.check),
@@ -117,127 +105,121 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (!widget.isEditMode) ...[
-              TextField(
-                controller: _titleController,
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
+            TextField(
+              controller: _titleController,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.onSecondaryContainer,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Collection Title',
+                hintStyle: TextStyle(
                   color: Theme.of(context).colorScheme.onSecondaryContainer,
                 ),
-                decoration: InputDecoration(
-                  hintText: 'Collection Title',
-                  hintStyle: TextStyle(
-                    color: Theme.of(context).colorScheme.onSecondaryContainer,
-                  ),
-                  border: InputBorder.none,
+                border: InputBorder.none,
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: _descriptionController,
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSecondaryContainer,
+              ),
+              decoration: InputDecoration(
+                hintText: 'Add a description...',
+                filled: true,
+                fillColor: Theme.of(context).colorScheme.secondaryContainer,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
                 ),
               ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _descriptionController,
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSecondaryContainer,
-                ),
-                decoration: InputDecoration(
-                  hintText: 'Add a description...',
-                  filled: true,
-                  fillColor: Theme.of(context).colorScheme.secondaryContainer,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Tooltip(
-                      message:
-                          'When enabled, AI will automatically add relevant screenshots to this collection',
-                      child: Row(
-                        children: [
-                          Flexible(
-                            child: Text(
-                              'Enable Auto-Add Screenshots',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color:
-                                    Theme.of(
-                                      context,
-                                    ).colorScheme.onSecondaryContainer,
-                              ),
+              maxLines: 3,
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Tooltip(
+                    message:
+                        'When enabled, AI will automatically add relevant screenshots to this collection',
+                    child: Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            'Enable Auto-Add Screenshots',
+                            style: TextStyle(
+                              fontSize: 16,
+                              color:
+                                  Theme.of(
+                                    context,
+                                  ).colorScheme.onSecondaryContainer,
                             ),
                           ),
-                          const SizedBox(width: 6),
-                          Icon(
-                            Icons.info_outline,
-                            size: 16,
-                            color: Theme.of(context).colorScheme.secondary,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Switch(
-                    value: _isAutoAddEnabled,
-                    activeColor: Theme.of(context).colorScheme.primary,
-                    onChanged: (bool value) {
-                      setState(() {
-                        _isAutoAddEnabled = value;
-                      });
-                    },
-                  ),
-                ],
-              ),
-              if (_isAutoAddEnabled)
-                Container(
-                  margin: const EdgeInsets.only(top: 8, bottom: 16),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.tertiaryContainer.withValues(alpha: 0.3),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.tertiary.withValues(alpha: 0.3),
-                      width: 0.5,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.auto_awesome,
-                        size: 16,
-                        color: Theme.of(context).colorScheme.tertiary,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Gemini AI will automatically categorize new screenshots into this collection based on content analysis.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color:
-                                Theme.of(
-                                  context,
-                                ).colorScheme.onTertiaryContainer,
-                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 6),
+                        Icon(
+                          Icons.info_outline,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.secondary,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              const SizedBox(height: 8),
-            ],
+                Switch(
+                  value: _isAutoAddEnabled,
+                  activeColor: Theme.of(context).colorScheme.primary,
+                  onChanged: (bool value) {
+                    setState(() {
+                      _isAutoAddEnabled = value;
+                    });
+                  },
+                ),
+              ],
+            ),
+            if (_isAutoAddEnabled)
+              Container(
+                margin: const EdgeInsets.only(top: 8, bottom: 16),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.tertiaryContainer.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.tertiary.withValues(alpha: 0.3),
+                    width: 0.5,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome,
+                      size: 16,
+                      color: Theme.of(context).colorScheme.tertiary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Gemini AI will automatically categorize new screenshots into this collection based on content analysis.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color:
+                              Theme.of(context).colorScheme.onTertiaryContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 8),
             Text(
-              widget.isEditMode
-                  ? 'Select screenshots to include'
-                  : 'Select Screenshots',
+              'Select Screenshots',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,

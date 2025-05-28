@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
-import 'package:shots_studio/screens/create_collection_screen.dart';
+import 'package:shots_studio/screens/manage_collection_screenshots_screen.dart';
 import 'package:shots_studio/screens/screenshot_details_screen.dart';
 
 class CollectionDetailScreen extends StatefulWidget {
@@ -102,10 +102,9 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
     ).push<List<String>>(
       MaterialPageRoute(
         builder:
-            (context) => CreateCollectionScreen(
+            (context) => ManageCollectionScreenshotsScreen(
               availableScreenshots: widget.allScreenshots,
               initialSelectedIds: Set.from(_currentScreenshotIds),
-              isEditMode: true,
             ),
       ),
     );
