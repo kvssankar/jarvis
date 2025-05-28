@@ -155,8 +155,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _maxParallelAI = 4;
 
   // update screenshots
-  List<Screenshot> get _activeScreenshots =>
-      _screenshots.where((screenshot) => !screenshot.isDeleted).toList();
+  List<Screenshot> get _activeScreenshots {
+    final activeScreenshots =
+        _screenshots.where((screenshot) => !screenshot.isDeleted).toList();
+    // Sort by addedOn date in descending order (newest first)
+    activeScreenshots.sort((a, b) => b.addedOn.compareTo(a.addedOn));
+    return activeScreenshots;
+  }
 
   @override
   void initState() {
