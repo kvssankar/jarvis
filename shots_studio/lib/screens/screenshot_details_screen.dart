@@ -187,9 +187,9 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
 
     if (confirm == true) {
       // Call the delete callback
+      widget.screenshot.isDeleted = true;
       widget.onDeleteScreenshot(widget.screenshot.id);
 
-      // Navigate back to the previous screen
       Navigator.of(context).pop();
 
       // Show confirmation message

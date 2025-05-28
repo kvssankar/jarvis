@@ -154,6 +154,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _screenshotLimit = 120;
   int _maxParallelAI = 4;
 
+  // update screenshots
+  List<Screenshot> get _activeScreenshots =>
+      _screenshots.where((screenshot) => !screenshot.isDeleted).toList();
+
   @override
   void initState() {
     super.initState();
@@ -288,7 +292,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // Filter unprocessed screenshots
     final unprocessedScreenshots =
-        _screenshots.where((s) => !s.aiProcessed).toList();
+        _activeScreenshots.where((s) => !s.aiProcessed).toList();
 
     if (unprocessedScreenshots.isEmpty) {
       SnackbarService().showSnackbar(
@@ -411,7 +415,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // Count how many screenshots were auto-categorized
     int autoCategorizedCount = 0;
-    for (var screenshot in _screenshots.where((s) => s.aiProcessed)) {
+    for (var screenshot in _activeScreenshots.where((s) => s.aiProcessed)) {
       if (screenshot.collectionIds.isNotEmpty) {
         autoCategorizedCount++;
       }
@@ -744,8 +748,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   void _deleteScreenshot(String screenshotId) {
     setState(() {
-      // Remove screenshot from the main list
-      _screenshots.removeWhere((s) => s.id == screenshotId);
+      // Mark screenshot as deleted instead of removing it
+      final screenshotIndex = _screenshots.indexWhere(
+        (s) => s.id == screenshotId,
+      );
+      if (screenshotIndex != -1) {
+        _screenshots[screenshotIndex].isDeleted = true;
+      }
 
       // Remove screenshot from all collections
       for (var collection in _collections) {
@@ -763,7 +772,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       MaterialPageRoute(
         builder:
             (context) => SearchScreen(
-              allScreenshots: _screenshots,
+              allScreenshots: _activeScreenshots,
               allCollections: _collections,
               onUpdateCollection: _updateCollection,
               onDeleteScreenshot: _deleteScreenshot,
@@ -873,7 +882,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   SliverToBoxAdapter(
                     child: CollectionsSection(
                       collections: _collections,
-                      screenshots: _screenshots,
+                      screenshots: _activeScreenshots,
                       onCollectionAdded: _addCollection,
                       onUpdateCollection: _updateCollection,
                       onDeleteCollection: _deleteCollection,
@@ -882,7 +891,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ),
                   SliverToBoxAdapter(
                     child: ScreenshotsSection(
-                      screenshots: _screenshots,
+                      screenshots: _activeScreenshots,
                       onScreenshotTap: _showScreenshotDetail,
                     ),
                   ),
