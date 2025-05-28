@@ -8,11 +8,13 @@ import 'package:uuid/uuid.dart';
 class CreateCollectionScreen extends StatefulWidget {
   final List<Screenshot> availableScreenshots;
   final Set<String>? initialSelectedIds;
+  final Collection? existingCollection;
 
   const CreateCollectionScreen({
     super.key,
     required this.availableScreenshots,
     this.initialSelectedIds,
+    this.existingCollection,
   });
 
   @override
@@ -29,6 +31,15 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
   @override
   void initState() {
     super.initState();
+
+    // If editing an existing collection, populate the fields
+    if (widget.existingCollection != null) {
+      _titleController.text = widget.existingCollection!.name ?? '';
+      _descriptionController.text =
+          widget.existingCollection!.description ?? '';
+      _isAutoAddEnabled = widget.existingCollection!.isAutoAddEnabled;
+    }
+
     _selectedScreenshotIds =
         widget.initialSelectedIds != null
             ? Set.from(widget.initialSelectedIds!)
@@ -70,16 +81,30 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
       return;
     }
 
-    final Collection newCollection = Collection(
-      id: _uuid.v4(),
-      name: title,
-      description: _descriptionController.text.trim(),
-      screenshotIds: _selectedScreenshotIds.toList(),
-      lastModified: DateTime.now(),
-      screenshotCount: _selectedScreenshotIds.length,
-      isAutoAddEnabled: _isAutoAddEnabled,
-    );
-    Navigator.of(context).pop(newCollection);
+    final Collection collection;
+    if (widget.existingCollection != null) {
+      // Update existing collection
+      collection = widget.existingCollection!.copyWith(
+        name: title,
+        description: _descriptionController.text.trim(),
+        screenshotIds: _selectedScreenshotIds.toList(),
+        lastModified: DateTime.now(),
+        screenshotCount: _selectedScreenshotIds.length,
+        isAutoAddEnabled: _isAutoAddEnabled,
+      );
+    } else {
+      // Create new collection
+      collection = Collection(
+        id: _uuid.v4(),
+        name: title,
+        description: _descriptionController.text.trim(),
+        screenshotIds: _selectedScreenshotIds.toList(),
+        lastModified: DateTime.now(),
+        screenshotCount: _selectedScreenshotIds.length,
+        isAutoAddEnabled: _isAutoAddEnabled,
+      );
+    }
+    Navigator.of(context).pop(collection);
   }
 
   @override
@@ -91,7 +116,11 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
           icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: const Text('Create Collection'),
+        title: Text(
+          widget.existingCollection != null
+              ? 'Edit Collection'
+              : 'Create Collection',
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.check),

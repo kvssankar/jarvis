@@ -4,6 +4,7 @@ import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
 import 'package:shots_studio/screens/manage_collection_screenshots_screen.dart';
 import 'package:shots_studio/screens/screenshot_details_screen.dart';
+import 'package:shots_studio/screens/create_collection_screen.dart';
 
 class CollectionDetailScreen extends StatefulWidget {
   final Collection collection;
@@ -59,6 +60,39 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
       isAutoAddEnabled: _isAutoAddEnabled,
     );
     widget.onUpdateCollection(updatedCollection);
+  }
+
+  Future<void> _editCollection() async {
+    final currentCollection = widget.collection.copyWith(
+      name: _nameController.text.trim(),
+      description: _descriptionController.text.trim(),
+      screenshotIds: _currentScreenshotIds,
+      isAutoAddEnabled: _isAutoAddEnabled,
+    );
+
+    final Collection? updatedCollection = await Navigator.of(
+      context,
+    ).push<Collection>(
+      MaterialPageRoute(
+        builder:
+            (context) => CreateCollectionScreen(
+              availableScreenshots: widget.allScreenshots,
+              initialSelectedIds: Set.from(_currentScreenshotIds),
+              existingCollection: currentCollection,
+            ),
+      ),
+    );
+
+    if (updatedCollection != null) {
+      setState(() {
+        _nameController.text = updatedCollection.name ?? '';
+        _descriptionController.text = updatedCollection.description ?? '';
+        _currentScreenshotIds = List.from(updatedCollection.screenshotIds);
+        _isAutoAddEnabled = updatedCollection.isAutoAddEnabled;
+      });
+
+      widget.onUpdateCollection(updatedCollection);
+    }
   }
 
   Future<void> _confirmDelete() async {
@@ -169,6 +203,11 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
         elevation: 0,
         actions: [
           IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: _editCollection,
+            tooltip: 'Edit Collection',
+          ),
+          IconButton(
             icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
             onPressed: _confirmDelete,
           ),
@@ -179,25 +218,18 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextField(
-              controller: _nameController,
+            Text(
+              _nameController.text.isEmpty
+                  ? 'Collection Name'
+                  : _nameController.text,
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Theme.of(context).colorScheme.onSecondaryContainer,
               ),
-              decoration: InputDecoration(
-                hintText: 'Collection Name',
-                hintStyle: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                border: InputBorder.none,
-              ),
-              onChanged: (value) => setState(() {}),
-              onEditingComplete: _saveChanges,
             ),
-            const SizedBox(height: 8),
-            TextField(
+            const SizedBox(height: 16),
+            TextFormField(
               controller: _descriptionController,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onSecondaryContainer,
@@ -227,7 +259,8 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                 ),
               ),
               maxLines: 3,
-              onEditingComplete: _saveChanges,
+              readOnly: true,
+              enableInteractiveSelection: true,
             ),
             const SizedBox(height: 16),
             Row(
