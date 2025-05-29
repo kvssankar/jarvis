@@ -16,6 +16,8 @@ class Screenshot {
   AiMetaData? aiMetadata;
   int? fileSize;
   bool isDeleted;
+  DateTime? reminderTime;
+  String? reminderText;
 
   Screenshot({
     required this.id,
@@ -30,6 +32,8 @@ class Screenshot {
     this.aiMetadata,
     this.fileSize,
     this.isDeleted = false,
+    this.reminderTime,
+    this.reminderText,
   }) : collectionIds = collectionIds ?? [];
 
   void addToCollections(List<String> collections) {
@@ -53,6 +57,8 @@ class Screenshot {
       'aiMetadata': aiMetadata?.toJson(),
       'fileSize': fileSize,
       'isDeleted': isDeleted,
+      'reminderTime': reminderTime?.toIso8601String(),
+      'reminderText': reminderText,
     };
   }
 
@@ -75,6 +81,21 @@ class Screenshot {
               : null,
       fileSize: json['fileSize'] as int?,
       isDeleted: json['isDeleted'] as bool? ?? false,
+      reminderTime:
+          json['reminderTime'] != null
+              ? DateTime.parse(json['reminderTime'] as String)
+              : null,
+      reminderText: json['reminderText'] as String?,
     );
+  }
+
+  void removeReminder() {
+    reminderTime = null;
+    reminderText = null;
+  }
+
+  void setReminder(DateTime time, {String? text}) {
+    reminderTime = time;
+    reminderText = text;
   }
 }

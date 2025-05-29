@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:math';
 import 'package:intl/intl.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/screens/full_screen_image_viewer.dart';
@@ -35,7 +36,6 @@ class ScreenshotDetailScreen extends StatefulWidget {
 class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   late List<String> _tags;
   late TextEditingController _descriptionController;
-  DateTime? _selectedReminderTime;
 
   @override
   void initState() {
@@ -44,6 +44,21 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     _descriptionController = TextEditingController(
       text: widget.screenshot.description,
     );
+
+    // Check for expired reminders
+    _checkExpiredReminders();
+  }
+
+  void _checkExpiredReminders() {
+    if (widget.screenshot.reminderTime != null &&
+        widget.screenshot.reminderTime!.isBefore(DateTime.now())) {
+      // Clear expired reminder
+      setState(() {
+        widget.screenshot.removeReminder();
+      });
+      ReminderUtils.clearReminder(context, widget.screenshot);
+      _updateScreenshotDetails();
+    }
   }
 
   @override
@@ -291,6 +306,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                       ),
                     ),
                   ],
+
                   const SizedBox(height: 16),
                   TextField(
                     controller: _descriptionController,
@@ -457,8 +473,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                         }),
                     ],
                   ),
-                  const SizedBox(height: 8),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),
@@ -506,23 +521,55 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
             IconButton(
               icon: Icon(
                 Icons.alarm,
-                color: Theme.of(context).colorScheme.secondary,
+                color:
+                    widget.screenshot.reminderTime != null
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.secondary,
               ),
               onPressed: () async {
-                final newReminderTime =
-                    await ReminderUtils.selectReminderDateTime(
+                final result = await ReminderUtils.showReminderBottomSheet(
+                  context,
+                  widget.screenshot.reminderTime,
+                  widget.screenshot.reminderText,
+                );
+
+                if (result != null) {
+                  // If we received an 'expired' flag, it means the bottom sheet detected
+                  // an expired reminder and already closed itself
+                  if (result['expired'] == true) {
+                    setState(() {
+                      widget.screenshot.removeReminder();
+                    });
+                    ReminderUtils.clearReminder(context, widget.screenshot);
+                    SnackbarService().showInfo(
                       context,
-                      _selectedReminderTime,
+                      'Expired reminder has been cleared',
                     );
-                if (newReminderTime != null) {
-                  setState(() {
-                    _selectedReminderTime = newReminderTime;
-                  });
-                  ReminderUtils.setReminder(
-                    context,
-                    widget.screenshot,
-                    _selectedReminderTime,
-                  );
+                  } else {
+                    setState(() {
+                      if (result['reminderTime'] != null) {
+                        widget.screenshot.setReminder(
+                          result['reminderTime'],
+                          text: result['reminderText'],
+                        );
+                      } else {
+                        widget.screenshot.removeReminder();
+                      }
+                    });
+
+                    if (result['reminderTime'] != null) {
+                      ReminderUtils.setReminder(
+                        context,
+                        widget.screenshot,
+                        result['reminderTime'],
+                        customMessage: result['reminderText'],
+                      );
+                    } else {
+                      ReminderUtils.clearReminder(context, widget.screenshot);
+                    }
+                  }
+
+                  _updateScreenshotDetails();
                 }
               },
             ),
@@ -533,7 +580,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
               ),
               onPressed: _confirmDeleteScreenshot,
             ),
-            const SizedBox(width: 48),
+            const SizedBox(width: 16),
           ],
         ),
       ),

@@ -462,6 +462,10 @@ class GeminiModel {
           addedOn: screenshot.addedOn,
           collectionIds: screenshot.collectionIds,
           aiMetadata: aiMetaData,
+          fileSize: screenshot.fileSize,
+          isDeleted: screenshot.isDeleted,
+          reminderTime: screenshot.reminderTime,
+          reminderText: screenshot.reminderText,
         );
 
         // Store collection names for automatic adding later in the main component
@@ -525,6 +529,10 @@ class GeminiModel {
             addedOn: screenshot.addedOn,
             collectionIds: screenshot.collectionIds,
             aiMetadata: aiMetaData,
+            fileSize: screenshot.fileSize,
+            isDeleted: screenshot.isDeleted,
+            reminderTime: screenshot.reminderTime,
+            reminderText: screenshot.reminderText,
           );
 
           if (collectionNames.isNotEmpty) {
