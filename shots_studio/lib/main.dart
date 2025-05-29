@@ -917,6 +917,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     _updateCollection(updatedCollection);
                   },
                   onDeleteScreenshot: _deleteScreenshot,
+                  onScreenshotUpdated: () {
+                    setState(() {});
+                  },
                 ),
           ),
         )

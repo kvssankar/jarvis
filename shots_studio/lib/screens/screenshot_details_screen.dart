@@ -17,6 +17,7 @@ class ScreenshotDetailScreen extends StatefulWidget {
   final List<Collection> allCollections;
   final Function(Collection) onUpdateCollection;
   final Function(String) onDeleteScreenshot;
+  final VoidCallback? onScreenshotUpdated;
 
   const ScreenshotDetailScreen({
     super.key,
@@ -24,6 +25,7 @@ class ScreenshotDetailScreen extends StatefulWidget {
     required this.allCollections,
     required this.onUpdateCollection,
     required this.onDeleteScreenshot,
+    this.onScreenshotUpdated,
   });
 
   @override
@@ -51,12 +53,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   }
 
   void _updateScreenshotDetails() {
-    // This can be called when description or tags change and need to be persisted
-    // For now, tags are updated directly, description on change.
-    // If you had a separate save button, it would go here.
-    // For simplicity, we're updating the model directly.
-    // Potentially, you might want a callback to HomeScreen to update the main _screenshots list
-    // if Screenshot objects are not treated as mutable references throughout the app.
+    widget.onScreenshotUpdated?.call();
   }
 
   void _addTag(String tag) {

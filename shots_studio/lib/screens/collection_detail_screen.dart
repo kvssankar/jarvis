@@ -401,6 +401,9 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                                                 widget.onUpdateCollection,
                                             onDeleteScreenshot:
                                                 widget.onDeleteScreenshot,
+                                            onScreenshotUpdated: () {
+                                              setState(() {});
+                                            },
                                           ),
                                     ),
                                   );

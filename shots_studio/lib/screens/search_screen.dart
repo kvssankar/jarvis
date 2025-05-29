@@ -90,6 +90,9 @@ class _SearchScreenState extends State<SearchScreen> {
               allCollections: widget.allCollections,
               onUpdateCollection: widget.onUpdateCollection,
               onDeleteScreenshot: widget.onDeleteScreenshot,
+              onScreenshotUpdated: () {
+                setState(() {});
+              },
             ),
       ),
     );
