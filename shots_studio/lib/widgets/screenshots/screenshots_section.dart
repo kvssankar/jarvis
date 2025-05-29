@@ -5,11 +5,13 @@ import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
 class ScreenshotsSection extends StatefulWidget {
   final List<Screenshot> screenshots;
   final Function(Screenshot) onScreenshotTap;
+  final Widget Function(BuildContext, Screenshot)? screenshotDetailBuilder;
 
   const ScreenshotsSection({
     super.key,
     required this.screenshots,
     required this.onScreenshotTap,
+    this.screenshotDetailBuilder,
   });
 
   @override
@@ -127,7 +129,18 @@ class _ScreenshotsSectionState extends State<ScreenshotsSection> {
 
               return ScreenshotCard(
                 screenshot: _visibleScreenshots[index],
-                onTap: () => widget.onScreenshotTap(_visibleScreenshots[index]),
+                destinationBuilder:
+                    widget.screenshotDetailBuilder != null
+                        ? (context) => widget.screenshotDetailBuilder!(
+                          context,
+                          _visibleScreenshots[index],
+                        )
+                        : null,
+                onTap:
+                    widget.screenshotDetailBuilder == null
+                        ? () =>
+                            widget.onScreenshotTap(_visibleScreenshots[index])
+                        : null,
               );
             },
           ),

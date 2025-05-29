@@ -81,23 +81,6 @@ class _SearchScreenState extends State<SearchScreen> {
     });
   }
 
-  void _showScreenshotDetail(Screenshot screenshot) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder:
-            (context) => ScreenshotDetailScreen(
-              screenshot: screenshot,
-              allCollections: widget.allCollections,
-              onUpdateCollection: widget.onUpdateCollection,
-              onDeleteScreenshot: widget.onDeleteScreenshot,
-              onScreenshotUpdated: () {
-                setState(() {});
-              },
-            ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -139,7 +122,16 @@ class _SearchScreenState extends State<SearchScreen> {
                   final screenshot = _filteredScreenshots[index];
                   return ScreenshotCard(
                     screenshot: screenshot,
-                    onTap: () => _showScreenshotDetail(screenshot),
+                    destinationBuilder:
+                        (context) => ScreenshotDetailScreen(
+                          screenshot: screenshot,
+                          allCollections: widget.allCollections,
+                          onUpdateCollection: widget.onUpdateCollection,
+                          onDeleteScreenshot: widget.onDeleteScreenshot,
+                          onScreenshotUpdated: () {
+                            setState(() {});
+                          },
+                        ),
                   );
                 },
               ),

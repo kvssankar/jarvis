@@ -900,6 +900,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 body: ScreenshotsSection(
                   screenshots: _activeScreenshots,
                   onScreenshotTap: _showScreenshotDetail,
+                  screenshotDetailBuilder:
+                      (context, screenshot) => ScreenshotDetailScreen(
+                        screenshot: screenshot,
+                        allCollections: _collections,
+                        onUpdateCollection: (updatedCollection) {
+                          _updateCollection(updatedCollection);
+                        },
+                        onDeleteScreenshot: _deleteScreenshot,
+                        onScreenshotUpdated: () {
+                          setState(() {});
+                        },
+                      ),
                 ),
               ),
     );

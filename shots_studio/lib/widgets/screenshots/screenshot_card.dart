@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:shots_studio/models/screenshot_model.dart';
+import 'package:animations/animations.dart';
 
 class ScreenshotCard extends StatelessWidget {
   final Screenshot screenshot;
-  final VoidCallback onTap;
+  final VoidCallback? onTap;
+  final Widget Function(BuildContext)? destinationBuilder;
 
   const ScreenshotCard({
     super.key,
     required this.screenshot,
-    required this.onTap,
+    this.onTap,
+    this.destinationBuilder,
   });
 
   @override
@@ -63,39 +66,53 @@ class ScreenshotCard extends StatelessWidget {
       imageWidget = const Center(child: Icon(Icons.broken_image));
     }
 
-    return RepaintBoundary(
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Theme.of(context).colorScheme.secondaryContainer,
-            width: 3.0,
-          ),
-          borderRadius: BorderRadius.circular(12),
+    Widget cardContent = Container(
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Theme.of(context).colorScheme.secondaryContainer,
+          width: 3.0,
         ),
-        child: Card(
-          margin: EdgeInsets.zero,
-          elevation: 0,
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: onTap,
-            child: Stack(
-              children: [
-                Positioned.fill(child: imageWidget),
-                if (screenshot.aiProcessed)
-                  Positioned(
-                    bottom: 4,
-                    right: 4,
-                    child: Icon(
-                      Icons.check_circle,
-                      color: Theme.of(context).colorScheme.primary,
-                      size: 20,
-                    ),
-                  ),
-              ],
-            ),
-          ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Card(
+        margin: EdgeInsets.zero,
+        elevation: 0,
+        clipBehavior: Clip.antiAlias,
+        child: Stack(
+          children: [
+            Positioned.fill(child: imageWidget),
+            if (screenshot.aiProcessed)
+              Positioned(
+                bottom: 4,
+                right: 4,
+                child: Icon(
+                  Icons.check_circle,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
+              ),
+          ],
         ),
       ),
+    );
+
+    return RepaintBoundary(
+      child:
+          destinationBuilder != null
+              ? OpenContainer(
+                transitionType: ContainerTransitionType.fade,
+                transitionDuration: const Duration(milliseconds: 300),
+                closedElevation: 0,
+                openElevation: 0,
+                closedShape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                closedColor: Colors.transparent,
+                openColor: Theme.of(context).colorScheme.surface,
+                closedBuilder: (context, action) => cardContent,
+                openBuilder: (context, action) => destinationBuilder!(context),
+              )
+              : InkWell(onTap: onTap, child: cardContent),
     );
   }
 }

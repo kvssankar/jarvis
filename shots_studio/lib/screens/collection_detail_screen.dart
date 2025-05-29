@@ -390,24 +390,18 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                             children: [
                               ScreenshotCard(
                                 screenshot: screenshot,
-                                onTap: () {
-                                  Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder:
-                                          (context) => ScreenshotDetailScreen(
-                                            screenshot: screenshot,
-                                            allCollections: [widget.collection],
-                                            onUpdateCollection:
-                                                widget.onUpdateCollection,
-                                            onDeleteScreenshot:
-                                                widget.onDeleteScreenshot,
-                                            onScreenshotUpdated: () {
-                                              setState(() {});
-                                            },
-                                          ),
+                                destinationBuilder:
+                                    (context) => ScreenshotDetailScreen(
+                                      screenshot: screenshot,
+                                      allCollections: [widget.collection],
+                                      onUpdateCollection:
+                                          widget.onUpdateCollection,
+                                      onDeleteScreenshot:
+                                          widget.onDeleteScreenshot,
+                                      onScreenshotUpdated: () {
+                                        setState(() {});
+                                      },
                                     ),
-                                  );
-                                },
                               ),
                               Positioned(
                                 top: 0,
