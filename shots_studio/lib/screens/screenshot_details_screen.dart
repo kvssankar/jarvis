@@ -19,6 +19,8 @@ class ScreenshotDetailScreen extends StatefulWidget {
   final Function(Collection) onUpdateCollection;
   final Function(String) onDeleteScreenshot;
   final VoidCallback? onScreenshotUpdated;
+  final int? currentIndex;
+  final int? totalCount;
 
   const ScreenshotDetailScreen({
     super.key,
@@ -27,6 +29,8 @@ class ScreenshotDetailScreen extends StatefulWidget {
     required this.onUpdateCollection,
     required this.onDeleteScreenshot,
     this.onScreenshotUpdated,
+    this.currentIndex,
+    this.totalCount,
   });
 
   @override
@@ -238,9 +242,9 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
+        title: Text(
           'Screenshot Detail',
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+          style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
         ),
         elevation: 0,
       ),

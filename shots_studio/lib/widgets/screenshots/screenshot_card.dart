@@ -96,12 +96,13 @@ class ScreenshotCard extends StatelessWidget {
       ),
     );
 
+    // If a destination builder is provided, use OpenContainer for transitions
     return RepaintBoundary(
       child:
           destinationBuilder != null
               ? OpenContainer(
                 transitionType: ContainerTransitionType.fade,
-                transitionDuration: const Duration(milliseconds: 300),
+                transitionDuration: const Duration(milliseconds: 250),
                 closedElevation: 0,
                 openElevation: 0,
                 closedShape: RoundedRectangleBorder(

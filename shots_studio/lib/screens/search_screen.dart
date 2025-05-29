@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
-import 'package:shots_studio/screens/screenshot_details_screen.dart';
+import 'package:shots_studio/screens/screenshot_swipe_detail_screen.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
 
 class SearchScreen extends StatefulWidget {
@@ -122,16 +122,21 @@ class _SearchScreenState extends State<SearchScreen> {
                   final screenshot = _filteredScreenshots[index];
                   return ScreenshotCard(
                     screenshot: screenshot,
-                    destinationBuilder:
-                        (context) => ScreenshotDetailScreen(
-                          screenshot: screenshot,
-                          allCollections: widget.allCollections,
-                          onUpdateCollection: widget.onUpdateCollection,
-                          onDeleteScreenshot: widget.onDeleteScreenshot,
-                          onScreenshotUpdated: () {
-                            setState(() {});
-                          },
-                        ),
+                    destinationBuilder: (context) {
+                      final int initialIndex = _filteredScreenshots.indexWhere(
+                        (s) => s.id == screenshot.id,
+                      );
+                      return ScreenshotSwipeDetailScreen(
+                        screenshots: List.from(_filteredScreenshots),
+                        initialIndex: initialIndex >= 0 ? initialIndex : 0,
+                        allCollections: widget.allCollections,
+                        onUpdateCollection: widget.onUpdateCollection,
+                        onDeleteScreenshot: widget.onDeleteScreenshot,
+                        onScreenshotUpdated: () {
+                          setState(() {});
+                        },
+                      );
+                    },
                   );
                 },
               ),

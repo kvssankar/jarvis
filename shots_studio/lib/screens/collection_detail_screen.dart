@@ -3,7 +3,7 @@ import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
 import 'package:shots_studio/screens/manage_collection_screenshots_screen.dart';
-import 'package:shots_studio/screens/screenshot_details_screen.dart';
+import 'package:shots_studio/screens/screenshot_swipe_detail_screen.dart';
 import 'package:shots_studio/screens/create_collection_screen.dart';
 
 class CollectionDetailScreen extends StatefulWidget {
@@ -390,18 +390,27 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                             children: [
                               ScreenshotCard(
                                 screenshot: screenshot,
-                                destinationBuilder:
-                                    (context) => ScreenshotDetailScreen(
-                                      screenshot: screenshot,
-                                      allCollections: [widget.collection],
-                                      onUpdateCollection:
-                                          widget.onUpdateCollection,
-                                      onDeleteScreenshot:
-                                          widget.onDeleteScreenshot,
-                                      onScreenshotUpdated: () {
-                                        setState(() {});
-                                      },
+                                destinationBuilder: (context) {
+                                  final int initialIndex =
+                                      screenshotsInCollection.indexWhere(
+                                        (s) => s.id == screenshot.id,
+                                      );
+                                  return ScreenshotSwipeDetailScreen(
+                                    screenshots: List.from(
+                                      screenshotsInCollection,
                                     ),
+                                    initialIndex:
+                                        initialIndex >= 0 ? initialIndex : 0,
+                                    allCollections: [widget.collection],
+                                    onUpdateCollection:
+                                        widget.onUpdateCollection,
+                                    onDeleteScreenshot:
+                                        widget.onDeleteScreenshot,
+                                    onScreenshotUpdated: () {
+                                      setState(() {});
+                                    },
+                                  );
+                                },
                               ),
                               Positioned(
                                 top: 0,

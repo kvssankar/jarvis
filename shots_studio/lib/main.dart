@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:shots_studio/screens/screenshot_details_screen.dart';
+import 'package:shots_studio/screens/screenshot_swipe_detail_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shots_studio/widgets/home_app_bar.dart';
 import 'package:shots_studio/widgets/collections/collections_section.dart';
@@ -900,18 +901,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 body: ScreenshotsSection(
                   screenshots: _activeScreenshots,
                   onScreenshotTap: _showScreenshotDetail,
-                  screenshotDetailBuilder:
-                      (context, screenshot) => ScreenshotDetailScreen(
-                        screenshot: screenshot,
-                        allCollections: _collections,
-                        onUpdateCollection: (updatedCollection) {
-                          _updateCollection(updatedCollection);
-                        },
-                        onDeleteScreenshot: _deleteScreenshot,
-                        onScreenshotUpdated: () {
-                          setState(() {});
-                        },
-                      ),
+                  screenshotDetailBuilder: (context, screenshot) {
+                    final int initialIndex = _activeScreenshots.indexWhere(
+                      (s) => s.id == screenshot.id,
+                    );
+                    return ScreenshotSwipeDetailScreen(
+                      screenshots: List.from(_activeScreenshots),
+                      initialIndex: initialIndex >= 0 ? initialIndex : 0,
+                      allCollections: _collections,
+                      onUpdateCollection: (updatedCollection) {
+                        _updateCollection(updatedCollection);
+                      },
+                      onDeleteScreenshot: _deleteScreenshot,
+                      onScreenshotUpdated: () {
+                        setState(() {});
+                      },
+                    );
+                  },
                 ),
               ),
     );
