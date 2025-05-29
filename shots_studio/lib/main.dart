@@ -882,28 +882,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ],
                 ),
               )
-              : CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: CollectionsSection(
-                      collections: _collections,
-                      screenshots: _activeScreenshots,
-                      onCollectionAdded: _addCollection,
-                      onUpdateCollection: _updateCollection,
-                      onDeleteCollection: _deleteCollection,
-                      onDeleteScreenshot: _deleteScreenshot,
+              : NestedScrollView(
+                headerSliverBuilder: (context, innerBoxIsScrolled) {
+                  return [
+                    SliverToBoxAdapter(
+                      child: CollectionsSection(
+                        collections: _collections,
+                        screenshots: _activeScreenshots,
+                        onCollectionAdded: _addCollection,
+                        onUpdateCollection: _updateCollection,
+                        onDeleteCollection: _deleteCollection,
+                        onDeleteScreenshot: _deleteScreenshot,
+                      ),
                     ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: ScreenshotsSection(
-                      screenshots: _activeScreenshots,
-                      onScreenshotTap: _showScreenshotDetail,
-                    ),
-                  ),
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 80), // Space for FAB
-                  ),
-                ],
+                  ];
+                },
+                body: ScreenshotsSection(
+                  screenshots: _activeScreenshots,
+                  onScreenshotTap: _showScreenshotDetail,
+                ),
               ),
     );
   }
