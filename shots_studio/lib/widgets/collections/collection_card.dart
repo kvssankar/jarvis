@@ -305,25 +305,25 @@ class _CollectionCardState extends State<CollectionCard> {
         child: Image.file(
           File(screenshot.path!),
           fit: BoxFit.cover,
-          cacheWidth: 120, // Increased from 100 to 120
-          cacheHeight: 120, // Increased from 100 to 120
+          cacheWidth: 120,
+          cacheHeight: 120,
           errorBuilder: (context, error, stackTrace) => _buildErrorThumbnail(),
         ),
       );
     } else if (screenshot.bytes != null) {
       imageWidget = ClipRRect(
-        borderRadius: BorderRadius.circular(8), // Match container border radius
+        borderRadius: BorderRadius.circular(8),
         child: Image.memory(
           screenshot.bytes!,
           fit: BoxFit.cover,
-          cacheWidth: 120, // Increased from 100 to 120
-          cacheHeight: 120, // Increased from 100 to 120
+          cacheWidth: 120,
+          cacheHeight: 120,
           errorBuilder: (context, error, stackTrace) => _buildErrorThumbnail(),
         ),
       );
     } else {
       imageWidget = ClipRRect(
-        borderRadius: BorderRadius.circular(8), // Match container border radius
+        borderRadius: BorderRadius.circular(8),
         child: _buildErrorThumbnail(),
       );
     }

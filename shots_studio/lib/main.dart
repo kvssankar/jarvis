@@ -152,8 +152,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   String? _apiKey;
   String _selectedModelName = 'gemini-2.0-flash';
-  int _screenshotLimit = 120;
+  int _screenshotLimit = 1200;
   int _maxParallelAI = 4;
+  bool _isScreenshotLimitEnabled = false;
 
   // update screenshots
   List<Screenshot> get _activeScreenshots {
@@ -244,8 +245,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(() {
       _apiKey = prefs.getString('apiKey');
       _selectedModelName = prefs.getString('modelName') ?? 'gemini-2.0-flash';
-      _screenshotLimit = prefs.getInt('limit') ?? 120;
+      _screenshotLimit = prefs.getInt('limit') ?? 1200;
       _maxParallelAI = prefs.getInt('maxParallel') ?? 4;
+      _isScreenshotLimitEnabled = prefs.getBool('limit_enabled') ?? false;
     });
   }
 
@@ -264,6 +266,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _updateScreenshotLimit(int newLimit) {
     setState(() {
       _screenshotLimit = newLimit;
+    });
+  }
+
+  void _updateScreenshotLimitEnabled(bool enabled) {
+    setState(() {
+      _isScreenshotLimitEnabled = enabled;
+    });
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setBool('limit_enabled', enabled);
     });
   }
 
@@ -602,8 +613,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ).lastModifiedSync().compareTo(File(a.path).lastModifiedSync());
       });
 
-      // Limit number of screenshots to prevent memory issues (adjust as needed)
-      final limitedFiles = allFiles.take(_screenshotLimit).toList();
+      // Apply limit if enabled
+      final limitedFiles =
+          _isScreenshotLimitEnabled
+              ? allFiles.take(_screenshotLimit).toList()
+              : allFiles.toList();
 
       setState(() {
         _totalToLoad = limitedFiles.length;
@@ -806,6 +820,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onLimitChanged: _updateScreenshotLimit,
         currentMaxParallel: _maxParallelAI,
         onMaxParallelChanged: _updateMaxParallelAI,
+        currentLimitEnabled: _isScreenshotLimitEnabled,
+        onLimitEnabledChanged: _updateScreenshotLimitEnabled,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {

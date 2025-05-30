@@ -6,6 +6,8 @@ class AdvancedSettingsSection extends StatefulWidget {
   final Function(int) onLimitChanged;
   final int currentMaxParallel;
   final Function(int) onMaxParallelChanged;
+  final bool? currentLimitEnabled;
+  final Function(bool)? onLimitEnabledChanged;
 
   const AdvancedSettingsSection({
     super.key,
@@ -13,6 +15,8 @@ class AdvancedSettingsSection extends StatefulWidget {
     required this.onLimitChanged,
     required this.currentMaxParallel,
     required this.onMaxParallelChanged,
+    this.currentLimitEnabled,
+    this.onLimitEnabledChanged,
   });
 
   @override
@@ -23,9 +27,11 @@ class AdvancedSettingsSection extends StatefulWidget {
 class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
   late TextEditingController _limitController;
   late TextEditingController _maxParallelController;
+  bool _isLimitEnabled = true;
 
   static const String _limitPrefKey = 'limit';
   static const String _maxParallelPrefKey = 'maxParallel';
+  static const String _limitEnabledPrefKey = 'limit_enabled';
 
   @override
   void initState() {
@@ -36,6 +42,20 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
     _maxParallelController = TextEditingController(
       text: widget.currentMaxParallel.toString(),
     );
+
+    // Initialize with widget value if provided, otherwise load from prefs
+    if (widget.currentLimitEnabled != null) {
+      _isLimitEnabled = widget.currentLimitEnabled!;
+    } else {
+      _loadLimitEnabledPref();
+    }
+  }
+
+  Future<void> _loadLimitEnabledPref() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isLimitEnabled = prefs.getBool(_limitEnabledPrefKey) ?? true;
+    });
   }
 
   @override
@@ -69,6 +89,11 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
     await prefs.setInt(_maxParallelPrefKey, value);
   }
 
+  Future<void> _saveLimitEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_limitEnabledPrefKey, value);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -88,35 +113,62 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
             ),
           ),
         ),
-        ListTile(
-          leading: Icon(Icons.filter_list, color: theme.colorScheme.primary),
+        SwitchListTile(
+          secondary: Icon(Icons.filter_list, color: theme.colorScheme.primary),
           title: Text(
-            'Screenshot Limit',
+            'Enable Screenshot Limit',
             style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
           ),
-          subtitle: TextFormField(
-            controller: _limitController,
-            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
-            decoration: InputDecoration(
-              hintText: 'e.g., 50',
-              hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-              enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: theme.colorScheme.outline),
-              ),
-              focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: theme.colorScheme.primary),
-              ),
-            ),
-            keyboardType: TextInputType.number,
-            onChanged: (value) {
-              final intValue = int.tryParse(value);
-              if (intValue != null) {
-                widget.onLimitChanged(intValue);
-                _saveLimit(intValue);
-              }
-            },
+          subtitle: Text(
+            _isLimitEnabled
+                ? 'Limited to ${widget.currentLimit} screenshots'
+                : 'All screenshots will be loaded',
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
           ),
+          value: _isLimitEnabled,
+          activeColor: theme.colorScheme.primary,
+          onChanged: (bool value) {
+            setState(() {
+              _isLimitEnabled = value;
+            });
+            _saveLimitEnabled(value);
+            if (widget.onLimitEnabledChanged != null) {
+              widget.onLimitEnabledChanged!(value);
+            }
+          },
         ),
+        if (_isLimitEnabled)
+          ListTile(
+            leading: const SizedBox(
+              width: 24,
+            ), // Keep alignment with icon above
+            title: Text(
+              'Screenshot Limit Value',
+              style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+            ),
+            subtitle: TextFormField(
+              controller: _limitController,
+              style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+              decoration: InputDecoration(
+                hintText: 'e.g., 50',
+                hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: theme.colorScheme.outline),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: theme.colorScheme.primary),
+                ),
+              ),
+              keyboardType: TextInputType.number,
+              onChanged: (value) {
+                final intValue = int.tryParse(value);
+                if (intValue != null) {
+                  widget.onLimitChanged(intValue);
+                  _saveLimit(intValue);
+                }
+              },
+            ),
+          ),
         ListTile(
           leading: Icon(Icons.sync_alt, color: theme.colorScheme.primary),
           title: Text(
