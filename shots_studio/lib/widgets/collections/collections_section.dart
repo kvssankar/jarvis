@@ -97,6 +97,7 @@ class CollectionsSection extends StatelessWidget {
                       if (index < collections.length) {
                         return CollectionCard(
                           collection: collections[index],
+                          screenshots: screenshots,
                           onTap: () {
                             Navigator.of(context).push(
                               MaterialPageRoute(

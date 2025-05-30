@@ -6,6 +6,13 @@ class MemoryUtils {
     PaintingBinding.instance.imageCache.clear();
   }
 
+  /// Clear only large images, preserving small thumbnail cache
+  static void clearLargeImagesOnly() {
+    final imageCache = PaintingBinding.instance.imageCache;
+    // Force eviction of images larger than thumbnail size
+    imageCache.clearLiveImages();
+  }
+
   /// Clear image cache and force garbage collection
   static Future<void> clearImageCacheAndGC() async {
     PaintingBinding.instance.imageCache.clear();
@@ -21,8 +28,10 @@ class MemoryUtils {
   /// Set image cache limits for better memory management
   static void optimizeImageCache() {
     final imageCache = PaintingBinding.instance.imageCache;
-    imageCache.maximumSize = 50; // Reduced from default 1000
-    imageCache.maximumSizeBytes = 50 << 20; // 50MB instead of 100MB
+    imageCache.maximumSize =
+        100; // Increased to accommodate collection thumbnails
+    imageCache.maximumSizeBytes =
+        100 << 20; // 100MB for better thumbnail caching
   }
 
   /// Get current image cache statistics

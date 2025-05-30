@@ -188,9 +188,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    // Clear image cache when app goes to background to free memory
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
+    // Only clear cache when app is completely detached to preserve collection thumbnails
+    if (state == AppLifecycleState.detached) {
       MemoryUtils.clearImageCache();
     }
   }
@@ -943,8 +942,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         )
         .then((_) {
           _saveDataToPrefs();
-          // Clear image cache after returning from detail screen to free memory
-          MemoryUtils.clearImageCache();
+          // Don't clear cache to preserve collection thumbnails
         });
   }
 }
