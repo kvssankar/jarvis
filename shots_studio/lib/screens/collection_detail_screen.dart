@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
+import 'package:shots_studio/services/ai_service_manager.dart';
+import 'package:shots_studio/services/ai_service.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
 import 'package:shots_studio/screens/manage_collection_screenshots_screen.dart';
 import 'package:shots_studio/screens/screenshot_swipe_detail_screen.dart';
 import 'package:shots_studio/screens/create_collection_screen.dart';
+import 'package:shots_studio/services/snackbar_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CollectionDetailScreen extends StatefulWidget {
   final Collection collection;
@@ -32,6 +37,12 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
   late List<String> _currentScreenshotIds;
   late bool _isAutoAddEnabled;
 
+  // Auto-categorization state
+  bool _isAutoCategorizing = false;
+  int _autoCategorizeProcessedCount = 0;
+  int _autoCategorizeTotalCount = 0;
+  final AIServiceManager _aiServiceManager = AIServiceManager();
+
   @override
   void initState() {
     super.initState();
@@ -54,7 +65,9 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
     final updatedCollection = widget.collection.copyWith(
       name: _nameController.text.trim(),
       description: _descriptionController.text.trim(),
-      screenshotIds: _currentScreenshotIds,
+      screenshotIds: List<String>.from(
+        _currentScreenshotIds,
+      ), // Create new list
       lastModified: DateTime.now(),
       screenshotCount: _currentScreenshotIds.length,
       isAutoAddEnabled: _isAutoAddEnabled,
@@ -66,7 +79,9 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
     final currentCollection = widget.collection.copyWith(
       name: _nameController.text.trim(),
       description: _descriptionController.text.trim(),
-      screenshotIds: _currentScreenshotIds,
+      screenshotIds: List<String>.from(
+        _currentScreenshotIds,
+      ), // Create new list
       isAutoAddEnabled: _isAutoAddEnabled,
     );
 
@@ -184,6 +199,172 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
     });
   }
 
+  Future<void> _startAutoCategorization() async {
+    // Prevent multiple auto-categorization attempts
+    if (_isAutoCategorizing) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    final String? apiKey = prefs.getString('apiKey');
+    if (apiKey == null || apiKey.isEmpty) {
+      SnackbarService().showError(
+        context,
+        'API key not set. Please configure it in settings.',
+      );
+      return;
+    }
+
+    final String modelName =
+        prefs.getString('selected_model') ?? 'gemini-2.0-flash';
+    final int maxParallel = prefs.getInt('max_parallel_ai') ?? 4;
+
+    final List<Screenshot> candidateScreenshots =
+        widget.allScreenshots
+            .where((s) => !_currentScreenshotIds.contains(s.id) && !s.isDeleted)
+            .toList();
+
+    if (candidateScreenshots.isEmpty) {
+      SnackbarService().showInfo(
+        context,
+        'No screenshots available for categorization.',
+      );
+      return;
+    }
+
+    setState(() {
+      _isAutoCategorizing = true;
+      _autoCategorizeProcessedCount = 0;
+      _autoCategorizeTotalCount = candidateScreenshots.length;
+    });
+
+    final config = AIConfig(
+      apiKey: apiKey,
+      modelName: modelName,
+      maxParallel: maxParallel,
+      showMessage: ({
+        required String message,
+        Color? backgroundColor,
+        Duration? duration,
+      }) {
+        SnackbarService().showInfo(context, message);
+      },
+    );
+
+    try {
+      // Initialize the AI service manager
+      _aiServiceManager.initialize(config);
+
+      final result = await _aiServiceManager.categorizeScreenshots(
+        collection: widget.collection,
+        screenshots: candidateScreenshots,
+        onBatchProcessed: (batch, response) {
+          setState(() {
+            _autoCategorizeProcessedCount += batch.length;
+          });
+
+          // Process batch results immediately if successful
+          if (!response.containsKey('error') && response.containsKey('data')) {
+            try {
+              final String responseText = response['data'];
+              final RegExp jsonRegExp = RegExp(r'\{.*\}', dotAll: true);
+              final match = jsonRegExp.firstMatch(responseText);
+
+              if (match != null) {
+                final parsedResponse = jsonDecode(match.group(0)!);
+                if (parsedResponse['matching_screenshots'] is List) {
+                  final List<String> batchMatchingIds = List<String>.from(
+                    parsedResponse['matching_screenshots'],
+                  );
+
+                  if (batchMatchingIds.isNotEmpty) {
+                    setState(() {
+                      // Add matching screenshots from this batch immediately
+                      // Create a new list to ensure proper change detection
+                      _currentScreenshotIds = [
+                        ..._currentScreenshotIds,
+                        ...batchMatchingIds,
+                      ];
+                    });
+
+                    // Update screenshot models immediately
+                    for (String screenshotId in batchMatchingIds) {
+                      final screenshot = widget.allScreenshots.firstWhere(
+                        (s) => s.id == screenshotId,
+                      );
+                      if (!screenshot.collectionIds.contains(
+                        widget.collection.id,
+                      )) {
+                        screenshot.collectionIds.add(widget.collection.id);
+                      }
+                    }
+
+                    // Save changes immediately
+                    _saveChanges();
+
+                    // // Show immediate feedback
+                    // SnackbarService().showInfo(
+                    //   context,
+                    //   'Added ${batchMatchingIds.length} screenshots from batch',
+                    // );
+                  }
+                }
+              }
+            } catch (e) {
+              // Silently handle parsing errors for individual batches
+              print('Error parsing batch response: $e');
+            }
+          }
+        },
+      );
+
+      if (result.cancelled) {
+        SnackbarService().showInfo(context, 'Auto-categorization cancelled.');
+        return;
+      }
+
+      if (result.success) {
+        final List<String> totalMatchingScreenshotIds = result.data ?? [];
+
+        // Show final summary (batches have already been processed)
+        if (totalMatchingScreenshotIds.isNotEmpty) {
+          SnackbarService().showInfo(
+            context,
+            'Auto-categorization completed. Total: ${totalMatchingScreenshotIds.length} screenshots added.',
+          );
+        } else {
+          SnackbarService().showInfo(
+            context,
+            'Auto-categorization completed. No matching screenshots found.',
+          );
+        }
+      } else {
+        SnackbarService().showError(
+          context,
+          result.error ?? 'Auto-categorization failed',
+        );
+      }
+    } catch (e) {
+      SnackbarService().showError(
+        context,
+        'Error during auto-categorization: ${e.toString()}',
+      );
+    } finally {
+      setState(() {
+        _isAutoCategorizing = false;
+        _autoCategorizeProcessedCount = 0;
+        _autoCategorizeTotalCount = 0;
+      });
+    }
+  }
+
+  void _stopAutoCategorization() {
+    _aiServiceManager.cancelAllOperations();
+    setState(() {
+      _isAutoCategorizing = false;
+      _autoCategorizeProcessedCount = 0;
+      _autoCategorizeTotalCount = 0;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -202,6 +383,35 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         actions: [
+          if (_isAutoCategorizing)
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    value:
+                        _autoCategorizeTotalCount > 0
+                            ? _autoCategorizeProcessedCount /
+                                _autoCategorizeTotalCount
+                            : null,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.stop, size: 16),
+                  onPressed: _stopAutoCategorization,
+                  tooltip: 'Stop Auto-categorization',
+                ),
+              ],
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.auto_awesome),
+              onPressed: _startAutoCategorization,
+              tooltip: 'Auto-categorize Screenshots',
+            ),
           IconButton(
             icon: const Icon(Icons.edit_outlined),
             onPressed: _editCollection,

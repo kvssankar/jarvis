@@ -13,7 +13,8 @@ import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:shots_studio/models/gemini_model.dart';
+import 'package:shots_studio/services/ai_service_manager.dart';
+import 'package:shots_studio/services/ai_service.dart';
 import 'package:shots_studio/screens/search_screen.dart';
 import 'package:shots_studio/widgets/privacy_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -144,7 +145,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isProcessingAI = false;
   int _aiProcessedCount = 0;
   int _aiTotalToProcess = 0;
-  GeminiModel? _geminiModelInstance;
+  final AIServiceManager _aiServiceManager = AIServiceManager();
 
   // Add loading progress tracking
   int _loadingProgress = 0;
@@ -301,31 +302,29 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (_apiKey == null || _apiKey!.isEmpty) {
       SnackbarService().showError(
         context,
-        'API Key is not set. Please set it in the drawer.',
+        'Gemini API key not configured. Please check app settings.',
       );
       return;
     }
 
-    // Filter unprocessed screenshots
     final unprocessedScreenshots =
         _activeScreenshots.where((s) => !s.aiProcessed).toList();
 
     if (unprocessedScreenshots.isEmpty) {
-      SnackbarService().showSnackbar(
+      SnackbarService().showInfo(
         context,
-        message: 'All screenshots are already processed.',
+        'All screenshots have already been processed.',
       );
       return;
     }
 
     setState(() {
       _isProcessingAI = true;
-      _aiTotalToProcess = unprocessedScreenshots.length;
       _aiProcessedCount = 0;
+      _aiTotalToProcess = unprocessedScreenshots.length;
     });
 
-    // Create a list of collections with isAutoAddEnabled set to true
-    // Include both name and description for each collection
+    // Get list of collections that have auto-add enabled
     final autoAddCollections =
         _collections
             .where((collection) => collection.isAutoAddEnabled)
@@ -338,137 +337,154 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             )
             .toList();
 
-    _geminiModelInstance = GeminiModel(
-      modelName: _selectedModelName,
+    final config = AIConfig(
       apiKey: _apiKey!,
+      modelName: _selectedModelName,
       maxParallel: _maxParallelAI,
       showMessage: _showSnackbarWrapper,
     );
 
-    final results = await _geminiModelInstance!.processBatchedImages(
-      unprocessedScreenshots,
-      (batch, result) {
-        // This callback is called after each batch is processed
-        final updatedScreenshots = _geminiModelInstance!
-            .parseResponseAndUpdateScreenshots(batch, result);
+    try {
+      // Initialize the AI service manager
+      _aiServiceManager.initialize(config);
 
-        setState(() {
-          _aiProcessedCount += updatedScreenshots.length;
-          for (var updatedScreenshot in updatedScreenshots) {
-            final index = _screenshots.indexWhere(
-              (s) => s.id == updatedScreenshot.id,
-            );
-            if (index != -1) {
-              _screenshots[index] = updatedScreenshot;
+      final result = await _aiServiceManager.analyzeScreenshots(
+        screenshots: unprocessedScreenshots,
+        onBatchProcessed: (batch, response) {
+          // Update the processed screenshots
+          final updatedScreenshots = _aiServiceManager
+              .parseAndUpdateScreenshots(batch, response);
 
-              List<String> suggestedCollections = [];
-              try {
-                if (result['suggestedCollections'] != null) {
-                  Map<dynamic, dynamic>? suggestionsMap;
+          setState(() {
+            _aiProcessedCount += updatedScreenshots.length;
 
-                  // Handle different types of map that might come from the AI response
-                  if (result['suggestedCollections']
-                      is Map<String, List<String>>) {
-                    suggestionsMap =
-                        result['suggestedCollections']
-                            as Map<String, List<String>>;
-                  } else if (result['suggestedCollections']
-                      is Map<dynamic, dynamic>) {
-                    suggestionsMap =
-                        result['suggestedCollections'] as Map<dynamic, dynamic>;
-                  } else if (result['suggestedCollections'] is Map) {
-                    suggestionsMap = Map<dynamic, dynamic>.from(
-                      result['suggestedCollections'] as Map,
-                    );
-                  }
+            for (var updatedScreenshot in updatedScreenshots) {
+              final index = _screenshots.indexWhere(
+                (s) => s.id == updatedScreenshot.id,
+              );
+              if (index != -1) {
+                _screenshots[index] = updatedScreenshot;
 
-                  // Now safely extract the suggestions list
-                  if (suggestionsMap != null &&
-                      suggestionsMap.containsKey(updatedScreenshot.id)) {
-                    final suggestions = suggestionsMap[updatedScreenshot.id];
-                    if (suggestions is List) {
-                      suggestedCollections = List<String>.from(
-                        suggestions.whereType<String>(),
+                // Handle auto-categorization
+                List<String> suggestedCollections = [];
+                try {
+                  if (response['suggestedCollections'] != null) {
+                    Map<dynamic, dynamic>? suggestionsMap;
+
+                    // Handle different types of map that might come from the AI response
+                    if (response['suggestedCollections']
+                        is Map<String, List<String>>) {
+                      suggestionsMap =
+                          response['suggestedCollections']
+                              as Map<String, List<String>>;
+                    } else if (response['suggestedCollections']
+                        is Map<dynamic, dynamic>) {
+                      suggestionsMap =
+                          response['suggestedCollections']
+                              as Map<dynamic, dynamic>;
+                    } else if (response['suggestedCollections'] is Map) {
+                      suggestionsMap = Map<dynamic, dynamic>.from(
+                        response['suggestedCollections'] as Map,
                       );
-                    } else if (suggestions is String) {
-                      // Handle case where a single string might be returned instead of a list
-                      suggestedCollections = [suggestions];
+                    }
+
+                    // Now safely extract the suggestions list
+                    if (suggestionsMap != null &&
+                        suggestionsMap.containsKey(updatedScreenshot.id)) {
+                      final suggestions = suggestionsMap[updatedScreenshot.id];
+                      if (suggestions is List) {
+                        suggestedCollections = List<String>.from(
+                          suggestions.whereType<String>(),
+                        );
+                      } else if (suggestions is String) {
+                        // Handle case where a single string might be returned instead of a list
+                        suggestedCollections = [suggestions];
+                      }
                     }
                   }
+                } catch (e) {
+                  print('Error accessing suggested collections: $e');
                 }
-              } catch (e) {
-                print('Error accessing suggested collections: $e');
-              }
 
-              if (suggestedCollections.isNotEmpty) {
-                for (var collection in _collections) {
-                  if (collection.isAutoAddEnabled &&
-                      suggestedCollections.contains(collection.name) &&
-                      !updatedScreenshot.collectionIds.contains(
-                        collection.id,
-                      ) &&
-                      !collection.screenshotIds.contains(
+                if (suggestedCollections.isNotEmpty) {
+                  for (var collection in _collections) {
+                    if (collection.isAutoAddEnabled &&
+                        suggestedCollections.contains(collection.name) &&
+                        !updatedScreenshot.collectionIds.contains(
+                          collection.id,
+                        ) &&
+                        !collection.screenshotIds.contains(
+                          updatedScreenshot.id,
+                        )) {
+                      // Auto-add screenshot to this collection
+                      final updatedCollection = collection.addScreenshot(
                         updatedScreenshot.id,
-                      )) {
-                    // Auto-add screenshot to this collection
-                    final updatedCollection = collection.addScreenshot(
-                      updatedScreenshot.id,
-                    );
-                    _updateCollection(updatedCollection);
+                        isAutoCategorized: true,
+                      );
+                      _updateCollection(updatedCollection);
 
-                    updatedScreenshot.collectionIds.add(collection.id);
+                      updatedScreenshot.collectionIds.add(collection.id);
+                    }
                   }
                 }
               }
             }
+          });
+        },
+        autoAddCollections: autoAddCollections,
+      );
+
+      if (result.success) {
+        final processedCount = result.data?['processedCount'] ?? 0;
+
+        // Count how many screenshots were auto-categorized
+        int autoCategorizedCount = 0;
+        for (var screenshot in _activeScreenshots.where((s) => s.aiProcessed)) {
+          if (screenshot.collectionIds.isNotEmpty) {
+            autoCategorizedCount++;
           }
-        });
-      },
-      autoAddCollections: autoAddCollections,
-    );
+        }
 
-    final processedCount = results['processedCount'] as int;
-
-    // Count how many screenshots were auto-categorized
-    int autoCategorizedCount = 0;
-    for (var screenshot in _activeScreenshots.where((s) => s.aiProcessed)) {
-      if (screenshot.collectionIds.isNotEmpty) {
-        autoCategorizedCount++;
-      }
-    }
-
-    // Show completion message with auto-categorization info
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Completed processing $processedCount of ${unprocessedScreenshots.length} screenshots.',
-            ),
-            if (autoCategorizedCount > 0)
-              Text(
-                'Auto-categorized $autoCategorizedCount screenshots based on content.',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
+        // Show completion message with auto-categorization info
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Completed processing $processedCount of ${unprocessedScreenshots.length} screenshots.',
                 ),
-              ),
-          ],
-        ),
-        duration: const Duration(seconds: 4),
-      ),
-    );
+                if (autoCategorizedCount > 0)
+                  Text(
+                    'Auto-categorized $autoCategorizedCount screenshots based on content.',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+              ],
+            ),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      } else {
+        SnackbarService().showError(
+          context,
+          result.error ?? 'Failed to process screenshots',
+        );
+      }
+    } catch (e) {
+      SnackbarService().showError(context, 'Error processing screenshots: $e');
+    }
 
     // Save data after all processing is done
     await _saveDataToPrefs();
 
     setState(() {
       _isProcessingAI = false;
-      _geminiModelInstance = null;
-      // _aiProcessedCount = 0;
-      // _aiTotalToProcess = 0;
+      _aiProcessedCount = 0;
+      _aiTotalToProcess = 0;
     });
   }
 
@@ -477,14 +493,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       setState(() {
         _aiTotalToProcess = 0;
       });
-      _geminiModelInstance?.cancel();
-      _geminiModelInstance = null;
+
+      _aiServiceManager.cancelAllOperations();
 
       SnackbarService().showWarning(context, 'AI processing stopped by user.');
 
       await _saveDataToPrefs();
       setState(() {
-        _isProcessingAI = false; // Now set to false
+        _isProcessingAI = false;
       });
     }
   }

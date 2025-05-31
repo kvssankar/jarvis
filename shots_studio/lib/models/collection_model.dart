@@ -6,6 +6,9 @@ class Collection {
   final DateTime lastModified;
   final int screenshotCount;
   final bool isAutoAddEnabled;
+  final DateTime? lastAutoCategorized;
+  final int autoCategorizedCount;
+  final Map<String, dynamic> categorizationMetadata;
 
   Collection({
     required this.id,
@@ -15,15 +18,55 @@ class Collection {
     required this.lastModified,
     required this.screenshotCount,
     this.isAutoAddEnabled = false,
+    this.lastAutoCategorized,
+    this.autoCategorizedCount = 0,
+    this.categorizationMetadata = const {},
   });
 
-  Collection addScreenshot(String screenshotId) {
+  Collection addScreenshot(
+    String screenshotId, {
+    bool isAutoCategorized = false,
+  }) {
     if (!screenshotIds.contains(screenshotId)) {
       final newIds = List<String>.from(screenshotIds)..add(screenshotId);
       return copyWith(
         screenshotIds: newIds,
         screenshotCount: newIds.length,
         lastModified: DateTime.now(),
+        autoCategorizedCount:
+            isAutoCategorized ? autoCategorizedCount + 1 : autoCategorizedCount,
+        lastAutoCategorized:
+            isAutoCategorized ? DateTime.now() : lastAutoCategorized,
+      );
+    }
+    return this;
+  }
+
+  Collection addMultipleScreenshots(
+    List<String> screenshotIds, {
+    bool isAutoCategorized = false,
+  }) {
+    final newIds = List<String>.from(this.screenshotIds);
+    int addedCount = 0;
+
+    for (String id in screenshotIds) {
+      if (!newIds.contains(id)) {
+        newIds.add(id);
+        addedCount++;
+      }
+    }
+
+    if (addedCount > 0) {
+      return copyWith(
+        screenshotIds: newIds,
+        screenshotCount: newIds.length,
+        lastModified: DateTime.now(),
+        autoCategorizedCount:
+            isAutoCategorized
+                ? autoCategorizedCount + addedCount
+                : autoCategorizedCount,
+        lastAutoCategorized:
+            isAutoCategorized ? DateTime.now() : lastAutoCategorized,
       );
     }
     return this;
@@ -49,6 +92,9 @@ class Collection {
     DateTime? lastModified,
     int? screenshotCount,
     bool? isAutoAddEnabled,
+    DateTime? lastAutoCategorized,
+    int? autoCategorizedCount,
+    Map<String, dynamic>? categorizationMetadata,
   }) {
     return Collection(
       id: id ?? this.id,
@@ -58,6 +104,10 @@ class Collection {
       lastModified: lastModified ?? this.lastModified,
       screenshotCount: screenshotCount ?? this.screenshotCount,
       isAutoAddEnabled: isAutoAddEnabled ?? this.isAutoAddEnabled,
+      lastAutoCategorized: lastAutoCategorized ?? this.lastAutoCategorized,
+      autoCategorizedCount: autoCategorizedCount ?? this.autoCategorizedCount,
+      categorizationMetadata:
+          categorizationMetadata ?? this.categorizationMetadata,
     );
   }
 
@@ -71,6 +121,9 @@ class Collection {
       'lastModified': lastModified.toIso8601String(),
       'screenshotCount': screenshotCount,
       'isAutoAddEnabled': isAutoAddEnabled,
+      'lastAutoCategorized': lastAutoCategorized?.toIso8601String(),
+      'autoCategorizedCount': autoCategorizedCount,
+      'categorizationMetadata': categorizationMetadata,
     };
   }
 
@@ -83,9 +136,14 @@ class Collection {
       screenshotIds: List<String>.from(json['screenshotIds'] as List<dynamic>),
       lastModified: DateTime.parse(json['lastModified'] as String),
       screenshotCount: json['screenshotCount'] as int,
-      isAutoAddEnabled:
-          json['isAutoAddEnabled'] as bool? ??
-          false, // Default to false if null
+      isAutoAddEnabled: json['isAutoAddEnabled'] as bool? ?? false,
+      lastAutoCategorized:
+          json['lastAutoCategorized'] != null
+              ? DateTime.parse(json['lastAutoCategorized'] as String)
+              : null,
+      autoCategorizedCount: json['autoCategorizedCount'] as int? ?? 0,
+      categorizationMetadata:
+          json['categorizationMetadata'] as Map<String, dynamic>? ?? {},
     );
   }
 }

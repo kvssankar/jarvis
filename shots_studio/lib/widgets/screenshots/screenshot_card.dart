@@ -17,53 +17,68 @@ class ScreenshotCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const double borderRadius = 12.0;
+
     Widget imageWidget;
     if (screenshot.path != null) {
-      imageWidget = Image.file(
-        File(screenshot.path!),
-        fit: BoxFit.cover,
-        cacheWidth: 300,
-        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-          if (wasSynchronouslyLoaded) return child;
-          return AnimatedOpacity(
-            opacity: frame == null ? 0 : 1,
-            duration: const Duration(milliseconds: 200),
-            child: child,
-          );
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return Center(
-            child: Icon(
-              Icons.broken_image,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          );
-        },
+      imageWidget = ClipRRect(
+        borderRadius: BorderRadius.circular(
+          borderRadius - 3.0,
+        ), // Adjust for border width
+        child: Image.file(
+          File(screenshot.path!),
+          fit: BoxFit.cover,
+          cacheWidth: 300,
+          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+            if (wasSynchronouslyLoaded) return child;
+            return AnimatedOpacity(
+              opacity: frame == null ? 0 : 1,
+              duration: const Duration(milliseconds: 200),
+              child: child,
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return Center(
+              child: Icon(
+                Icons.broken_image,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            );
+          },
+        ),
       );
     } else if (screenshot.bytes != null) {
-      imageWidget = Image.memory(
-        screenshot.bytes!,
-        fit: BoxFit.cover,
-        cacheWidth: 300,
-        frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-          if (wasSynchronouslyLoaded) return child;
-          return AnimatedOpacity(
-            opacity: frame == null ? 0 : 1,
-            duration: const Duration(milliseconds: 200),
-            child: child,
-          );
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return Center(
-            child: Icon(
-              Icons.broken_image,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-            ),
-          );
-        },
+      imageWidget = ClipRRect(
+        borderRadius: BorderRadius.circular(
+          borderRadius - 3.0,
+        ), // Adjust for border width
+        child: Image.memory(
+          screenshot.bytes!,
+          fit: BoxFit.cover,
+          cacheWidth: 300,
+          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+            if (wasSynchronouslyLoaded) return child;
+            return AnimatedOpacity(
+              opacity: frame == null ? 0 : 1,
+              duration: const Duration(milliseconds: 200),
+              child: child,
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return Center(
+              child: Icon(
+                Icons.broken_image,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            );
+          },
+        ),
       );
     } else {
-      imageWidget = const Center(child: Icon(Icons.broken_image));
+      imageWidget = ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius - 3.0),
+        child: const Center(child: Icon(Icons.broken_image)),
+      );
     }
 
     Widget cardContent = Container(
@@ -72,27 +87,31 @@ class ScreenshotCard extends StatelessWidget {
           color: Theme.of(context).colorScheme.secondaryContainer,
           width: 3.0,
         ),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(borderRadius),
       ),
-      child: Card(
-        margin: EdgeInsets.zero,
-        elevation: 0,
-        clipBehavior: Clip.antiAlias,
-        child: Stack(
-          children: [
-            Positioned.fill(child: imageWidget),
-            if (screenshot.aiProcessed)
-              Positioned(
-                bottom: 4,
-                right: 4,
-                child: Icon(
-                  Icons.check_circle,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 20,
-                ),
+      child: Stack(
+        children: [
+          // Using a plain container instead of Card to avoid double clipping
+          Container(
+            margin: EdgeInsets.zero,
+            clipBehavior: Clip.antiAlias,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(borderRadius - 3.0),
+              color: Theme.of(context).cardColor,
+            ),
+            child: SizedBox.expand(child: imageWidget),
+          ),
+          if (screenshot.aiProcessed)
+            Positioned(
+              bottom: 4,
+              right: 4,
+              child: Icon(
+                Icons.check_circle,
+                color: Theme.of(context).colorScheme.primary,
+                size: 20,
               ),
-          ],
-        ),
+            ),
+        ],
       ),
     );
 

@@ -35,11 +35,21 @@ class _CollectionCardState extends State<CollectionCard> {
   @override
   void didUpdateWidget(CollectionCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (!_screenshotsEqual(oldWidget.screenshots, widget.screenshots) ||
+
+    // Check if collection changed (including lastModified which changes on updates)
+    final collectionChanged =
+        oldWidget.collection.id != widget.collection.id ||
+        oldWidget.collection.lastModified != widget.collection.lastModified ||
         !_screenshotIdsEqual(
           oldWidget.collection.screenshotIds,
           widget.collection.screenshotIds,
-        )) {
+        );
+
+    // Check if screenshots list changed
+    final screenshotsChanged =
+        !_screenshotsEqual(oldWidget.screenshots, widget.screenshots);
+
+    if (collectionChanged || screenshotsChanged) {
       _updateCachedScreenshots();
     }
   }
@@ -56,13 +66,18 @@ class _CollectionCardState extends State<CollectionCard> {
         widget.screenshots
             .where(
               (screenshot) =>
-                  widget.collection.screenshotIds.contains(screenshot.id),
+                  widget.collection.screenshotIds.contains(screenshot.id) &&
+                  !screenshot.isDeleted, // Exclude deleted screenshots
             )
             .take(3)
             .toList();
 
     _cachedScreenshots = collectionScreenshots;
-    _cachedThumbnails = null; // Reset cached thumbnails
+    _cachedThumbnails = null; // Reset cached thumbnails to force rebuild
+
+    // Also clear the local image cache for screenshots no longer in this collection
+    final currentIds = collectionScreenshots.map((s) => s.id).toSet();
+    _imageCache.removeWhere((id, widget) => !currentIds.contains(id));
   }
 
   bool _screenshotsEqual(List<Screenshot> list1, List<Screenshot> list2) {
@@ -74,7 +89,10 @@ class _CollectionCardState extends State<CollectionCard> {
   }
 
   bool _screenshotIdsEqual(List<String> list1, List<String> list2) {
+    if (identical(list1, list2)) return true; // Same reference
     if (list1.length != list2.length) return false;
+
+    // Check if all elements are equal in order
     for (int i = 0; i < list1.length; i++) {
       if (list1[i] != list2[i]) return false;
     }
@@ -305,8 +323,7 @@ class _CollectionCardState extends State<CollectionCard> {
         child: Image.file(
           File(screenshot.path!),
           fit: BoxFit.cover,
-          cacheWidth: 120,
-          cacheHeight: 120,
+          cacheWidth: 200,
           errorBuilder: (context, error, stackTrace) => _buildErrorThumbnail(),
         ),
       );
@@ -316,8 +333,7 @@ class _CollectionCardState extends State<CollectionCard> {
         child: Image.memory(
           screenshot.bytes!,
           fit: BoxFit.cover,
-          cacheWidth: 120,
-          cacheHeight: 120,
+          cacheWidth: 200,
           errorBuilder: (context, error, stackTrace) => _buildErrorThumbnail(),
         ),
       );

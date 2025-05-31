@@ -572,4 +572,196 @@ class GeminiModel {
       return screenshots;
     }
   }
+
+  String getCategorizePrompt(
+    String collectionName,
+    String? collectionDescription,
+  ) {
+    String basePrompt = """
+      You are a screenshot categorization system. You will be given a collection and a list of screenshots with their metadata.
+      
+      Collection to categorize into:
+      - Name: "$collectionName"
+      - Description: "${collectionDescription ?? 'No description provided'}"
+      
+      For each screenshot provided, analyze the title, description, and tags to determine if it fits into this collection.
+      Consider the semantic meaning and context, not just exact keyword matches.
+      
+      Respond strictly in this JSON format:
+      {
+        "matching_screenshots": ["screenshot_id_1", "screenshot_id_2", ...],
+        "reasoning": "Brief explanation of why these screenshots match the collection"
+      }
+      
+      Only include screenshot IDs that genuinely fit the collection's purpose and description.
+    """;
+
+    return basePrompt;
+  }
+
+  Future<Map<String, dynamic>> categorizeScreenshotsIntoCollection({
+    required String collectionId,
+    required String collectionName,
+    String? collectionDescription,
+    required List<Screenshot> screenshots,
+    required Function(List<Screenshot>, Map<String, dynamic>) onBatchProcessed,
+  }) async {
+    _isCancelled = false;
+
+    if (screenshots.isEmpty) {
+      return {'error': 'No screenshots to categorize', 'statusCode': 400};
+    }
+
+    print(
+      'Categorizing ${screenshots.length} screenshots into collection: $collectionName...',
+    );
+
+    Map<String, dynamic> finalResults = {
+      'batchResults': [],
+      'statusCode': 200,
+      'processedCount': 0,
+      'totalCount': screenshots.length,
+      'cancelled': false,
+      'matchingScreenshots': <String>[],
+    };
+
+    // Process in batches
+    for (int i = 0; i < screenshots.length; i += maxParallel) {
+      if (_isCancelled) {
+        print("GeminiModel: Categorization batch processing cancelled.");
+        finalResults['cancelled'] = true;
+        break;
+      }
+
+      int end = min(i + maxParallel, screenshots.length);
+      List<Screenshot> batch = screenshots.sublist(i, end);
+
+      print(
+        'Categorizing batch ${(i ~/ maxParallel) + 1}: ${i + 1} to $end of ${screenshots.length}',
+      );
+
+      try {
+        if (_isCancelled) {
+          print(
+            "GeminiModel: Categorization cancelled before processing batch ${(i ~/ maxParallel) + 1}.",
+          );
+          finalResults['cancelled'] = true;
+          onBatchProcessed(batch, {
+            'error': 'Categorization cancelled by user',
+            'cancelled': true,
+          });
+          break;
+        }
+
+        final requestData = await _prepareCategorizeRequestData(
+          collectionName,
+          collectionDescription,
+          batch,
+        );
+        final headers = {'Content-Type': 'application/json'};
+        final result = await _fetchAiResponse(requestData, headers);
+
+        if (_isCancelled && result['statusCode'] == 499) {
+          print(
+            "GeminiModel: Categorization detected cancellation for batch ${(i ~/ maxParallel) + 1}.",
+          );
+          finalResults['cancelled'] = true;
+          onBatchProcessed(batch, result);
+          break;
+        }
+
+        (finalResults['batchResults'] as List).add({
+          'batch': batch.map((s) => s.id).toList(),
+          'result': result,
+        });
+
+        if (result.containsKey('error')) {
+          finalResults['processedCount'] =
+              (finalResults['processedCount'] as int);
+          onBatchProcessed(batch, result);
+        } else {
+          finalResults['processedCount'] =
+              (finalResults['processedCount'] as int) + batch.length;
+
+          // Parse the categorization result
+          final matchingIds = _parseCategorizeResponse(result);
+          (finalResults['matchingScreenshots'] as List<String>).addAll(
+            matchingIds,
+          );
+
+          onBatchProcessed(batch, result);
+        }
+
+        await Future.delayed(const Duration(milliseconds: 500));
+      } catch (e) {
+        print(
+          'Error categorizing batch ${(i ~/ maxParallel) + 1}: ${e.toString()}',
+        );
+        (finalResults['batchResults'] as List).add({
+          'batch': batch.map((s) => s.id).toList(),
+          'error': e.toString(),
+        });
+        onBatchProcessed(batch, {'error': e.toString()});
+      }
+    }
+
+    if (_isCancelled) {
+      print("GeminiModel: Categorization completed with cancellation status.");
+    }
+    return finalResults;
+  }
+
+  Future<Map<String, dynamic>> _prepareCategorizeRequestData(
+    String collectionName,
+    String? collectionDescription,
+    List<Screenshot> screenshots,
+  ) async {
+    List<Map<String, dynamic>> contentParts = [
+      {'text': getCategorizePrompt(collectionName, collectionDescription)},
+    ];
+
+    contentParts.add({'text': '\nScreenshots to analyze:'});
+
+    for (var screenshot in screenshots) {
+      String screenshotInfo = '''
+      ID: ${screenshot.id}
+      Title: ${screenshot.title ?? 'No title'}
+      Description: ${screenshot.description ?? 'No description'}
+      Tags: ${screenshot.tags.join(', ')}
+      ''';
+      contentParts.add({'text': screenshotInfo});
+    }
+
+    final requestData = {
+      'contents': [
+        {'parts': contentParts},
+      ],
+    };
+    return requestData;
+  }
+
+  List<String> _parseCategorizeResponse(Map<String, dynamic> response) {
+    List<String> matchingScreenshots = [];
+
+    try {
+      if (response.containsKey('data')) {
+        final String responseText = response['data'];
+        final RegExp jsonRegExp = RegExp(r'\{.*\}', dotAll: true);
+        final match = jsonRegExp.firstMatch(responseText);
+
+        if (match != null) {
+          final parsedResponse = jsonDecode(match.group(0)!);
+          if (parsedResponse['matching_screenshots'] is List) {
+            matchingScreenshots = List<String>.from(
+              parsedResponse['matching_screenshots'],
+            );
+          }
+        }
+      }
+    } catch (e) {
+      print('Error parsing categorization response: $e');
+    }
+
+    return matchingScreenshots;
+  }
 }
