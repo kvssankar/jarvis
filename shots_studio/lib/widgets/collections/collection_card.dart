@@ -131,7 +131,7 @@ class _CollectionCardState extends State<CollectionCard> {
                   children: [
                     // Collection name - fixed height container
                     SizedBox(
-                      height: 40, // Fixed height for consistent layout
+                      height: 50, // Increased height to fit two rows of text
                       child: Text(
                         widget.collection.name ?? 'Untitled Collection',
                         style: TextStyle(
@@ -146,7 +146,7 @@ class _CollectionCardState extends State<CollectionCard> {
                         overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 4),
                     // Thumbnails section - always at same position
                     if (_cachedScreenshots.isNotEmpty)
                       SizedBox(

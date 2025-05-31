@@ -1,7 +1,6 @@
 import 'dart:typed_data';
 import 'dart:convert';
 import 'package:shots_studio/models/gemini_model.dart';
-import 'package:shots_studio/models/collection_model.dart';
 
 class Screenshot {
   String id;

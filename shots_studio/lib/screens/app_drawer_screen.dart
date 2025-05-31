@@ -134,6 +134,7 @@ class _AppDrawerState extends State<AppDrawer> {
               onTap: _handleAboutTap,
               onLongPress: _handleAboutLongPress,
             ),
+            const PrivacySection(),
           ],
         ),
       ),

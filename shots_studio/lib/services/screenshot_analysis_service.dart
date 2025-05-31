@@ -14,7 +14,22 @@ class ScreenshotAnalysisService extends AIService {
   static const String _baseUrl =
       'https://generativelanguage.googleapis.com/v1beta/models';
 
+  // Track network errors to prevent multiple notifications
+  int _networkErrorCount = 0;
+  bool _processingTerminated = false;
+
+  // Track when the last successful request was made
+  DateTime? _lastSuccessfulRequestTime;
+
   ScreenshotAnalysisService(super.config);
+
+  @override
+  void reset() {
+    super.reset();
+    _networkErrorCount = 0;
+    _processingTerminated = false;
+    _lastSuccessfulRequestTime = DateTime.now();
+  }
 
   String _getAnalysisPrompt({List<Map<String, String?>>? autoAddCollections}) {
     String basePrompt = """
@@ -121,7 +136,7 @@ class ScreenshotAnalysisService extends AIService {
   Future<Map<String, dynamic>> _makeAPIRequest(
     Map<String, dynamic> requestData,
   ) async {
-    if (isCancelled) {
+    if (isCancelled || _processingTerminated) {
       return {'error': 'Request cancelled by user', 'statusCode': 499};
     }
 
@@ -133,6 +148,22 @@ class ScreenshotAnalysisService extends AIService {
     final headers = {'Content-Type': 'application/json'};
 
     try {
+      // Check if it has been a long time since the last successful request
+      if (_lastSuccessfulRequestTime != null) {
+        final timeSinceLastRequest = DateTime.now().difference(
+          _lastSuccessfulRequestTime!,
+        );
+        // If more than 2 minutes have passed since the last successful request, assume app was reopened
+        if (timeSinceLastRequest.inMinutes > 2) {
+          _processingTerminated = true;
+          return {
+            'error':
+                'App was likely closed and reopened. AI processing terminated.',
+            'statusCode': 499,
+          };
+        }
+      }
+
       final response = await http
           .post(url, headers: headers, body: requestBody)
           .timeout(Duration(seconds: config.timeoutSeconds));
@@ -140,6 +171,9 @@ class ScreenshotAnalysisService extends AIService {
       final responseJson = jsonDecode(response.body);
 
       if (response.statusCode == 200) {
+        // Update last successful request time
+        _lastSuccessfulRequestTime = DateTime.now();
+
         final candidates = responseJson['candidates'] as List?;
         if (candidates != null && candidates.isNotEmpty) {
           final content = candidates[0]['content'] as Map?;
@@ -454,18 +488,36 @@ class ScreenshotAnalysisService extends AIService {
       );
     } else if (response['error'] != null &&
         response['error'].toString().contains('Network error')) {
-      config.showMessage?.call(
-        message:
-            'Network issue detected. Please check your internet connection and try again.',
-        backgroundColor: Colors.orange,
-        duration: const Duration(seconds: 3),
-      );
+      // Increment network error count
+      _networkErrorCount++;
+
+      // If we get repeated network errors or the app was closed and reopened,
+      // we should cancel all AI processing
+      if (_networkErrorCount >= 2 || _processingTerminated) {
+        // Cancel all AI processing
+        cancel();
+        _processingTerminated = true;
+
+        config.showMessage?.call(
+          message:
+              'Network issues detected. AI processing has been terminated.',
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 2),
+        );
+      } else {
+        config.showMessage?.call(
+          message:
+              'Network issue detected. Please check your internet connection and try again.',
+          backgroundColor: Colors.orange,
+          duration: const Duration(seconds: 2),
+        );
+      }
     } else {
       config.showMessage?.call(
         message:
             'No data found in response or error occurred: ${response['error']}',
         backgroundColor: Colors.orange,
-        duration: const Duration(seconds: 2),
+        duration: const Duration(seconds: 1),
       );
     }
   }

@@ -145,24 +145,24 @@ class _ScreenshotsSectionState extends State<ScreenshotsSection> {
             },
           ),
         ),
-        if (widget.screenshots.length > _visibleScreenshots.length)
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Center(
-              child: TextButton.icon(
-                onPressed: _isLoadingMore ? null : _loadMoreItems,
-                icon:
-                    _isLoadingMore
-                        ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                        : const Icon(Icons.expand_more),
-                label: Text(_isLoadingMore ? 'Loading...' : 'Load More'),
-              ),
-            ),
-          ),
+        // if (widget.screenshots.length > _visibleScreenshots.length)
+        //   Padding(
+        //     padding: const EdgeInsets.all(16.0),
+        //     child: Center(
+        //       child: TextButton.icon(
+        //         onPressed: _isLoadingMore ? null : _loadMoreItems,
+        //         icon:
+        //             _isLoadingMore
+        //                 ? const SizedBox(
+        //                   width: 16,
+        //                   height: 16,
+        //                   child: CircularProgressIndicator(strokeWidth: 2),
+        //                 )
+        //                 : const Icon(Icons.expand_more),
+        //         label: Text(_isLoadingMore ? 'Loading...' : 'Load More'),
+        //       ),
+        //     ),
+        //   ),
       ],
     );
   }

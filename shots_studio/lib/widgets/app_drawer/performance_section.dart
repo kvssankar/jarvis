@@ -12,17 +12,6 @@ class PerformanceSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Divider(color: theme.colorScheme.outline),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Text(
-            'Performance',
-            style: TextStyle(
-              color: theme.colorScheme.onSecondaryContainer,
-              fontSize: 15,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
         ListTile(
           leading: Icon(Icons.speed, color: theme.colorScheme.primary),
           title: Text(
