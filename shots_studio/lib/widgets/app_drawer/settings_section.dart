@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class SettingsSection extends StatefulWidget {
   final String? currentApiKey;
   final String currentModelName;
   final Function(String) onApiKeyChanged;
   final Function(String) onModelChanged;
+  final Key? apiKeyFieldKey;
 
   const SettingsSection({
     super.key,
@@ -13,6 +15,7 @@ class SettingsSection extends StatefulWidget {
     required this.currentModelName,
     required this.onApiKeyChanged,
     required this.onModelChanged,
+    this.apiKeyFieldKey,
   });
 
   @override
@@ -22,6 +25,7 @@ class SettingsSection extends StatefulWidget {
 class _SettingsSectionState extends State<SettingsSection> {
   late TextEditingController _apiKeyController;
   late String _selectedModelName;
+  final FocusNode _apiKeyFocusNode = FocusNode();
 
   static const String _apiKeyPrefKey = 'apiKey';
   static const String _modelNamePrefKey = 'modelName';
@@ -31,6 +35,14 @@ class _SettingsSectionState extends State<SettingsSection> {
     super.initState();
     _apiKeyController = TextEditingController(text: widget.currentApiKey ?? '');
     _selectedModelName = widget.currentModelName;
+
+    // Request focus on the API key field when it's empty
+    if (widget.currentApiKey?.isEmpty ?? true) {
+      // Request focus on the next frame
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _apiKeyFocusNode.requestFocus();
+      });
+    }
   }
 
   @override
@@ -39,7 +51,6 @@ class _SettingsSectionState extends State<SettingsSection> {
     if (widget.currentApiKey != oldWidget.currentApiKey) {
       if (_apiKeyController.text != (widget.currentApiKey ?? '')) {
         _apiKeyController.text = widget.currentApiKey ?? '';
-        // Ensure the cursor is at the end of the text after programmatically changing it.
         _apiKeyController.selection = TextSelection.fromPosition(
           TextPosition(offset: _apiKeyController.text.length),
         );
@@ -129,28 +140,136 @@ class _SettingsSectionState extends State<SettingsSection> {
             Icons.vpn_key_outlined,
             color: theme.colorScheme.primary,
           ),
+          trailing: IconButton(
+            tooltip: "Get an API key",
+            icon: Icon(
+              Icons.help_outline,
+              color: theme.colorScheme.primary,
+              size: 20,
+            ),
+            onPressed: () async {
+              final Uri url = Uri.parse(
+                'https://aistudio.google.com/app/apikey',
+              );
+              if (await canLaunchUrl(url)) {
+                await launchUrl(url, mode: LaunchMode.externalApplication);
+              }
+            },
+          ),
           title: TextFormField(
+            key: widget.apiKeyFieldKey,
             controller: _apiKeyController,
+            focusNode: _apiKeyFocusNode,
+            autofocus: widget.currentApiKey?.isEmpty ?? true,
             style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
             decoration: InputDecoration(
-              hintText: 'API Key',
+              hintText: 'Enter Gemini API Key',
+              helperText:
+                  _apiKeyController.text.isEmpty
+                      ? 'Required for AI features'
+                      : 'API key is set',
+              helperStyle: TextStyle(
+                color:
+                    _apiKeyController.text.isEmpty
+                        ? theme.colorScheme.error.withOpacity(0.7)
+                        : Theme.of(context).colorScheme.onSecondaryContainer,
+                fontSize: 12,
+              ),
               hintStyle: TextStyle(
                 color: theme.colorScheme.onSecondaryContainer,
               ),
               enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: theme.colorScheme.outline),
+                borderSide: BorderSide(
+                  color:
+                      _apiKeyController.text.isEmpty
+                          ? theme.colorScheme.error.withOpacity(0.5)
+                          : theme.colorScheme.outline,
+                  width: _apiKeyController.text.isEmpty ? 2.0 : 1.0,
+                ),
               ),
               focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: theme.colorScheme.primary),
+                borderSide: BorderSide(
+                  color: theme.colorScheme.primary,
+                  width: 2.0,
+                ),
               ),
+              suffixIcon:
+                  _apiKeyController.text.isEmpty
+                      ? Icon(
+                        Icons.key_off,
+                        color: theme.colorScheme.error,
+                        size: 20,
+                      )
+                      : Icon(
+                        Icons.check_circle,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        size: 20,
+                      ),
             ),
             obscureText: true,
             onChanged: (value) {
               widget.onApiKeyChanged(value);
               _saveApiKey(value);
+              setState(() {}); // Refresh to update the suffix icon
             },
           ),
         ),
+
+        // Add a helper note about getting an API key
+        if (_apiKeyController.text.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 8.0,
+            ),
+            child: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.lightbulb_outline,
+                        color: theme.colorScheme.primary,
+                        size: 16,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        'How to get an API key:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.primary,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    '1. Go to Google AI Studio website',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                  Text(
+                    '2. Create or log in to your account',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                  Text(
+                    '3. Navigate to API Keys section',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                  Text(
+                    '4. Create a new key and paste it here',
+                    style: TextStyle(fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -158,6 +277,7 @@ class _SettingsSectionState extends State<SettingsSection> {
   @override
   void dispose() {
     _apiKeyController.dispose();
+    _apiKeyFocusNode.dispose();
     super.dispose();
   }
 }

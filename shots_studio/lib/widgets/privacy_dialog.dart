@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -107,26 +108,38 @@ class PrivacyAcknowledgementDialog extends StatelessWidget {
   }
 }
 
-Future<void> showPrivacyDialogIfNeeded(BuildContext context) async {
+Future<bool> showPrivacyDialogIfNeeded(BuildContext context) async {
   const String privacyAcknowledgementKey = 'privacyAcknowledgementAccepted';
   final prefs = await SharedPreferences.getInstance();
   bool? acknowledged = prefs.getBool(privacyAcknowledgementKey);
 
-  if (acknowledged != true) {
-    if (!context.mounted) return;
-    showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext dialogContext) {
-        return PrivacyAcknowledgementDialog(
-          onAgreed: () async {
-            await prefs.setBool(privacyAcknowledgementKey, true);
-          },
-          onDisagreed: () {
-            SystemNavigator.pop();
-          },
-        );
-      },
-    );
+  if (acknowledged == true) {
+    // Privacy already accepted, no need to show dialog
+    return true;
   }
+
+  if (!context.mounted) return false;
+  
+  // Create a completer to handle the async result
+  Completer<bool> dialogCompleter = Completer<bool>();
+  
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (BuildContext dialogContext) {
+      return PrivacyAcknowledgementDialog(
+        onAgreed: () async {
+          await prefs.setBool(privacyAcknowledgementKey, true);
+          dialogCompleter.complete(true);
+        },
+        onDisagreed: () {
+          SystemNavigator.pop();
+          dialogCompleter.complete(false);
+        },
+      );
+    },
+  );
+  
+  // Wait for dialog to complete
+  return dialogCompleter.future;
 }

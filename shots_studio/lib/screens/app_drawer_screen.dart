@@ -15,6 +15,7 @@ class AppDrawer extends StatefulWidget {
   final Function(int) onMaxParallelChanged;
   final bool? currentLimitEnabled;
   final Function(bool)? onLimitEnabledChanged;
+  final Key? apiKeyFieldKey;
 
   const AppDrawer({
     super.key,
@@ -28,6 +29,7 @@ class AppDrawer extends StatefulWidget {
     required this.onMaxParallelChanged,
     this.currentLimitEnabled,
     this.onLimitEnabledChanged,
+    this.apiKeyFieldKey,
   });
 
   @override
@@ -118,6 +120,7 @@ class _AppDrawerState extends State<AppDrawer> {
               currentModelName: widget.currentModelName,
               onApiKeyChanged: widget.onApiKeyChanged,
               onModelChanged: widget.onModelChanged,
+              apiKeyFieldKey: widget.apiKeyFieldKey,
             ),
             if (_showAdvancedSettings)
               AdvancedSettingsSection(

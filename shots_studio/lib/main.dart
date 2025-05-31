@@ -17,6 +17,7 @@ import 'package:shots_studio/services/ai_service_manager.dart';
 import 'package:shots_studio/services/ai_service.dart';
 import 'package:shots_studio/screens/search_screen.dart';
 import 'package:shots_studio/widgets/privacy_dialog.dart';
+import 'package:shots_studio/widgets/onboarding/api_key_guide_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:shots_studio/services/notification_service.dart';
@@ -147,6 +148,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _aiTotalToProcess = 0;
   final AIServiceManager _aiServiceManager = AIServiceManager();
 
+  // Add a global key for the API key text field
+  final GlobalKey<State> _apiKeyFieldKey = GlobalKey();
+
   // Add loading progress tracking
   int _loadingProgress = 0;
   int _totalToLoad = 0;
@@ -176,9 +180,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _loadAndroidScreenshots();
     }
     // Show privacy dialog after the first frame
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => showPrivacyDialogIfNeeded(context),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Show privacy dialog and only proceed to API key guide if accepted
+      bool privacyAccepted = await showPrivacyDialogIfNeeded(context);
+      if (privacyAccepted && context.mounted) {
+        // API key guide will only show after privacy is accepted
+        await showApiKeyGuideIfNeeded(context, _apiKey, _updateApiKey);
+      }
+    });
   }
 
   @override
@@ -255,6 +264,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _updateApiKey(String newApiKey) {
     setState(() {
       _apiKey = newApiKey;
+    });
+    // Save to SharedPreferences
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setString('apiKey', newApiKey);
     });
   }
 
@@ -838,6 +851,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onMaxParallelChanged: _updateMaxParallelAI,
         currentLimitEnabled: _isScreenshotLimitEnabled,
         onLimitEnabledChanged: _updateScreenshotLimitEnabled,
+        apiKeyFieldKey: _apiKeyFieldKey,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
