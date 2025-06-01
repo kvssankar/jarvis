@@ -38,12 +38,7 @@ class ScreenshotCard extends StatelessWidget {
             );
           },
           errorBuilder: (context, error, stackTrace) {
-            return Center(
-              child: Icon(
-                Icons.broken_image,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            );
+            return const SizedBox.shrink();
           },
         ),
       );
@@ -65,19 +60,14 @@ class ScreenshotCard extends StatelessWidget {
             );
           },
           errorBuilder: (context, error, stackTrace) {
-            return Center(
-              child: Icon(
-                Icons.broken_image,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            );
+            return const SizedBox.shrink();
           },
         ),
       );
     } else {
       imageWidget = ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius - 3.0),
-        child: const Center(child: Icon(Icons.broken_image)),
+        child: const SizedBox.shrink(),
       );
     }
 
