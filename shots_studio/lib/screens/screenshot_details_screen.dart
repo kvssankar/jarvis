@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:math';
 import 'package:intl/intl.dart';
-import 'package:flutter/foundation.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/screens/full_screen_image_viewer.dart';
@@ -12,6 +11,9 @@ import 'package:shots_studio/widgets/screenshots/tags/tag_chip.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_collection_dialog.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shots_studio/utils/reminder_utils.dart';
+import 'package:shots_studio/services/ai_service_manager.dart';
+import 'package:shots_studio/services/ai_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ScreenshotDetailScreen extends StatefulWidget {
   final Screenshot screenshot;
@@ -40,6 +42,8 @@ class ScreenshotDetailScreen extends StatefulWidget {
 class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   late List<String> _tags;
   late TextEditingController _descriptionController;
+  bool _isProcessingAI = false;
+  final AIServiceManager _aiServiceManager = AIServiceManager();
 
   @override
   void initState() {
@@ -162,6 +166,219 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     );
   }
 
+  Future<void> _processSingleScreenshotWithAI() async {
+    // Check if already processed and confirmed by user
+    if (widget.screenshot.aiProcessed) {
+      final bool? shouldReprocess = await showDialog<bool>(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text(
+              'Screenshot Already Processed',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSecondaryContainer,
+              ),
+            ),
+            content: Text(
+              'This screenshot has already been processed by AI. Do you want to process it again?',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onTertiaryContainer,
+              ),
+            ),
+            actions: <Widget>[
+              TextButton(
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                  ),
+                ),
+                onPressed: () => Navigator.of(context).pop(false),
+              ),
+              TextButton(
+                child: Text(
+                  'Process Again',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                onPressed: () => Navigator.of(context).pop(true),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (shouldReprocess != true) return;
+    }
+
+    // Get settings from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    final String? apiKey = prefs.getString('apiKey');
+
+    if (apiKey == null || apiKey.isEmpty) {
+      SnackbarService().showError(
+        context,
+        'Gemini API key not configured. Please check app settings.',
+      );
+      return;
+    }
+
+    final String modelName =
+        prefs.getString('selected_model') ?? 'gemini-2.0-flash';
+
+    setState(() {
+      _isProcessingAI = true;
+    });
+
+    // Get list of collections that have auto-add enabled for auto-categorization
+    final autoAddCollections =
+        widget.allCollections
+            .where((collection) => collection.isAutoAddEnabled)
+            .map(
+              (collection) => {
+                'name': collection.name,
+                'description': collection.description,
+                'id': collection.id,
+              },
+            )
+            .toList();
+
+    final config = AIConfig(
+      apiKey: apiKey,
+      modelName: modelName,
+      maxParallel: 1, // Single screenshot processing
+      showMessage: ({
+        required String message,
+        Color? backgroundColor,
+        Duration? duration,
+      }) {
+        SnackbarService().showSnackbar(
+          context,
+          message: message,
+          backgroundColor: backgroundColor,
+          duration: duration,
+        );
+      },
+    );
+
+    try {
+      // Initialize the AI service manager
+      _aiServiceManager.initialize(config);
+
+      // Process the single screenshot (pass as single-item list)
+      final result = await _aiServiceManager.analyzeScreenshots(
+        screenshots: [widget.screenshot],
+        onBatchProcessed: (batch, response) {
+          // Update the screenshot with processed data
+          final updatedScreenshots = _aiServiceManager
+              .parseAndUpdateScreenshots(batch, response);
+
+          if (updatedScreenshots.isNotEmpty) {
+            final updatedScreenshot = updatedScreenshots.first;
+
+            setState(() {
+              // Update the screenshot properties
+              widget.screenshot.title = updatedScreenshot.title;
+              widget.screenshot.description = updatedScreenshot.description;
+              widget.screenshot.tags = updatedScreenshot.tags;
+              widget.screenshot.aiProcessed = updatedScreenshot.aiProcessed;
+              widget.screenshot.aiMetadata = updatedScreenshot.aiMetadata;
+
+              // Update local state
+              _tags = List.from(updatedScreenshot.tags);
+              _descriptionController.text = updatedScreenshot.description ?? '';
+            });
+
+            // Handle auto-categorization
+            if (response['suggestedCollections'] != null) {
+              try {
+                Map<dynamic, dynamic>? suggestionsMap;
+                if (response['suggestedCollections']
+                    is Map<String, List<String>>) {
+                  suggestionsMap =
+                      response['suggestedCollections']
+                          as Map<String, List<String>>;
+                } else if (response['suggestedCollections']
+                    is Map<dynamic, dynamic>) {
+                  suggestionsMap =
+                      response['suggestedCollections'] as Map<dynamic, dynamic>;
+                }
+
+                List<String> suggestedCollections = [];
+                if (suggestionsMap != null &&
+                    suggestionsMap.containsKey(updatedScreenshot.id)) {
+                  final suggestions = suggestionsMap[updatedScreenshot.id];
+                  if (suggestions is List) {
+                    suggestedCollections = List<String>.from(
+                      suggestions.whereType<String>(),
+                    );
+                  } else if (suggestions is String) {
+                    suggestedCollections = [suggestions];
+                  }
+                }
+
+                if (suggestedCollections.isNotEmpty) {
+                  int autoAddedCount = 0;
+                  for (var collection in widget.allCollections) {
+                    if (collection.isAutoAddEnabled &&
+                        suggestedCollections.contains(collection.name) &&
+                        !updatedScreenshot.collectionIds.contains(
+                          collection.id,
+                        ) &&
+                        !collection.screenshotIds.contains(
+                          updatedScreenshot.id,
+                        )) {
+                      // Auto-add screenshot to this collection
+                      final updatedCollection = collection.addScreenshot(
+                        updatedScreenshot.id,
+                        isAutoCategorized: true,
+                      );
+                      widget.onUpdateCollection(updatedCollection);
+                      updatedScreenshot.collectionIds.add(collection.id);
+                      autoAddedCount++;
+                    }
+                  }
+
+                  if (autoAddedCount > 0) {
+                    SnackbarService().showSuccess(
+                      context,
+                      'Screenshot processed and auto-categorized into $autoAddedCount collection${autoAddedCount > 1 ? 's' : ''}',
+                    );
+                  }
+                }
+              } catch (e) {
+                print('Error handling auto-categorization: $e');
+              }
+            }
+          }
+        },
+        autoAddCollections: autoAddCollections,
+      );
+
+      if (result.success) {
+        SnackbarService().showSuccess(
+          context,
+          'Screenshot processed successfully!',
+        );
+        widget.onScreenshotUpdated?.call();
+      } else if (result.cancelled) {
+        SnackbarService().showInfo(context, 'AI processing was cancelled.');
+      } else {
+        SnackbarService().showError(
+          context,
+          result.error ?? 'Failed to process screenshot',
+        );
+      }
+    } catch (e) {
+      SnackbarService().showError(context, 'Error processing screenshot: $e');
+    } finally {
+      setState(() {
+        _isProcessingAI = false;
+      });
+    }
+  }
+
   Future<void> _confirmDeleteScreenshot() async {
     final bool? confirm = await showDialog<bool>(
       context: context,
@@ -247,6 +464,37 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
           style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
         ),
         elevation: 0,
+        actions: [
+          if (_isProcessingAI)
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ),
+            )
+          else
+            IconButton(
+              icon: Icon(
+                Icons.auto_awesome_outlined,
+                color:
+                    widget.screenshot.aiProcessed
+                        ? Theme.of(context).colorScheme.primary
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              tooltip:
+                  widget.screenshot.aiProcessed
+                      ? 'Reprocess with AI'
+                      : 'Process with AI',
+              onPressed: _processSingleScreenshotWithAI,
+            ),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
