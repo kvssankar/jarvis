@@ -12,6 +12,30 @@ typedef ShowMessageCallback =
 typedef BatchProcessedCallback =
     void Function(List<Screenshot> batch, Map<String, dynamic> result);
 
+// AI metadata for tracking processing information
+class AiMetaData {
+  String modelName;
+  DateTime processingTime;
+
+  AiMetaData({required this.modelName, required this.processingTime});
+
+  // Method to convert AiMetaData instance to a Map (JSON)
+  Map<String, dynamic> toJson() {
+    return {
+      'modelName': modelName,
+      'processingTime': processingTime.toIso8601String(),
+    };
+  }
+
+  // Factory constructor to create an AiMetaData instance from a Map (JSON)
+  factory AiMetaData.fromJson(Map<String, dynamic> json) {
+    return AiMetaData(
+      modelName: json['modelName'] as String,
+      processingTime: DateTime.parse(json['processingTime'] as String),
+    );
+  }
+}
+
 // Base configuration for AI operations
 class AIConfig {
   final String apiKey;

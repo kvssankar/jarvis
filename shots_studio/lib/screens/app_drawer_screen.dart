@@ -15,6 +15,10 @@ class AppDrawer extends StatefulWidget {
   final Function(int) onMaxParallelChanged;
   final bool? currentLimitEnabled;
   final Function(bool)? onLimitEnabledChanged;
+  final bool? currentDevMode;
+  final Function(bool)? onDevModeChanged;
+  final bool? currentAutoProcessEnabled;
+  final Function(bool)? onAutoProcessEnabledChanged;
   final Key? apiKeyFieldKey;
 
   const AppDrawer({
@@ -29,6 +33,10 @@ class AppDrawer extends StatefulWidget {
     required this.onMaxParallelChanged,
     this.currentLimitEnabled,
     this.onLimitEnabledChanged,
+    this.currentDevMode,
+    this.onDevModeChanged,
+    this.currentAutoProcessEnabled,
+    this.onAutoProcessEnabledChanged,
     this.apiKeyFieldKey,
   });
 
@@ -121,6 +129,8 @@ class _AppDrawerState extends State<AppDrawer> {
               onApiKeyChanged: widget.onApiKeyChanged,
               onModelChanged: widget.onModelChanged,
               apiKeyFieldKey: widget.apiKeyFieldKey,
+              currentAutoProcessEnabled: widget.currentAutoProcessEnabled,
+              onAutoProcessEnabledChanged: widget.onAutoProcessEnabledChanged,
             ),
             if (_showAdvancedSettings)
               AdvancedSettingsSection(
@@ -130,6 +140,8 @@ class _AppDrawerState extends State<AppDrawer> {
                 onMaxParallelChanged: widget.onMaxParallelChanged,
                 currentLimitEnabled: widget.currentLimitEnabled,
                 onLimitEnabledChanged: widget.onLimitEnabledChanged,
+                currentDevMode: widget.currentDevMode,
+                onDevModeChanged: widget.onDevModeChanged,
               ),
             const PerformanceSection(),
             AboutSection(

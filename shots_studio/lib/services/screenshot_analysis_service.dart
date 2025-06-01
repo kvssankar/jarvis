@@ -7,7 +7,6 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shots_studio/models/screenshot_model.dart';
-import 'package:shots_studio/models/gemini_model.dart';
 import 'package:shots_studio/services/ai_service.dart';
 
 class ScreenshotAnalysisService extends AIService {
@@ -17,6 +16,7 @@ class ScreenshotAnalysisService extends AIService {
   // Track network errors to prevent multiple notifications
   int _networkErrorCount = 0;
   bool _processingTerminated = false;
+  bool _apiKeyErrorShown = false;
 
   // Track when the last successful request was made
   DateTime? _lastSuccessfulRequestTime;
@@ -28,6 +28,7 @@ class ScreenshotAnalysisService extends AIService {
     super.reset();
     _networkErrorCount = 0;
     _processingTerminated = false;
+    _apiKeyErrorShown = false;
     _lastSuccessfulRequestTime = DateTime.now();
   }
 
@@ -294,7 +295,10 @@ class ScreenshotAnalysisService extends AIService {
     Map<String, dynamic> response,
   ) {
     if (response.containsKey('error') || !response.containsKey('data')) {
-      _handleResponseError(response);
+      // Don't show error messages if processing has already been terminated
+      if (!_processingTerminated) {
+        _handleResponseError(response);
+      }
       return screenshots;
     }
 
@@ -481,11 +485,19 @@ class ScreenshotAnalysisService extends AIService {
   void _handleResponseError(Map<String, dynamic> response) {
     if (response['error'] != null &&
         response['error'].toString().contains('API key not valid')) {
-      config.showMessage?.call(
-        message: 'Invalid API key provided. Please check your API key.',
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 3),
-      );
+      // Only show the error message once and terminate processing
+      if (!_apiKeyErrorShown) {
+        _apiKeyErrorShown = true;
+        cancel();
+        _processingTerminated = true;
+
+        config.showMessage?.call(
+          message:
+              'Invalid API key provided. AI processing has been terminated.',
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        );
+      }
     } else if (response['error'] != null &&
         response['error'].toString().contains('Network error')) {
       // Increment network error count

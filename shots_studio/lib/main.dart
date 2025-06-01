@@ -24,6 +24,7 @@ import 'package:shots_studio/services/notification_service.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/utils/memory_utils.dart';
 import 'package:dynamic_color/dynamic_color.dart';
+import 'package:shots_studio/widgets/ai_processing_container.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -160,6 +161,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _screenshotLimit = 1200;
   int _maxParallelAI = 4;
   bool _isScreenshotLimitEnabled = false;
+  bool _devMode = false;
+  bool _autoProcessEnabled = true;
+
+  // Shared preferences keys
+  static const String _screenshotsKey = 'screenshots';
+  static const String _collectionsKey = 'collections';
+  static const String _apiKeyKey = 'apiKey';
 
   // update screenshots
   List<Screenshot> get _activeScreenshots {
@@ -186,6 +194,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (privacyAccepted && context.mounted) {
         // API key guide will only show after privacy is accepted
         await showApiKeyGuideIfNeeded(context, _apiKey, _updateApiKey);
+        // Automatically process any unprocessed screenshots
+        _autoProcessWithGemini();
       }
     });
   }
@@ -202,6 +212,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Only clear cache when app is completely detached to preserve collection thumbnails
     if (state == AppLifecycleState.detached) {
       MemoryUtils.clearImageCache();
+    }
+
+    // Auto-process unprocessed screenshots when the app comes to foreground
+    if (state == AppLifecycleState.resumed) {
+      // Add a small delay to ensure the UI is ready
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _autoProcessWithGemini();
+      });
     }
   }
 
@@ -258,6 +276,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _screenshotLimit = prefs.getInt('limit') ?? 1200;
       _maxParallelAI = prefs.getInt('maxParallel') ?? 4;
       _isScreenshotLimitEnabled = prefs.getBool('limit_enabled') ?? false;
+      _devMode = prefs.getBool('dev_mode') ?? false;
+      _autoProcessEnabled = prefs.getBool('auto_process_enabled') ?? true;
     });
   }
 
@@ -296,6 +316,28 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(() {
       _maxParallelAI = newMaxParallel;
     });
+  }
+
+  void _updateDevMode(bool value) {
+    setState(() {
+      _devMode = value;
+    });
+    // Save to SharedPreferences
+    _saveDevMode(value);
+  }
+
+  void _updateAutoProcessEnabled(bool enabled) {
+    setState(() {
+      _autoProcessEnabled = enabled;
+    });
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setBool('auto_process_enabled', enabled);
+    });
+  }
+
+  Future<void> _saveDevMode(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('dev_mode', value);
   }
 
   void _showSnackbarWrapper({
@@ -582,6 +624,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           _totalToLoad = 0;
         });
         await _saveDataToPrefs();
+
+        // Auto-process the newly added screenshots
+        if (newScreenshots.isNotEmpty) {
+          _autoProcessWithGemini();
+        }
       }
     } catch (e) {
       setState(() {
@@ -733,6 +780,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _totalToLoad = 0;
       });
       await _saveDataToPrefs();
+
+      // Auto-process newly loaded screenshots
+      if (_screenshots.isNotEmpty) {
+        _autoProcessWithGemini();
+      }
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -829,6 +881,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
+  // Helper method to check and auto-process screenshots
+  Future<void> _autoProcessWithGemini() async {
+    // Only auto-process if enabled, we have an API key, and we're not already processing
+    if (_autoProcessEnabled &&
+        _apiKey != null &&
+        _apiKey!.isNotEmpty &&
+        !_isProcessingAI) {
+      // Check if there are any unprocessed screenshots
+      final unprocessedScreenshots =
+          _activeScreenshots.where((s) => !s.aiProcessed).toList();
+      if (unprocessedScreenshots.isNotEmpty) {
+        // Add a small delay to allow UI to update before processing starts
+        await Future.delayed(const Duration(milliseconds: 300));
+        _processWithGemini();
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -839,6 +909,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         aiTotalToProcess: _aiTotalToProcess,
         onSearchPressed: _navigateToSearchScreen,
         onStopProcessingAI: _stopProcessingAI,
+        devMode: _devMode,
+        autoProcessEnabled: _autoProcessEnabled,
       ),
       drawer: AppDrawer(
         currentApiKey: _apiKey,
@@ -851,6 +923,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onMaxParallelChanged: _updateMaxParallelAI,
         currentLimitEnabled: _isScreenshotLimitEnabled,
         onLimitEnabledChanged: _updateScreenshotLimitEnabled,
+        currentDevMode: _devMode,
+        onDevModeChanged: _updateDevMode,
+        currentAutoProcessEnabled: _autoProcessEnabled,
+        onAutoProcessEnabledChanged: _updateAutoProcessEnabled,
         apiKeyFieldKey: _apiKeyFieldKey,
       ),
       floatingActionButton: FloatingActionButton(
@@ -932,13 +1008,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 headerSliverBuilder: (context, innerBoxIsScrolled) {
                   return [
                     SliverToBoxAdapter(
-                      child: CollectionsSection(
-                        collections: _collections,
-                        screenshots: _activeScreenshots,
-                        onCollectionAdded: _addCollection,
-                        onUpdateCollection: _updateCollection,
-                        onDeleteCollection: _deleteCollection,
-                        onDeleteScreenshot: _deleteScreenshot,
+                      child: Column(
+                        children: [
+                          // AI Processing Container
+                          AIProcessingContainer(
+                            isProcessing: _isProcessingAI,
+                            processedCount: _aiProcessedCount,
+                            totalCount: _aiTotalToProcess,
+                            onStop: _stopProcessingAI,
+                          ),
+                          // Collections Section
+                          CollectionsSection(
+                            collections: _collections,
+                            screenshots: _activeScreenshots,
+                            onCollectionAdded: _addCollection,
+                            onUpdateCollection: _updateCollection,
+                            onDeleteCollection: _deleteCollection,
+                            onDeleteScreenshot: _deleteScreenshot,
+                          ),
+                        ],
                       ),
                     ),
                   ];

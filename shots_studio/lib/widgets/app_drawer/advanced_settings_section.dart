@@ -8,6 +8,8 @@ class AdvancedSettingsSection extends StatefulWidget {
   final Function(int) onMaxParallelChanged;
   final bool? currentLimitEnabled;
   final Function(bool)? onLimitEnabledChanged;
+  final bool? currentDevMode;
+  final Function(bool)? onDevModeChanged;
 
   const AdvancedSettingsSection({
     super.key,
@@ -17,6 +19,8 @@ class AdvancedSettingsSection extends StatefulWidget {
     required this.onMaxParallelChanged,
     this.currentLimitEnabled,
     this.onLimitEnabledChanged,
+    this.currentDevMode,
+    this.onDevModeChanged,
   });
 
   @override
@@ -28,10 +32,12 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
   late TextEditingController _limitController;
   late TextEditingController _maxParallelController;
   bool _isLimitEnabled = true;
+  bool _devMode = false;
 
   static const String _limitPrefKey = 'limit';
   static const String _maxParallelPrefKey = 'maxParallel';
   static const String _limitEnabledPrefKey = 'limit_enabled';
+  static const String _devModePrefKey = 'dev_mode';
 
   @override
   void initState() {
@@ -49,12 +55,25 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
     } else {
       _loadLimitEnabledPref();
     }
+
+    if (widget.currentDevMode != null) {
+      _devMode = widget.currentDevMode!;
+    } else {
+      _loadDevModePref();
+    }
   }
 
   Future<void> _loadLimitEnabledPref() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _isLimitEnabled = prefs.getBool(_limitEnabledPrefKey) ?? true;
+    });
+  }
+
+  Future<void> _loadDevModePref() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _devMode = prefs.getBool(_devModePrefKey) ?? false;
     });
   }
 
@@ -92,6 +111,11 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
   Future<void> _saveLimitEnabled(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_limitEnabledPrefKey, value);
+  }
+
+  Future<void> _saveDevMode(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_devModePrefKey, value);
   }
 
   @override
@@ -197,6 +221,33 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
               }
             },
           ),
+        ),
+        SwitchListTile(
+          secondary: Icon(
+            Icons.developer_mode,
+            color: theme.colorScheme.primary,
+          ),
+          title: Text(
+            'Developer Mode',
+            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+          ),
+          subtitle: Text(
+            _devMode
+                ? 'Additional debug options are enabled'
+                : 'Debug options are hidden',
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          value: _devMode,
+          activeColor: theme.colorScheme.primary,
+          onChanged: (bool value) {
+            setState(() {
+              _devMode = value;
+            });
+            _saveDevMode(value);
+            if (widget.onDevModeChanged != null) {
+              widget.onDevModeChanged!(value);
+            }
+          },
         ),
       ],
     );

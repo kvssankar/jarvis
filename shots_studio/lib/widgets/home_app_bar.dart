@@ -7,6 +7,8 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   final int aiTotalToProcess;
   final VoidCallback? onSearchPressed;
   final VoidCallback? onStopProcessingAI;
+  final bool devMode;
+  final bool autoProcessEnabled;
 
   const HomeAppBar({
     super.key,
@@ -16,10 +18,15 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.aiTotalToProcess = 0,
     this.onSearchPressed,
     this.onStopProcessingAI,
+    this.devMode = false,
+    this.autoProcessEnabled = true,
   });
 
   @override
   Widget build(BuildContext context) {
+    // Show AI buttons either when in dev mode or when auto-processing is disabled
+    final bool showAIButtons = devMode || !autoProcessEnabled;
+
     return AppBar(
       title: const Text(
         'Shots Studio',
@@ -38,7 +45,9 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           tooltip: 'Search Screenshots',
           onPressed: onSearchPressed,
         ),
-        if (isProcessingAI)
+
+        // Show AI processing buttons when in dev mode OR auto-processing is disabled
+        if (showAIButtons && isProcessingAI)
           Padding(
             padding: const EdgeInsets.only(right: 8.0),
             child: Center(
@@ -48,13 +57,13 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
               ),
             ),
           ),
-        if (isProcessingAI)
+        if (showAIButtons && isProcessingAI)
           IconButton(
             icon: const Icon(Icons.stop_circle_outlined),
             tooltip: 'Stop Processing',
             onPressed: onStopProcessingAI,
           )
-        else if (onProcessWithAI != null)
+        else if (showAIButtons && onProcessWithAI != null)
           IconButton(
             icon: const Icon(Icons.auto_awesome_outlined),
             tooltip: 'Process with AI',

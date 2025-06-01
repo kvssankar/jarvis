@@ -8,6 +8,8 @@ class SettingsSection extends StatefulWidget {
   final Function(String) onApiKeyChanged;
   final Function(String) onModelChanged;
   final Key? apiKeyFieldKey;
+  final bool? currentAutoProcessEnabled;
+  final Function(bool)? onAutoProcessEnabledChanged;
 
   const SettingsSection({
     super.key,
@@ -16,6 +18,8 @@ class SettingsSection extends StatefulWidget {
     required this.onApiKeyChanged,
     required this.onModelChanged,
     this.apiKeyFieldKey,
+    this.currentAutoProcessEnabled,
+    this.onAutoProcessEnabledChanged,
   });
 
   @override
@@ -26,15 +30,24 @@ class _SettingsSectionState extends State<SettingsSection> {
   late TextEditingController _apiKeyController;
   late String _selectedModelName;
   final FocusNode _apiKeyFocusNode = FocusNode();
+  bool _autoProcessEnabled = true;
 
   static const String _apiKeyPrefKey = 'apiKey';
   static const String _modelNamePrefKey = 'modelName';
+  static const String _autoProcessEnabledPrefKey = 'auto_process_enabled';
 
   @override
   void initState() {
     super.initState();
     _apiKeyController = TextEditingController(text: widget.currentApiKey ?? '');
     _selectedModelName = widget.currentModelName;
+
+    // Initialize auto-processing state
+    if (widget.currentAutoProcessEnabled != null) {
+      _autoProcessEnabled = widget.currentAutoProcessEnabled!;
+    } else {
+      _loadAutoProcessEnabledPref();
+    }
 
     // Request focus on the API key field when it's empty
     if (widget.currentApiKey?.isEmpty ?? true) {
@@ -43,6 +56,13 @@ class _SettingsSectionState extends State<SettingsSection> {
         _apiKeyFocusNode.requestFocus();
       });
     }
+  }
+
+  void _loadAutoProcessEnabledPref() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _autoProcessEnabled = prefs.getBool(_autoProcessEnabledPrefKey) ?? true;
+    });
   }
 
   @override
@@ -61,6 +81,11 @@ class _SettingsSectionState extends State<SettingsSection> {
         _selectedModelName = widget.currentModelName;
       }
     }
+    if (widget.currentAutoProcessEnabled !=
+            oldWidget.currentAutoProcessEnabled &&
+        widget.currentAutoProcessEnabled != null) {
+      _autoProcessEnabled = widget.currentAutoProcessEnabled!;
+    }
   }
 
   Future<void> _saveApiKey(String value) async {
@@ -71,6 +96,11 @@ class _SettingsSectionState extends State<SettingsSection> {
   Future<void> _saveModelName(String value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_modelNamePrefKey, value);
+  }
+
+  Future<void> _saveAutoProcessEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_autoProcessEnabledPrefKey, value);
   }
 
   @override
@@ -90,6 +120,30 @@ class _SettingsSectionState extends State<SettingsSection> {
               fontWeight: FontWeight.bold,
             ),
           ),
+        ),
+        SwitchListTile(
+          secondary: Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
+          title: Text(
+            'Auto-Process Screenshots',
+            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+          ),
+          subtitle: Text(
+            _autoProcessEnabled
+                ? 'Screenshots will be automatically processed when added'
+                : 'Manual processing only',
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          value: _autoProcessEnabled,
+          activeColor: theme.colorScheme.primary,
+          onChanged: (bool value) {
+            setState(() {
+              _autoProcessEnabled = value;
+            });
+            _saveAutoProcessEnabled(value);
+            if (widget.onAutoProcessEnabledChanged != null) {
+              widget.onAutoProcessEnabledChanged!(value);
+            }
+          },
         ),
         ListTile(
           leading: Icon(
