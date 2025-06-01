@@ -9,6 +9,7 @@ class Collection {
   final DateTime? lastAutoCategorized;
   final int autoCategorizedCount;
   final Map<String, dynamic> categorizationMetadata;
+  final Set<String> scannedSet;
 
   Collection({
     required this.id,
@@ -21,6 +22,7 @@ class Collection {
     this.lastAutoCategorized,
     this.autoCategorizedCount = 0,
     this.categorizationMetadata = const {},
+    this.scannedSet = const {},
   });
 
   Collection addScreenshot(
@@ -72,6 +74,13 @@ class Collection {
     return this;
   }
 
+  Collection addScannedScreenshots(List<String> screenshotIds) {
+    final newScannedSet = Set<String>.from(scannedSet);
+    newScannedSet.addAll(screenshotIds);
+
+    return copyWith(scannedSet: newScannedSet, lastModified: DateTime.now());
+  }
+
   Collection removeScreenshot(String screenshotId) {
     if (screenshotIds.contains(screenshotId)) {
       final newIds = List<String>.from(screenshotIds)..remove(screenshotId);
@@ -95,6 +104,7 @@ class Collection {
     DateTime? lastAutoCategorized,
     int? autoCategorizedCount,
     Map<String, dynamic>? categorizationMetadata,
+    Set<String>? scannedSet,
   }) {
     return Collection(
       id: id ?? this.id,
@@ -108,6 +118,7 @@ class Collection {
       autoCategorizedCount: autoCategorizedCount ?? this.autoCategorizedCount,
       categorizationMetadata:
           categorizationMetadata ?? this.categorizationMetadata,
+      scannedSet: scannedSet ?? this.scannedSet,
     );
   }
 
@@ -124,6 +135,7 @@ class Collection {
       'lastAutoCategorized': lastAutoCategorized?.toIso8601String(),
       'autoCategorizedCount': autoCategorizedCount,
       'categorizationMetadata': categorizationMetadata,
+      'scannedSet': scannedSet.toList(),
     };
   }
 
@@ -144,6 +156,10 @@ class Collection {
       autoCategorizedCount: json['autoCategorizedCount'] as int? ?? 0,
       categorizationMetadata:
           json['categorizationMetadata'] as Map<String, dynamic>? ?? {},
+      scannedSet:
+          json['scannedSet'] != null
+              ? Set<String>.from(json['scannedSet'] as List<dynamic>)
+              : {},
     );
   }
 }

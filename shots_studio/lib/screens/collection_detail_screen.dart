@@ -52,6 +52,12 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
     );
     _currentScreenshotIds = List.from(widget.collection.screenshotIds);
     _isAutoAddEnabled = widget.collection.isAutoAddEnabled;
+
+    if (_isAutoAddEnabled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _startAutoCategorization();
+      });
+    }
   }
 
   @override
@@ -219,16 +225,13 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
 
     final List<Screenshot> candidateScreenshots =
         widget.allScreenshots
-            .where((s) => !_currentScreenshotIds.contains(s.id) && !s.isDeleted)
+            .where(
+              (s) =>
+                  !_currentScreenshotIds.contains(s.id) &&
+                  !s.isDeleted &&
+                  !widget.collection.scannedSet.contains(s.id),
+            )
             .toList();
-
-    if (candidateScreenshots.isEmpty) {
-      SnackbarService().showInfo(
-        context,
-        'No screenshots available for categorization.',
-      );
-      return;
-    }
 
     setState(() {
       _isAutoCategorizing = true;
@@ -257,9 +260,18 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
         collection: widget.collection,
         screenshots: candidateScreenshots,
         onBatchProcessed: (batch, response) {
+          if (!mounted) return;
+
           setState(() {
             _autoCategorizeProcessedCount += batch.length;
           });
+
+          // Add all batch screenshot IDs to the scanned set (regardless of whether they matched)
+          final List<String> batchIds = batch.map((s) => s.id).toList();
+          final updatedCollection = widget.collection.addScannedScreenshots(
+            batchIds,
+          );
+          widget.onUpdateCollection(updatedCollection);
 
           // Process batch results immediately if successful
           if (!response.containsKey('error') && response.containsKey('data')) {
@@ -275,7 +287,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                     parsedResponse['matching_screenshots'],
                   );
 
-                  if (batchMatchingIds.isNotEmpty) {
+                  if (batchMatchingIds.isNotEmpty && mounted) {
                     setState(() {
                       // Add matching screenshots from this batch immediately
                       // Create a new list to ensure proper change detection
@@ -348,21 +360,25 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
         'Error during auto-categorization: ${e.toString()}',
       );
     } finally {
+      if (mounted) {
+        setState(() {
+          _isAutoCategorizing = false;
+          _autoCategorizeProcessedCount = 0;
+          _autoCategorizeTotalCount = 0;
+        });
+      }
+    }
+  }
+
+  void _stopAutoCategorization() {
+    _aiServiceManager.cancelAllOperations();
+    if (mounted) {
       setState(() {
         _isAutoCategorizing = false;
         _autoCategorizeProcessedCount = 0;
         _autoCategorizeTotalCount = 0;
       });
     }
-  }
-
-  void _stopAutoCategorization() {
-    _aiServiceManager.cancelAllOperations();
-    setState(() {
-      _isAutoCategorizing = false;
-      _autoCategorizeProcessedCount = 0;
-      _autoCategorizeTotalCount = 0;
-    });
   }
 
   @override
@@ -383,34 +399,11 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         actions: [
-          if (_isAutoCategorizing)
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    value:
-                        _autoCategorizeTotalCount > 0
-                            ? _autoCategorizeProcessedCount /
-                                _autoCategorizeTotalCount
-                            : null,
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.stop, size: 16),
-                  onPressed: _stopAutoCategorization,
-                  tooltip: 'Stop Auto-categorization',
-                ),
-              ],
-            )
-          else
+          if (_isAutoAddEnabled && _isAutoCategorizing)
             IconButton(
-              icon: const Icon(Icons.auto_awesome),
-              onPressed: _startAutoCategorization,
-              tooltip: 'Auto-categorize Screenshots',
+              icon: const Icon(Icons.stop, size: 16),
+              onPressed: _stopAutoCategorization,
+              tooltip: 'Stop Auto-categorization',
             ),
           IconButton(
             icon: const Icon(Icons.edit_outlined),
@@ -548,6 +541,49 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                   ],
                 ),
               ),
+            if (_isAutoAddEnabled && _isAutoCategorizing)
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Auto-categorizing screenshots...',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                        Text(
+                          '$_autoCategorizeProcessedCount/$_autoCategorizeTotalCount',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    LinearProgressIndicator(
+                      value:
+                          _autoCategorizeTotalCount > 0
+                              ? _autoCategorizeProcessedCount /
+                                  _autoCategorizeTotalCount
+                              : null,
+                      backgroundColor:
+                          Theme.of(context).colorScheme.surfaceContainerHighest,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Theme.of(context).colorScheme.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -617,7 +653,9 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                                     onDeleteScreenshot:
                                         widget.onDeleteScreenshot,
                                     onScreenshotUpdated: () {
-                                      setState(() {});
+                                      if (mounted) {
+                                        setState(() {});
+                                      }
                                     },
                                   );
                                 },
