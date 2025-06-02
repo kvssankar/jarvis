@@ -5,7 +5,7 @@ publish_to: 'none'
 
 # The patch version numbering is automatically incremented by the git hook. 
 # Only update major and minor versions manually. 
-version: 1.8.28+1
+version: 1.8.29+1
 
 environment:
   sdk: ^3.7.2
@@ -37,6 +37,8 @@ dependencies:
   flutter_local_notifications: ^17.2.1
   dynamic_color: ^1.7.0
   animations: ^2.0.11
+  flutter_background_service: ^5.0.5
+  flutter_background_service_android: ^6.3.0
 
 dev_dependencies:
   flutter_test:

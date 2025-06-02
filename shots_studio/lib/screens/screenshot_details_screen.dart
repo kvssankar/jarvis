@@ -13,6 +13,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shots_studio/utils/reminder_utils.dart';
 import 'package:shots_studio/services/ai_service_manager.dart';
 import 'package:shots_studio/services/ai_service.dart';
+import 'package:shots_studio/services/notification_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ScreenshotDetailScreen extends StatefulWidget {
@@ -160,6 +161,12 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       widget.screenshot.aiProcessed = false;
     });
     _updateScreenshotDetails();
+
+    // Show a notification that the AI processing data has been cleared
+    NotificationService().showAIProcessingCancelled(
+      title: 'AI Processing Data Cleared',
+    );
+
     SnackbarService().showInfo(
       context,
       'AI details cleared. Ready for re-processing.',
@@ -231,6 +238,12 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       _isProcessingAI = true;
     });
 
+    // Show notification that processing has started
+    await NotificationService().showAIProcessingStarted(
+      totalCount: 1,
+      title: 'Processing Screenshot',
+    );
+
     // Get list of collections that have auto-add enabled for auto-categorization
     final autoAddCollections =
         widget.allCollections
@@ -273,6 +286,13 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
           // Update the screenshot with processed data
           final updatedScreenshots = _aiServiceManager
               .parseAndUpdateScreenshots(batch, response);
+
+          // Update notification with progress
+          NotificationService().updateAIProcessingProgress(
+            processedCount: 1,
+            totalCount: 1,
+            title: 'Processing Screenshot',
+          );
 
           if (updatedScreenshots.isNotEmpty) {
             final updatedScreenshot = updatedScreenshots.first;
@@ -357,20 +377,51 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       );
 
       if (result.success) {
+        // Count how many collections the screenshot got added to
+        int autoCategorizedCount = 0;
+        if (widget.screenshot.collectionIds.isNotEmpty) {
+          autoCategorizedCount = widget.screenshot.collectionIds.length;
+        }
+
+        // Show completion notification
+        await NotificationService().showAIProcessingCompleted(
+          processedCount: 1,
+          totalCount: 1,
+          categorizedCount: autoCategorizedCount,
+          title: 'Processing Complete',
+        );
+
         SnackbarService().showSuccess(
           context,
           'Screenshot processed successfully!',
         );
         widget.onScreenshotUpdated?.call();
       } else if (result.cancelled) {
+        // Show cancellation notification
+        await NotificationService().showAIProcessingCancelled(
+          title: 'Processing Cancelled',
+        );
+
         SnackbarService().showInfo(context, 'AI processing was cancelled.');
       } else {
+        // Show error notification
+        await NotificationService().showAIProcessingError(
+          title: 'Processing Failed',
+          errorMessage: result.error ?? 'Failed to process screenshot',
+        );
+
         SnackbarService().showError(
           context,
           result.error ?? 'Failed to process screenshot',
         );
       }
     } catch (e) {
+      // Show error notification
+      await NotificationService().showAIProcessingError(
+        title: 'Processing Error',
+        errorMessage: e.toString(),
+      );
+
       SnackbarService().showError(context, 'Error processing screenshot: $e');
     } finally {
       setState(() {

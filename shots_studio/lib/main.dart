@@ -379,6 +379,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _aiTotalToProcess = unprocessedScreenshots.length;
     });
 
+    // Show notification that processing has started
+    await NotificationService().showAIProcessingStarted(
+      totalCount: unprocessedScreenshots.length,
+      title: 'Processing Screenshots',
+    );
+
     // Get list of collections that have auto-add enabled
     final autoAddCollections =
         _collections
@@ -412,6 +418,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
           setState(() {
             _aiProcessedCount += updatedScreenshots.length;
+
+            // Update notification with current progress
+            NotificationService().updateAIProcessingProgress(
+              processedCount: _aiProcessedCount,
+              totalCount: _aiTotalToProcess,
+              title: 'Processing Screenshots',
+            );
 
             for (var updatedScreenshot in updatedScreenshots) {
               final index = _screenshots.indexWhere(
@@ -500,6 +513,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           }
         }
 
+        // Show notification of completion with categorization info
+        await NotificationService().showAIProcessingCompleted(
+          processedCount: processedCount,
+          totalCount: unprocessedScreenshots.length,
+          categorizedCount: autoCategorizedCount,
+          title: 'Processing Complete',
+        );
+
         // Show completion message with auto-categorization info
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -524,12 +545,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           ),
         );
       } else {
+        // Show error notification
+        await NotificationService().showAIProcessingError(
+          title: 'Processing Failed',
+          errorMessage: result.error ?? 'Failed to process screenshots',
+        );
+
         SnackbarService().showError(
           context,
           result.error ?? 'Failed to process screenshots',
         );
       }
     } catch (e) {
+      // Show error notification
+      await NotificationService().showAIProcessingError(
+        title: 'Processing Error',
+        errorMessage: e.toString(),
+      );
+
       SnackbarService().showError(context, 'Error processing screenshots: $e');
     }
 
@@ -550,6 +583,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       });
 
       _aiServiceManager.cancelAllOperations();
+
+      // Show cancellation notification
+      await NotificationService().showAIProcessingCancelled(
+        title: 'Processing Cancelled',
+      );
 
       SnackbarService().showWarning(context, 'AI processing stopped by user.');
 
@@ -894,7 +932,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (unprocessedScreenshots.isNotEmpty) {
         // Add a small delay to allow UI to update before processing starts
         await Future.delayed(const Duration(milliseconds: 300));
-        _processWithGemini();
+
+        // Show notification that auto-processing will start
+        await NotificationService().showAIProcessingStarted(
+          totalCount: unprocessedScreenshots.length,
+          title: 'Auto-Processing Screenshots',
+        );
+
+        await _processWithGemini();
       }
     }
   }
