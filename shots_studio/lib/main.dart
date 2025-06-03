@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:shots_studio/screens/screenshot_details_screen.dart';
 import 'package:shots_studio/screens/screenshot_swipe_detail_screen.dart';
 import 'package:image_picker/image_picker.dart';
@@ -13,18 +14,19 @@ import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:shots_studio/services/ai_service_manager.dart';
-import 'package:shots_studio/services/ai_service.dart';
 import 'package:shots_studio/screens/search_screen.dart';
 import 'package:shots_studio/widgets/privacy_dialog.dart';
 import 'package:shots_studio/widgets/onboarding/api_key_guide_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:shots_studio/services/notification_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/utils/memory_utils.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:shots_studio/widgets/ai_processing_container.dart';
+import 'package:shots_studio/services/background_service.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -33,7 +35,37 @@ void main() async {
   MemoryUtils.optimizeImageCache();
 
   await NotificationService().init();
+
+  // Initialize background service for AI processing only on non-web platforms
+  if (!kIsWeb) {
+    print("Main: Initial background service setup");
+    // Set up notification channel for background service
+    await _setupBackgroundServiceNotificationChannel();
+    // Don't initialize service at app startup - we'll do it when needed
+    // This prevents unnecessary background service running when not needed
+    print("Main: Background service will be initialized when needed");
+  }
+
   runApp(const MyApp());
+}
+
+// Set up notification channel for background service
+Future<void> _setupBackgroundServiceNotificationChannel() async {
+  const AndroidNotificationChannel channel = AndroidNotificationChannel(
+    'ai_processing_channel', // id - matches BackgroundProcessingService.notificationChannelId
+    'AI Processing Service', // title
+    description: 'Channel for AI screenshot processing notifications',
+    importance: Importance.low, // importance must be at low or higher level
+  );
+
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >()
+      ?.createNotificationChannel(channel);
 }
 
 class MyApp extends StatelessWidget {
@@ -147,7 +179,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isProcessingAI = false;
   int _aiProcessedCount = 0;
   int _aiTotalToProcess = 0;
-  final AIServiceManager _aiServiceManager = AIServiceManager();
 
   // Add a global key for the API key text field
   final GlobalKey<State> _apiKeyFieldKey = GlobalKey();
@@ -163,11 +194,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isScreenshotLimitEnabled = false;
   bool _devMode = false;
   bool _autoProcessEnabled = true;
-
-  // Shared preferences keys
-  static const String _screenshotsKey = 'screenshots';
-  static const String _collectionsKey = 'collections';
-  static const String _apiKeyKey = 'apiKey';
 
   // update screenshots
   List<Screenshot> get _activeScreenshots {
@@ -186,6 +212,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _loadSettings();
     if (!kIsWeb) {
       _loadAndroidScreenshots();
+      _setupBackgroundServiceListeners();
     }
     // Show privacy dialog after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -204,6 +231,147 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  /// Setup listeners for background service events
+  void _setupBackgroundServiceListeners() {
+    print("Setting up background service listeners...");
+
+    final service = FlutterBackgroundService();
+
+    // Listen for batch processing updates with the new channel name
+    service.on('batch_processed').listen((event) {
+      print("Main app: Received batch update event: $event");
+
+      try {
+        if (event != null && mounted) {
+          final data = Map<String, dynamic>.from(event);
+          final updatedScreenshotsJson = data['updatedScreenshots'] as String?;
+          final processedCount = data['processedCount'] as int? ?? 0;
+          final totalCount = data['totalCount'] as int? ?? 0;
+
+          print(
+            "Main app: Processing batch update - $processedCount/$totalCount",
+          );
+
+          if (updatedScreenshotsJson != null) {
+            final List<dynamic> updatedScreenshotsList = jsonDecode(
+              updatedScreenshotsJson,
+            );
+            final List<Screenshot> updatedScreenshots =
+                updatedScreenshotsList
+                    .map(
+                      (json) =>
+                          Screenshot.fromJson(json as Map<String, dynamic>),
+                    )
+                    .toList();
+
+            setState(() {
+              _aiProcessedCount = processedCount;
+              _aiTotalToProcess = totalCount;
+
+              // Update screenshots in our list
+              for (var updatedScreenshot in updatedScreenshots) {
+                final index = _screenshots.indexWhere(
+                  (s) => s.id == updatedScreenshot.id,
+                );
+                if (index != -1) {
+                  _screenshots[index] = updatedScreenshot;
+                  print("Main app: Updated screenshot ${updatedScreenshot.id}");
+                }
+              }
+            });
+
+            // Save updated data
+            _saveDataToPrefs();
+          }
+        }
+      } catch (e) {
+        print("Main app: Error processing batch update: $e");
+      }
+    });
+
+    // Listen for processing completion with the new channel name
+    service.on('processing_completed').listen((event) {
+      print("Main app: Received processing completed event: $event");
+
+      try {
+        if (event != null && mounted) {
+          final data = Map<String, dynamic>.from(event);
+          final success = data['success'] as bool? ?? false;
+          final processedCount = data['processedCount'] as int? ?? 0;
+          final totalCount = data['totalCount'] as int? ?? 0;
+          final error = data['error'] as String?;
+          final cancelled = data['cancelled'] as bool? ?? false;
+
+          print(
+            "Main app: Processing completed - Success: $success, Processed: $processedCount/$totalCount",
+          );
+
+          setState(() {
+            _isProcessingAI = false;
+            _aiProcessedCount = 0;
+            _aiTotalToProcess = 0;
+          });
+
+          if (cancelled) {
+            SnackbarService().showWarning(
+              context,
+              'Processing cancelled. Processed $processedCount of $totalCount screenshots.',
+            );
+          } else if (success) {
+            SnackbarService().showSuccess(
+              context,
+              'Completed processing $processedCount of $totalCount screenshots.',
+            );
+          } else {
+            SnackbarService().showError(
+              context,
+              error ?? 'Failed to process screenshots',
+            );
+          }
+
+          // Save final data
+          _saveDataToPrefs();
+        }
+      } catch (e) {
+        print("Main app: Error processing completion event: $e");
+      }
+    });
+
+    // Listen for processing errors with the new channel name
+    service.on('processing_error').listen((event) {
+      print("Main app: Received processing error event: $event");
+
+      try {
+        if (event != null && mounted) {
+          final data = Map<String, dynamic>.from(event);
+          final error = data['error'] as String? ?? 'Unknown error';
+
+          print("Main app: Processing error: $error");
+
+          setState(() {
+            _isProcessingAI = false;
+            _aiProcessedCount = 0;
+            _aiTotalToProcess = 0;
+          });
+
+          SnackbarService().showError(context, 'Processing error: $error');
+
+          // Save data even on error
+          _saveDataToPrefs();
+        }
+      } catch (e) {
+        print("Main app: Error handling processing error event: $e");
+      }
+    });
+
+    // Listen for initialization confirmation
+    service.on('initialize').listen((event) {
+      print("Main app: Received service initialization event: $event");
+    });
+
+    print("Background service listeners setup complete");
   }
 
   @override
@@ -340,21 +508,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     await prefs.setBool('dev_mode', value);
   }
 
-  void _showSnackbarWrapper({
-    required String message,
-    Color? backgroundColor,
-    Duration? duration,
-  }) {
-    SnackbarService().showSnackbar(
-      context,
-      message: message,
-      backgroundColor: backgroundColor,
-      duration: duration,
-    );
-  }
-
   Future<void> _processWithGemini() async {
+    print("Main app: _processWithGemini called");
+
+    // Check for API key
     if (_apiKey == null || _apiKey!.isEmpty) {
+      print("Main app: No API key configured");
       SnackbarService().showError(
         context,
         'Gemini API key not configured. Please check app settings.',
@@ -362,10 +521,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       return;
     }
 
+    // Get unprocessed screenshots
     final unprocessedScreenshots =
         _activeScreenshots.where((s) => !s.aiProcessed).toList();
 
     if (unprocessedScreenshots.isEmpty) {
+      print("Main app: No unprocessed screenshots found");
       SnackbarService().showInfo(
         context,
         'All screenshots have already been processed.',
@@ -373,17 +534,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       return;
     }
 
+    print(
+      "Main app: Starting background processing for ${unprocessedScreenshots.length} screenshots",
+    );
+
+    // Update UI to show processing state
     setState(() {
       _isProcessingAI = true;
       _aiProcessedCount = 0;
       _aiTotalToProcess = unprocessedScreenshots.length;
     });
-
-    // Show notification that processing has started
-    await NotificationService().showAIProcessingStarted(
-      totalCount: unprocessedScreenshots.length,
-      title: 'Processing Screenshots',
-    );
 
     // Get list of collections that have auto-add enabled
     final autoAddCollections =
@@ -398,198 +558,109 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             )
             .toList();
 
-    final config = AIConfig(
-      apiKey: _apiKey!,
-      modelName: _selectedModelName,
-      maxParallel: _maxParallelAI,
-      showMessage: _showSnackbarWrapper,
-    );
+    print("Main app: Auto-add collections count: ${autoAddCollections.length}");
 
     try {
-      // Initialize the AI service manager
-      _aiServiceManager.initialize(config);
+      // Use the background processing approach
+      final backgroundService = BackgroundProcessingService();
 
-      final result = await _aiServiceManager.analyzeScreenshots(
-        screenshots: unprocessedScreenshots,
-        onBatchProcessed: (batch, response) {
-          // Update the processed screenshots
-          final updatedScreenshots = _aiServiceManager
-              .parseAndUpdateScreenshots(batch, response);
+      print("Main app: Initializing background service...");
 
-          setState(() {
-            _aiProcessedCount += updatedScreenshots.length;
+      // Simple service initialization
+      final serviceInitialized = await backgroundService.initializeService();
 
-            // Update notification with current progress
-            NotificationService().updateAIProcessingProgress(
-              processedCount: _aiProcessedCount,
-              totalCount: _aiTotalToProcess,
-              title: 'Processing Screenshots',
-            );
-
-            for (var updatedScreenshot in updatedScreenshots) {
-              final index = _screenshots.indexWhere(
-                (s) => s.id == updatedScreenshot.id,
-              );
-              if (index != -1) {
-                _screenshots[index] = updatedScreenshot;
-
-                // Handle auto-categorization
-                List<String> suggestedCollections = [];
-                try {
-                  if (response['suggestedCollections'] != null) {
-                    Map<dynamic, dynamic>? suggestionsMap;
-
-                    // Handle different types of map that might come from the AI response
-                    if (response['suggestedCollections']
-                        is Map<String, List<String>>) {
-                      suggestionsMap =
-                          response['suggestedCollections']
-                              as Map<String, List<String>>;
-                    } else if (response['suggestedCollections']
-                        is Map<dynamic, dynamic>) {
-                      suggestionsMap =
-                          response['suggestedCollections']
-                              as Map<dynamic, dynamic>;
-                    } else if (response['suggestedCollections'] is Map) {
-                      suggestionsMap = Map<dynamic, dynamic>.from(
-                        response['suggestedCollections'] as Map,
-                      );
-                    }
-
-                    // Now safely extract the suggestions list
-                    if (suggestionsMap != null &&
-                        suggestionsMap.containsKey(updatedScreenshot.id)) {
-                      final suggestions = suggestionsMap[updatedScreenshot.id];
-                      if (suggestions is List) {
-                        suggestedCollections = List<String>.from(
-                          suggestions.whereType<String>(),
-                        );
-                      } else if (suggestions is String) {
-                        // Handle case where a single string might be returned instead of a list
-                        suggestedCollections = [suggestions];
-                      }
-                    }
-                  }
-                } catch (e) {
-                  print('Error accessing suggested collections: $e');
-                }
-
-                if (suggestedCollections.isNotEmpty) {
-                  for (var collection in _collections) {
-                    if (collection.isAutoAddEnabled &&
-                        suggestedCollections.contains(collection.name) &&
-                        !updatedScreenshot.collectionIds.contains(
-                          collection.id,
-                        ) &&
-                        !collection.screenshotIds.contains(
-                          updatedScreenshot.id,
-                        )) {
-                      // Auto-add screenshot to this collection
-                      final updatedCollection = collection.addScreenshot(
-                        updatedScreenshot.id,
-                        isAutoCategorized: true,
-                      );
-                      _updateCollection(updatedCollection);
-
-                      updatedScreenshot.collectionIds.add(collection.id);
-                    }
-                  }
-                }
-              }
-            }
-          });
-        },
-        autoAddCollections: autoAddCollections,
-      );
-
-      if (result.success) {
-        final processedCount = result.data?['processedCount'] ?? 0;
-
-        // Count how many screenshots were auto-categorized
-        int autoCategorizedCount = 0;
-        for (var screenshot in _activeScreenshots.where((s) => s.aiProcessed)) {
-          if (screenshot.collectionIds.isNotEmpty) {
-            autoCategorizedCount++;
-          }
-        }
-
-        // Show notification of completion with categorization info
-        await NotificationService().showAIProcessingCompleted(
-          processedCount: processedCount,
-          totalCount: unprocessedScreenshots.length,
-          categorizedCount: autoCategorizedCount,
-          title: 'Processing Complete',
-        );
-
-        // Show completion message with auto-categorization info
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Completed processing $processedCount of ${unprocessedScreenshots.length} screenshots.',
-                ),
-                if (autoCategorizedCount > 0)
-                  Text(
-                    'Auto-categorized $autoCategorizedCount screenshots based on content.',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontStyle: FontStyle.italic,
-                    ),
-                  ),
-              ],
-            ),
-            duration: const Duration(seconds: 4),
-          ),
-        );
-      } else {
-        // Show error notification
-        await NotificationService().showAIProcessingError(
-          title: 'Processing Failed',
-          errorMessage: result.error ?? 'Failed to process screenshots',
-        );
+      if (!serviceInitialized) {
+        print("Main app: Service initialization failed");
+        setState(() {
+          _isProcessingAI = false;
+          _aiProcessedCount = 0;
+          _aiTotalToProcess = 0;
+        });
 
         SnackbarService().showError(
           context,
-          result.error ?? 'Failed to process screenshots',
+          'Failed to initialize background service. Please try again.',
+        );
+        return;
+      }
+
+      print("Main app: Background service initialized, starting processing...");
+
+      // Start the processing with the initialized service
+      print(
+        "Main app: Calling startBackgroundProcessing with ${unprocessedScreenshots.length} screenshots",
+      );
+      final success = await backgroundService.startBackgroundProcessing(
+        screenshots: unprocessedScreenshots,
+        apiKey: _apiKey!,
+        modelName: _selectedModelName,
+        maxParallel: _maxParallelAI,
+        autoAddCollections: autoAddCollections,
+      );
+      print("Main app: startBackgroundProcessing returned: $success");
+
+      if (success) {
+        print("Main app: Background processing started successfully");
+        SnackbarService().showInfo(
+          context,
+          'Processing started for ${unprocessedScreenshots.length} screenshots.',
+        );
+      } else {
+        print("Main app: Failed to start background processing");
+        setState(() {
+          _isProcessingAI = false;
+          _aiProcessedCount = 0;
+          _aiTotalToProcess = 0;
+        });
+
+        SnackbarService().showError(
+          context,
+          'Failed to start background processing. Please try again.',
         );
       }
     } catch (e) {
+      print("Main app: Error starting background processing: $e");
+
+      setState(() {
+        _isProcessingAI = false;
+        _aiProcessedCount = 0;
+        _aiTotalToProcess = 0;
+      });
+
       // Show error notification
-      await NotificationService().showAIProcessingError(
-        title: 'Processing Error',
-        errorMessage: e.toString(),
+      SnackbarService().showError(
+        context,
+        'Error starting background processing: $e',
       );
-
-      SnackbarService().showError(context, 'Error processing screenshots: $e');
     }
-
-    // Save data after all processing is done
-    await _saveDataToPrefs();
-
-    setState(() {
-      _isProcessingAI = false;
-      _aiProcessedCount = 0;
-      _aiTotalToProcess = 0;
-    });
   }
 
   Future<void> _stopProcessingAI() async {
     if (_isProcessingAI) {
+      print("Main app: Stopping background processing...");
+
+      // Update UI immediately to reflect stopping state
       setState(() {
         _aiTotalToProcess = 0;
       });
 
-      _aiServiceManager.cancelAllOperations();
+      try {
+        // Use the new stopBackgroundProcessing method that doesn't shut down the service
+        final backgroundService = BackgroundProcessingService();
+        await backgroundService.stopBackgroundProcessing();
+        print("Main app: Background processing stop requested");
 
-      // Show cancellation notification
-      await NotificationService().showAIProcessingCancelled(
-        title: 'Processing Cancelled',
-      );
+        // No need to show notification here, the service will report back with a cancelled status
+        // and the listener will handle showing the notification
+      } catch (e) {
+        print("Main app: Error stopping background processing: $e");
 
-      SnackbarService().showWarning(context, 'AI processing stopped by user.');
+        // Show error notification only if an exception occurred during the stop request
+        SnackbarService().showWarning(
+          context,
+          'Error stopping AI processing: $e',
+        );
+      }
 
       await _saveDataToPrefs();
       setState(() {
@@ -921,7 +992,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   // Helper method to check and auto-process screenshots
   Future<void> _autoProcessWithGemini() async {
-    // Only auto-process if enabled, we have an API key, and we're not already processing
+    // Only auto-process if enabled, we have an API key, we're not already processing,
     if (_autoProcessEnabled &&
         _apiKey != null &&
         _apiKey!.isNotEmpty &&
@@ -932,12 +1003,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (unprocessedScreenshots.isNotEmpty) {
         // Add a small delay to allow UI to update before processing starts
         await Future.delayed(const Duration(milliseconds: 300));
-
-        // Show notification that auto-processing will start
-        await NotificationService().showAIProcessingStarted(
-          totalCount: unprocessedScreenshots.length,
-          title: 'Auto-Processing Screenshots',
-        );
 
         await _processWithGemini();
       }
@@ -1060,7 +1125,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             isProcessing: _isProcessingAI,
                             processedCount: _aiProcessedCount,
                             totalCount: _aiTotalToProcess,
-                            onStop: _stopProcessingAI,
                           ),
                           // Collections Section
                           CollectionsSection(

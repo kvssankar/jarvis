@@ -5,14 +5,12 @@ class AIProcessingContainer extends StatefulWidget {
   final bool isProcessing;
   final int processedCount;
   final int totalCount;
-  final VoidCallback? onStop;
 
   const AIProcessingContainer({
     super.key,
     required this.isProcessing,
     required this.processedCount,
     required this.totalCount,
-    this.onStop,
   });
 
   @override
@@ -325,25 +323,6 @@ class _AIProcessingContainerState extends State<AIProcessingContainer>
                                     color: theme.colorScheme.onPrimaryContainer,
                                   ),
                                 ),
-                                if (widget.onStop != null) ...[
-                                  const SizedBox(width: 8),
-                                  GestureDetector(
-                                    onTap: widget.onStop,
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: theme.colorScheme.error
-                                            .withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: Icon(
-                                        Icons.stop,
-                                        size: 16,
-                                        color: theme.colorScheme.error,
-                                      ),
-                                    ),
-                                  ),
-                                ],
                               ],
                             ),
                           ],
