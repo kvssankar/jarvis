@@ -172,7 +172,10 @@ class CollectionCategorizationService extends AIService {
     reset();
 
     if (screenshots.isEmpty) {
-      return AIResult.error('No screenshots to categorize');
+      return AIResult.success(
+        [],
+        metadata: {'processedCount': 0, 'totalCount': 0, 'batchResults': []},
+      );
     }
 
     Map<String, dynamic> finalResults = {
