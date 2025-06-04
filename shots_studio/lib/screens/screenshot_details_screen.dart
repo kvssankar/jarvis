@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/screens/full_screen_image_viewer.dart';
+import 'package:shots_studio/screens/search_screen.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/widgets/screenshots/tags/tag_input_field.dart';
 import 'package:shots_studio/widgets/screenshots/tags/tag_chip.dart';
@@ -18,6 +19,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ScreenshotDetailScreen extends StatefulWidget {
   final Screenshot screenshot;
   final List<Collection> allCollections;
+  final List<Screenshot> allScreenshots;
   final Function(Collection) onUpdateCollection;
   final Function(String) onDeleteScreenshot;
   final VoidCallback? onScreenshotUpdated;
@@ -28,6 +30,7 @@ class ScreenshotDetailScreen extends StatefulWidget {
     super.key,
     required this.screenshot,
     required this.allCollections,
+    required this.allScreenshots,
     required this.onUpdateCollection,
     required this.onDeleteScreenshot,
     this.onScreenshotUpdated,
@@ -102,7 +105,26 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       return TagInputField(onTagAdded: _addTag);
     }
 
-    return TagChip(label: label, onDelete: () => _removeTag(label));
+    return TagChip(
+      label: label,
+      onDelete: () => _removeTag(label),
+      onTap: () => _navigateToTagSearch(label),
+    );
+  }
+
+  void _navigateToTagSearch(String tag) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (context) => SearchScreen(
+              allScreenshots: widget.allScreenshots,
+              allCollections: widget.allCollections,
+              onUpdateCollection: widget.onUpdateCollection,
+              onDeleteScreenshot: widget.onDeleteScreenshot,
+              initialSearchQuery: tag,
+            ),
+      ),
+    );
   }
 
   void _showAddToCollectionDialog() {

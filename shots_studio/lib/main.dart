@@ -1151,6 +1151,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       screenshots: List.from(_activeScreenshots),
                       initialIndex: initialIndex >= 0 ? initialIndex : 0,
                       allCollections: _collections,
+                      allScreenshots: _screenshots,
                       onUpdateCollection: (updatedCollection) {
                         _updateCollection(updatedCollection);
                       },
@@ -1173,6 +1174,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 (context) => ScreenshotDetailScreen(
                   screenshot: screenshot,
                   allCollections: _collections,
+                  allScreenshots: _screenshots,
                   onUpdateCollection: (updatedCollection) {
                     _updateCollection(updatedCollection);
                   },

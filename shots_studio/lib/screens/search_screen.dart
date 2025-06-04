@@ -9,6 +9,7 @@ class SearchScreen extends StatefulWidget {
   final List<Collection> allCollections;
   final Function(Collection) onUpdateCollection;
   final Function(String) onDeleteScreenshot;
+  final String? initialSearchQuery; // Add this parameter
 
   const SearchScreen({
     super.key,
@@ -16,6 +17,7 @@ class SearchScreen extends StatefulWidget {
     required this.allCollections,
     required this.onUpdateCollection,
     required this.onDeleteScreenshot,
+    this.initialSearchQuery, // Add this parameter
   });
 
   @override
@@ -32,6 +34,14 @@ class _SearchScreenState extends State<SearchScreen> {
     super.initState();
     _filteredScreenshots = widget.allScreenshots;
     _searchController.addListener(_onSearchChanged);
+
+    // Set initial search query if provided
+    if (widget.initialSearchQuery != null &&
+        widget.initialSearchQuery!.isNotEmpty) {
+      _searchController.text = widget.initialSearchQuery!;
+      _searchQuery = widget.initialSearchQuery!.toLowerCase();
+      _filterScreenshots();
+    }
   }
 
   @override
@@ -44,41 +54,45 @@ class _SearchScreenState extends State<SearchScreen> {
   void _onSearchChanged() {
     setState(() {
       _searchQuery = _searchController.text.toLowerCase();
-      if (_searchQuery.isEmpty) {
-        _filteredScreenshots = widget.allScreenshots;
-      } else {
-        // Match if it's a whole word OR starts with the word OR ends with the word
-        final RegExp wordPattern = RegExp(
-          r'(?:^|[\s.,!?])' +
-              RegExp.escape(_searchQuery) +
-              r'|' + // Whole word or word at start
-              r'\b' +
-              RegExp.escape(_searchQuery) +
-              r'\w*|' + // Word starting with query
-              r'\w*' +
-              RegExp.escape(_searchQuery) +
-              r'(?:[\s.,!?]|$)', // Word ending with query
-          caseSensitive: false,
-        );
-
-        _filteredScreenshots =
-            widget.allScreenshots.where((screenshot) {
-              final titleMatch =
-                  screenshot.title != null &&
-                  wordPattern.hasMatch(screenshot.title!.toLowerCase());
-
-              final descriptionMatch =
-                  screenshot.description != null &&
-                  wordPattern.hasMatch(screenshot.description!.toLowerCase());
-
-              final tagsMatch = screenshot.tags.any(
-                (tag) => tag.toLowerCase() == _searchQuery,
-              );
-
-              return titleMatch || descriptionMatch || tagsMatch;
-            }).toList();
-      }
+      _filterScreenshots();
     });
+  }
+
+  void _filterScreenshots() {
+    if (_searchQuery.isEmpty) {
+      _filteredScreenshots = widget.allScreenshots;
+    } else {
+      // Match if it's a whole word OR starts with the word OR ends with the word
+      final RegExp wordPattern = RegExp(
+        r'(?:^|[\s.,!?])' +
+            RegExp.escape(_searchQuery) +
+            r'|' + // Whole word or word at start
+            r'\b' +
+            RegExp.escape(_searchQuery) +
+            r'\w*|' + // Word starting with query
+            r'\w*' +
+            RegExp.escape(_searchQuery) +
+            r'(?:[\s.,!?]|$)', // Word ending with query
+        caseSensitive: false,
+      );
+
+      _filteredScreenshots =
+          widget.allScreenshots.where((screenshot) {
+            final titleMatch =
+                screenshot.title != null &&
+                wordPattern.hasMatch(screenshot.title!.toLowerCase());
+
+            final descriptionMatch =
+                screenshot.description != null &&
+                wordPattern.hasMatch(screenshot.description!.toLowerCase());
+
+            final tagsMatch = screenshot.tags.any(
+              (tag) => tag.toLowerCase() == _searchQuery,
+            );
+
+            return titleMatch || descriptionMatch || tagsMatch;
+          }).toList();
+    }
   }
 
   @override
@@ -130,6 +144,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         screenshots: List.from(_filteredScreenshots),
                         initialIndex: initialIndex >= 0 ? initialIndex : 0,
                         allCollections: widget.allCollections,
+                        allScreenshots: widget.allScreenshots,
                         onUpdateCollection: widget.onUpdateCollection,
                         onDeleteScreenshot: widget.onDeleteScreenshot,
                         onScreenshotUpdated: () {

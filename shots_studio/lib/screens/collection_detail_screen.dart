@@ -568,6 +568,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                                     initialIndex:
                                         initialIndex >= 0 ? initialIndex : 0,
                                     allCollections: [widget.collection],
+                                    allScreenshots: widget.allScreenshots,
                                     onUpdateCollection:
                                         widget.onUpdateCollection,
                                     onDeleteScreenshot:
