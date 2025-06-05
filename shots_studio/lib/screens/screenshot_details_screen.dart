@@ -730,6 +730,16 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                         ...widget.screenshot.collectionIds.map((collectionId) {
                           final collection = widget.allCollections.firstWhere(
                             (c) => c.id == collectionId,
+                            orElse:
+                                () => Collection(
+                                  id: collectionId,
+                                  name: 'Unknown Collection',
+                                  description: '',
+                                  screenshotIds: [],
+                                  lastModified: DateTime.now(),
+                                  screenshotCount: 0,
+                                  isAutoAddEnabled: false,
+                                ),
                           );
 
                           return Chip(

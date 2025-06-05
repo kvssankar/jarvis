@@ -241,8 +241,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // Listen for batch processing updates with the new channel name
     service.on('batch_processed').listen((event) {
-      print("Main app: Received batch update event: $event");
-
       try {
         if (event != null && mounted) {
           final data = Map<String, dynamic>.from(event);

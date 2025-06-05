@@ -104,6 +104,7 @@ class CollectionsSection extends StatelessWidget {
                                 builder:
                                     (context) => CollectionDetailScreen(
                                       collection: collections[index],
+                                      allCollections: collections,
                                       allScreenshots: screenshots,
                                       onUpdateCollection: onUpdateCollection,
                                       onDeleteCollection: onDeleteCollection,

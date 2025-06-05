@@ -45,11 +45,6 @@ class AICategorizer {
       return AICategorizeResult(success: false, error: 'API key not set');
     }
 
-    // showing the collection's scanned set
-    print(
-      'Scanned set for collection ${collection.id}: ${collection.scannedSet}',
-    );
-
     final String modelName =
         prefs.getString('selected_model') ?? 'gemini-2.0-flash';
     final int maxParallel = (prefs.getInt('max_parallel_ai') ?? 4) * 6;
@@ -155,11 +150,6 @@ class AICategorizer {
 
       _isRunning = false;
       onCompleted?.call(); // Notify completion immediately
-
-      //scanned set is updated in the categorizeScreenshots method
-      print(
-        "Scanned set after categorization: ${currentCollection.scannedSet}",
-      );
 
       if (result.cancelled) {
         SnackbarService().showInfo(context, 'Auto-categorization cancelled.');

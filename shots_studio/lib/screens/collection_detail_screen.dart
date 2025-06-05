@@ -11,6 +11,7 @@ import 'package:shots_studio/screens/create_collection_screen.dart';
 
 class CollectionDetailScreen extends StatefulWidget {
   final Collection collection;
+  final List<Collection> allCollections;
   final List<Screenshot> allScreenshots;
   final Function(Collection) onUpdateCollection;
   final Function(String) onDeleteCollection;
@@ -19,6 +20,7 @@ class CollectionDetailScreen extends StatefulWidget {
   const CollectionDetailScreen({
     super.key,
     required this.collection,
+    required this.allCollections,
     required this.allScreenshots,
     required this.onUpdateCollection,
     required this.onDeleteCollection,
@@ -561,7 +563,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                                     ),
                                     initialIndex:
                                         initialIndex >= 0 ? initialIndex : 0,
-                                    allCollections: [widget.collection],
+                                    allCollections: widget.allCollections,
                                     allScreenshots: widget.allScreenshots,
                                     onUpdateCollection:
                                         widget.onUpdateCollection,

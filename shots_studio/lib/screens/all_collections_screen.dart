@@ -58,6 +58,7 @@ class AllCollectionsScreen extends StatelessWidget {
                             builder:
                                 (context) => CollectionDetailScreen(
                                   collection: collection,
+                                  allCollections: collections,
                                   allScreenshots: allScreenshots,
                                   onUpdateCollection: onUpdateCollection,
                                   onDeleteCollection: onDeleteCollection,
