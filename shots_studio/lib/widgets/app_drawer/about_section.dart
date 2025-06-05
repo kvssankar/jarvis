@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../services/sponsorship_service.dart';
+import '../sponsorship/sponsorship_dialog.dart';
 
 class AboutSection extends StatelessWidget {
   final String appVersion;
@@ -18,6 +20,20 @@ class AboutSection extends StatelessWidget {
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       throw Exception('Could not launch $urlString');
     }
+  }
+
+  void _showSponsorshipDialog(BuildContext context) {
+    final sponsorshipOptions = SponsorshipService.getAllOptions();
+
+    // Route to fullscreen dialog
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder:
+            (context) =>
+                SponsorshipDialog(sponsorshipOptions: sponsorshipOptions),
+        fullscreenDialog: true,
+      ),
+    );
   }
 
   @override
@@ -51,7 +67,7 @@ class AboutSection extends StatelessWidget {
           ),
           onTap: () {
             Navigator.pop(context);
-            _launchURL('https://github.com/sponsors/AnsahMohammad');
+            _showSponsorshipDialog(context);
           },
         ),
         Divider(color: theme.colorScheme.outline),
