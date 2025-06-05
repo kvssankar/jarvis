@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation - Shots Studio</title>
+    <meta name="description" content="Complete documentation for Shots Studio - AI-powered screenshot management application.">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .docs-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 100px 20px 60px;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 40px;
+        }
+
+        .docs-sidebar {
+            position: sticky;
+            top: 100px;
+            height: fit-content;
+            background: var(--bg-secondary);
+            padding: 24px;
+            border-radius: var(--border-radius-lg);
+            border: 1px solid var(--border-color);
+        }
+
+        .docs-nav {
+            list-style: none;
+        }
+
+        .docs-nav-item {
+            margin-bottom: 8px;
+        }
+
+        .docs-nav-link {
+            display: block;
+            padding: 8px 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            transition: var(--transition);
+            font-size: 14px;
+        }
+
+        .docs-nav-link:hover,
+        .docs-nav-link.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .docs-content {
+            background: var(--bg-primary);
+            padding: 40px;
+            border-radius: var(--border-radius-lg);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .docs-content h1 {
+            font-size: 2.5rem;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .docs-content h2 {
+            font-size: 1.75rem;
+            margin: 40px 0 16px;
+            color: var(--text-primary);
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 8px;
+        }
+
+        .docs-content h3 {
+            font-size: 1.25rem;
+            margin: 24px 0 12px;
+            color: var(--text-primary);
+        }
+
+        .docs-content p {
+            margin-bottom: 16px;
+            line-height: 1.7;
+            color: var(--text-secondary);
+        }
+
+        .docs-content ul, .docs-content ol {
+            margin-bottom: 16px;
+            padding-left: 24px;
+        }
+
+        .docs-content li {
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        .code-block {
+            background: #1e1e1e;
+            border-radius: var(--border-radius);
+            padding: 20px;
+            margin: 20px 0;
+            overflow-x: auto;
+        }
+
+        .code-block code {
+            color: #d4d4d4;
+            font-family: 'Fira Code', 'Monaco', 'Cascadia Code', monospace;
+            font-size: 14px;
+        }
+
+        .inline-code {
+            background: var(--bg-secondary);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Fira Code', 'Monaco', 'Cascadia Code', monospace;
+            font-size: 0.9em;
+            color: var(--primary-color);
+        }
+
+        .warning-box {
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: var(--border-radius);
+            padding: 16px;
+            margin: 20px 0;
+        }
+
+        .warning-box .warning-title {
+            font-weight: 600;
+            color: #92400e;
+            margin-bottom: 8px;
+        }
+
+        .warning-box p {
+            color: #92400e;
+            margin: 0;
+        }
+
+        .info-box {
+            background: #dbeafe;
+            border: 1px solid #3b82f6;
+            border-radius: var(--border-radius);
+            padding: 16px;
+            margin: 20px 0;
+        }
+
+        .info-box .info-title {
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 8px;
+        }
+
+        .info-box p {
+            color: #1e40af;
+            margin: 0;
+        }
+
+        @media (max-width: 768px) {
+            .docs-container {
+                grid-template-columns: 1fr;
+                padding-top: 80px;
+            }
+
+            .docs-sidebar {
+                position: static;
+                order: 2;
+            }
+
+            .docs-content {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <img src="assets/logo.png" alt="Shots Studio Logo" class="logo-img">
+                <span class="logo-text">Shots Studio</span>
+            </div>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="index.html" class="nav-link">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a href="index.html#features" class="nav-link">Features</a>
+                </li>
+                <li class="nav-item">
+                    <a href="index.html#about" class="nav-link">About</a>
+                </li>
+                <li class="nav-item">
+                    <a href="index.html#contact" class="nav-link">Contact</a>
+                </li>
+                <li class="nav-item">
+                    <a href="documentation.html" class="nav-link active">Documentation</a>
+                </li>
+                <li class="nav-item">
+                    <a href="index.html#download" class="nav-link cta-button">Download</a>
+                </li>
+            </ul>
+            <div class="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="docs-container">
+        <!-- Sidebar -->
+        <aside class="docs-sidebar">
+            <ul class="docs-nav">
+                <li class="docs-nav-item">
+                    <a href="#getting-started" class="docs-nav-link active">Getting Started</a>
+                </li>
+                <li class="docs-nav-item">
+                    <a href="#installation" class="docs-nav-link">Installation</a>
+                </li>
+                <li class="docs-nav-item">
+                    <a href="#api-setup" class="docs-nav-link">API Setup</a>
+                </li>
+                <li class="docs-nav-item">
+                    <a href="#features-guide" class="docs-nav-link">Features Guide</a>
+                </li>
+                <li class="docs-nav-item">
+                    <a href="#collections" class="docs-nav-link">Collections</a>
+                </li>
+                <li class="docs-nav-item">
+                    <a href="#search" class="docs-nav-link">Search & Filtering</a>
+                </li>
+                <li class="docs-nav-item">
+                    <a href="#settings" class="docs-nav-link">Settings</a>
+                </li>
+                <li class="docs-nav-item">
+                    <a href="#troubleshooting" class="docs-nav-link">Troubleshooting</a>
+                </li>
+                <li class="docs-nav-item">
+                    <a href="#api-reference" class="docs-nav-link">API Reference</a>
+                </li>
+                <li class="docs-nav-item">
+                    <a href="#contributing" class="docs-nav-link">Contributing</a>
+                </li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="docs-content">
+            <h1>Shots Studio Documentation</h1>
+            <p>Welcome to the complete documentation for Shots Studio, your AI-powered screenshot management solution.</p>
+
+            <section id="getting-started">
+                <h2>Getting Started</h2>
+                <p>Shots Studio is an Android application that uses artificial intelligence to help you organize, search, and manage your screenshots. This guide will walk you through everything you need to know to get started.</p>
+
+                <h3>What You'll Need</h3>
+                <ul>
+                    <li>Android device running Android 8.0 (API level 26) or higher</li>
+                    <li>Google Gemini API key (free to obtain)</li>
+                    <li>Storage permissions for accessing screenshots</li>
+                    <li>Internet connection for AI processing</li>
+                </ul>
+            </section>
+
+            <section id="installation">
+                <h2>Installation</h2>
+                
+                <h3>Download the APK</h3>
+                <ol>
+                    <li>Visit the <a href="https://github.com/yourusername/shots-studio/releases">Releases page</a> on GitHub</li>
+                    <li>Download the latest <code class="inline-code">shots-studio-v1.x.x.apk</code> file</li>
+                    <li>On your Android device, enable "Install from unknown sources" in Settings</li>
+                    <li>Open the downloaded APK file to install</li>
+                </ol>
+
+                <div class="warning-box">
+                    <div class="warning-title">⚠️ Security Notice</div>
+                    <p>Only download APK files from official sources. Always verify the file integrity before installation.</p>
+                </div>
+
+                <h3>First Launch</h3>
+                <p>When you first launch Shots Studio, you'll be prompted to:</p>
+                <ul>
+                    <li>Grant storage permissions</li>
+                    <li>Allow the app to access your device's screenshots</li>
+                    <li>Set up your Gemini API key</li>
+                </ul>
+            </section>
+
+            <section id="api-setup">
+                <h2>API Setup</h2>
+                
+                <h3>Getting Your Gemini API Key</h3>
+                <ol>
+                    <li>Visit <a href="https://ai.google.dev/gemini-api/docs/api-key">Google AI Studio</a></li>
+                    <li>Sign in with your Google account</li>
+                    <li>Click "Create API Key"</li>
+                    <li>Copy the generated API key</li>
+                </ol>
+
+                <h3>Configuring the API Key in Shots Studio</h3>
+                <ol>
+                    <li>Open Shots Studio</li>
+                    <li>Tap the menu icon (☰) in the top-left corner</li>
+                    <li>Select "Settings" → "API Key"</li>
+                    <li>Paste your API key and tap "Save"</li>
+                </ol>
+
+                <div class="code-block">
+                    <code>
+// Example API key format:
+AIzaSyBxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+                    </code>
+                </div>
+
+                <div class="info-box">
+                    <div class="info-title">💡 Privacy Note</div>
+                    <p>Your API key is stored locally on your device and is only used to communicate with Google's Gemini API. Shots Studio never stores your data on external servers.</p>
+                </div>
+            </section>
+
+            <section id="features-guide">
+                <h2>Features Guide</h2>
+
+                <h3>AI-Powered Analysis</h3>
+                <p>Shots Studio uses Google's Gemini AI to analyze your screenshots and extract:</p>
+                <ul>
+                    <li><strong>Text content</strong> - OCR extraction from images</li>
+                    <li><strong>Object detection</strong> - Identifying elements in screenshots</li>
+                    <li><strong>Context understanding</strong> - Understanding the purpose and content</li>
+                    <li><strong>Smart tags</strong> - Automatic categorization and tagging</li>
+                </ul>
+
+                <h3>Processing Screenshots</h3>
+                <ol>
+                    <li>Tap the AI ⚡️ button in the top-right corner</li>
+                    <li>Select screenshots to process (or process all)</li>
+                    <li>Choose your AI model:
+                        <ul>
+                            <li><strong>Gemini 2.0 Flash</strong> - Fast processing, good for bulk operations</li>
+                            <li><strong>Gemini 2.5 Pro</strong> - Detailed analysis, better for complex screenshots</li>
+                        </ul>
+                    </li>
+                    <li>Wait for processing to complete</li>
+                </ol>
+            </section>
+
+            <section id="collections">
+                <h2>Collections</h2>
+                
+                <h3>Creating Collections</h3>
+                <p>Collections help you group related screenshots for easy access:</p>
+                <ol>
+                    <li>Tap the "+" button on the main screen</li>
+                    <li>Select "Create Collection"</li>
+                    <li>Enter a name and description</li>
+                    <li>Optionally enable "Auto-Add" for automatic population</li>
+                </ol>
+
+                <h3>Auto-Add Feature</h3>
+                <p>When Auto-Add is enabled, new screenshots matching the collection criteria will be automatically added. The AI determines relevance based on:</p>
+                <ul>
+                    <li>Collection name and description</li>
+                    <li>Existing screenshots in the collection</li>
+                    <li>Content similarity analysis</li>
+                </ul>
+
+                <h3>Managing Collections</h3>
+                <ul>
+                    <li><strong>Add screenshots</strong> - Long-press screenshots and select "Add to Collection"</li>
+                    <li><strong>Remove screenshots</strong> - In collection view, long-press and select "Remove"</li>
+                    <li><strong>Edit collection</strong> - Tap the edit icon in collection header</li>
+                    <li><strong>Delete collection</strong> - In collection settings, tap "Delete Collection"</li>
+                </ul>
+            </section>
+
+            <section id="search">
+                <h2>Search & Filtering</h2>
+
+                <h3>AI-Powered Search</h3>
+                <p>Search your screenshots using natural language:</p>
+                
+                <div class="code-block">
+                    <code>
+// Example search queries:
+"screenshots with code"
+"images containing text about recipes"
+"social media posts"
+"screenshots from last week"
+"images with phone numbers"
+                    </code>
+                </div>
+
+                <h3>Search Features</h3>
+                <ul>
+                    <li><strong>Content search</strong> - Find by text content within screenshots</li>
+                    <li><strong>Object search</strong> - Search for specific UI elements or objects</li>
+                    <li><strong>Date filtering</strong> - Filter by creation date</li>
+                    <li><strong>Tag filtering</strong> - Filter by AI-generated or manual tags</li>
+                    <li><strong>Collection filtering</strong> - Search within specific collections</li>
+                </ul>
+
+                <h3>Advanced Search Operators</h3>
+                <ul>
+                    <li><code class="inline-code">tag:work</code> - Find screenshots tagged with "work"</li>
+                    <li><code class="inline-code">date:2024-01-01</code> - Find screenshots from specific date</li>
+                    <li><code class="inline-code">collection:recipes</code> - Search within "recipes" collection</li>
+                </ul>
+            </section>
+
+            <section id="settings">
+                <h2>Settings</h2>
+
+                <h3>API Configuration</h3>
+                <ul>
+                    <li><strong>API Key</strong> - Manage your Gemini API key</li>
+                    <li><strong>Default Model</strong> - Choose between Flash and Pro models</li>
+                    <li><strong>Processing Quality</strong> - Adjust image quality for API calls</li>
+                </ul>
+
+                <h3>Storage & Performance</h3>
+                <ul>
+                    <li><strong>Cache Management</strong> - Clear processed data cache</li>
+                    <li><strong>Thumbnail Quality</strong> - Adjust thumbnail generation settings</li>
+                    <li><strong>Background Processing</strong> - Enable processing in background</li>
+                </ul>
+
+                <h3>Privacy Settings</h3>
+                <ul>
+                    <li><strong>Data Retention</strong> - How long to keep processed data</li>
+                    <li><strong>Analytics</strong> - Anonymous usage analytics (opt-in)</li>
+                    <li><strong>Crash Reporting</strong> - Help improve the app</li>
+                </ul>
+            </section>
+
+            <section id="troubleshooting">
+                <h2>Troubleshooting</h2>
+
+                <h3>Common Issues</h3>
+                
+                <h4>API Key Not Working</h4>
+                <ul>
+                    <li>Verify the API key is correctly copied (no extra spaces)</li>
+                    <li>Check that Gemini API is enabled in Google Cloud Console</li>
+                    <li>Ensure you have sufficient API quota</li>
+                </ul>
+
+                <h4>Screenshots Not Processing</h4>
+                <ul>
+                    <li>Check internet connection</li>
+                    <li>Verify storage permissions are granted</li>
+                    <li>Try processing smaller batches</li>
+                    <li>Check API usage limits</li>
+                </ul>
+
+                <h4>App Crashing</h4>
+                <ul>
+                    <li>Clear app cache in Android settings</li>
+                    <li>Restart the app</li>
+                    <li>Check available device storage</li>
+                    <li>Update to latest version</li>
+                </ul>
+
+                <h3>Performance Optimization</h3>
+                <ul>
+                    <li>Process screenshots in smaller batches</li>
+                    <li>Use Gemini Flash for bulk operations</li>
+                    <li>Clear cache periodically</li>
+                    <li>Close other apps while processing</li>
+                </ul>
+            </section>
+
+            <section id="api-reference">
+                <h2>API Reference</h2>
+
+                <h3>Gemini API Integration</h3>
+                <p>Shots Studio integrates with Google's Gemini API for AI processing. Here's how the integration works:</p>
+
+                <div class="code-block">
+                    <code>
+// API Endpoint
+POST https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent
+
+// Request Headers
+Content-Type: application/json
+Authorization: Bearer YOUR_API_KEY
+
+// Request Body Example
+{
+  "contents": [{
+    "parts": [
+      {
+        "text": "Analyze this screenshot and extract text content, identify objects, and suggest relevant tags."
+      },
+      {
+        "inline_data": {
+          "mime_type": "image/jpeg",
+          "data": "base64_encoded_image_data"
+        }
+      }
+    ]
+  }]
+}
+                    </code>
+                </div>
+
+                <h3>Response Format</h3>
+                <p>The API returns structured data that Shots Studio processes to extract:</p>
+                <ul>
+                    <li>Extracted text content</li>
+                    <li>Identified objects and UI elements</li>
+                    <li>Suggested tags and categories</li>
+                    <li>Content description and context</li>
+                </ul>
+            </section>
+
+            <section id="contributing">
+                <h2>Contributing</h2>
+
+                <h3>Development Setup</h3>
+                <ol>
+                    <li>Clone the repository:
+                        <div class="code-block">
+                            <code>git clone https://github.com/yourusername/shots-studio.git</code>
+                        </div>
+                    </li>
+                    <li>Install Flutter SDK (version 3.10 or higher)</li>
+                    <li>Install dependencies:
+                        <div class="code-block">
+                            <code>flutter pub get</code>
+                        </div>
+                    </li>
+                    <li>Run the app:
+                        <div class="code-block">
+                            <code>flutter run</code>
+                        </div>
+                    </li>
+                </ol>
+
+                <h3>Project Structure</h3>
+                <div class="code-block">
+                    <code>
+lib/
+├── main.dart              # App entry point
+├── models/               # Data models
+│   ├── screenshot_model.dart
+│   ├── collection_model.dart
+│   └── gemini_model.dart
+├── screens/              # UI screens
+│   ├── home_screen.dart
+│   ├── search_screen.dart
+│   └── settings_screen.dart
+├── services/             # Business logic
+│   ├── gemini_service.dart
+│   ├── storage_service.dart
+│   └── notification_service.dart
+└── widgets/              # Reusable UI components
+                    </code>
+                </div>
+
+                <h3>Contributing Guidelines</h3>
+                <ul>
+                    <li>Fork the repository and create a feature branch</li>
+                    <li>Follow the existing code style and conventions</li>
+                    <li>Add tests for new functionality</li>
+                    <li>Update documentation as needed</li>
+                    <li>Submit a pull request with detailed description</li>
+                </ul>
+
+                <h3>Reporting Issues</h3>
+                <p>Found a bug or have a feature request? Please:</p>
+                <ol>
+                    <li>Check existing issues first</li>
+                    <li>Provide detailed reproduction steps</li>
+                    <li>Include device and Android version info</li>
+                    <li>Attach relevant screenshots or logs</li>
+                </ol>
+            </section>
+
+            <div style="margin-top: 60px; padding-top: 40px; border-top: 1px solid var(--border-color);">
+                <p style="text-align: center; color: var(--text-light);">
+                    Need more help? <a href="index.html#contact" style="color: var(--primary-color);">Contact our support team</a> or 
+                    <a href="https://github.com/yourusername/shots-studio/issues" style="color: var(--primary-color);">open an issue on GitHub</a>.
+                </p>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+        // Documentation-specific JavaScript
+        document.addEventListener('DOMContentLoaded', function() {
+            // Smooth scrolling for sidebar links
+            const sidebarLinks = document.querySelectorAll('.docs-nav-link');
+            
+            sidebarLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const targetId = this.getAttribute('href').substring(1);
+                    const targetElement = document.getElementById(targetId);
+                    
+                    if (targetElement) {
+                        targetElement.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
+                        });
+                        
+                        // Update active link
+                        sidebarLinks.forEach(l => l.classList.remove('active'));
+                        this.classList.add('active');
+                    }
+                });
+            });
+
+            // Update active link on scroll
+            window.addEventListener('scroll', function() {
+                const sections = document.querySelectorAll('section[id]');
+                const scrollPos = window.scrollY + 120;
+                
+                sections.forEach(section => {
+                    const sectionTop = section.offsetTop;
+                    const sectionHeight = section.offsetHeight;
+                    const sectionId = section.getAttribute('id');
+                    
+                    if (scrollPos >= sectionTop && scrollPos < sectionTop + sectionHeight) {
+                        sidebarLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href') === `#${sectionId}`) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
