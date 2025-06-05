@@ -63,7 +63,8 @@ class AICategorizer {
               (s) =>
                   !currentScreenshotIds.contains(s.id) &&
                   !s.isDeleted &&
-                  !currentCollection.scannedSet.contains(s.id),
+                  !currentCollection.scannedSet.contains(s.id) &&
+                  s.aiProcessed,
             )
             .toList();
 

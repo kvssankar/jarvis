@@ -178,7 +178,7 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                       children: [
                         Flexible(
                           child: Text(
-                            'Enable Auto-Add Screenshots',
+                            'Smart Categorization',
                             style: TextStyle(
                               fontSize: 16,
                               color:

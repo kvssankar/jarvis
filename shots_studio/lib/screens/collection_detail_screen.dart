@@ -397,16 +397,10 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                       children: [
                         const Flexible(
                           child: Text(
-                            'Enable Auto-Add Screenshots (AI)',
+                            'Smart Categorization',
                             style: TextStyle(fontSize: 16),
                             overflow: TextOverflow.ellipsis,
                           ),
-                        ),
-                        const SizedBox(width: 6),
-                        Icon(
-                          Icons.info_outline,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.primary,
                         ),
                       ],
                     ),
