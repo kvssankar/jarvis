@@ -247,6 +247,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         if (event != null && mounted) {
           final data = Map<String, dynamic>.from(event);
           final updatedScreenshotsJson = data['updatedScreenshots'] as String?;
+          final responseJson = data['response'] as String?;
           final processedCount = data['processedCount'] as int? ?? 0;
           final totalCount = data['totalCount'] as int? ?? 0;
 
@@ -266,11 +267,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     )
                     .toList();
 
+            // Process auto-categorization if response data is available
+            Map<String, dynamic>? response;
+            if (responseJson != null) {
+              try {
+                response = jsonDecode(responseJson) as Map<String, dynamic>;
+              } catch (e) {
+                print("Main app: Error parsing response JSON: $e");
+              }
+            }
+
             setState(() {
               _aiProcessedCount = processedCount;
               _aiTotalToProcess = totalCount;
 
-              // Update screenshots in our list
+              // Update screenshots in our list and handle auto-categorization
               for (var updatedScreenshot in updatedScreenshots) {
                 final index = _screenshots.indexWhere(
                   (s) => s.id == updatedScreenshot.id,
@@ -278,6 +289,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 if (index != -1) {
                   _screenshots[index] = updatedScreenshot;
                   print("Main app: Updated screenshot ${updatedScreenshot.id}");
+
+                  // Handle auto-categorization for this screenshot
+                  if (response != null &&
+                      response['suggestedCollections'] != null) {
+                    _handleAutoCategorization(updatedScreenshot, response);
+                  }
                 }
               }
             });
@@ -988,6 +1005,62 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             ),
       ),
     );
+  }
+
+  /// Handle auto-categorization for a screenshot based on AI suggestions
+  void _handleAutoCategorization(
+    Screenshot screenshot,
+    Map<String, dynamic> response,
+  ) {
+    try {
+      Map<dynamic, dynamic>? suggestionsMap;
+      if (response['suggestedCollections'] is Map<String, List<String>>) {
+        suggestionsMap =
+            response['suggestedCollections'] as Map<String, List<String>>;
+      } else if (response['suggestedCollections'] is Map<dynamic, dynamic>) {
+        suggestionsMap =
+            response['suggestedCollections'] as Map<dynamic, dynamic>;
+      }
+
+      List<String> suggestedCollections = [];
+      if (suggestionsMap != null && suggestionsMap.containsKey(screenshot.id)) {
+        final suggestions = suggestionsMap[screenshot.id];
+        if (suggestions is List) {
+          suggestedCollections = List<String>.from(
+            suggestions.whereType<String>(),
+          );
+        } else if (suggestions is String) {
+          suggestedCollections = [suggestions];
+        }
+      }
+
+      if (suggestedCollections.isNotEmpty) {
+        int autoAddedCount = 0;
+        for (var collection in _collections) {
+          if (collection.isAutoAddEnabled &&
+              suggestedCollections.contains(collection.name) &&
+              !screenshot.collectionIds.contains(collection.id) &&
+              !collection.screenshotIds.contains(screenshot.id)) {
+            // Auto-add screenshot to this collection
+            final updatedCollection = collection.addScreenshot(
+              screenshot.id,
+              isAutoCategorized: true,
+            );
+            _updateCollection(updatedCollection);
+            screenshot.collectionIds.add(collection.id);
+            autoAddedCount++;
+          }
+        }
+
+        if (autoAddedCount > 0) {
+          print(
+            "Main app: Auto-categorized screenshot ${screenshot.id} into $autoAddedCount collection(s)",
+          );
+        }
+      }
+    } catch (e) {
+      print('Main app: Error handling auto-categorization: $e');
+    }
   }
 
   // Helper method to check and auto-process screenshots
