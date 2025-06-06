@@ -13,6 +13,26 @@ class AppDrawerHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
+          // App icon with theme coloring
+          Container(
+            width: 48,
+            height: 48,
+            margin: const EdgeInsets.only(bottom: 16),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.onPrimaryContainer.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: ColorFiltered(
+              colorFilter: ColorFilter.mode(
+                theme.colorScheme.onPrimaryContainer,
+                BlendMode.srcIn,
+              ),
+              child: Image.asset(
+                'assets/icon/ic_launcher_monochrome.png',
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
           Text(
             'Shots Studio',
             style: TextStyle(
