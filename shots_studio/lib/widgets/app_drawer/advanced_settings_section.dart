@@ -171,6 +171,33 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
           ),
         ),
         SwitchListTile(
+          secondary: Icon(
+            Icons.developer_mode,
+            color: theme.colorScheme.primary,
+          ),
+          title: Text(
+            'Developer Mode',
+            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+          ),
+          subtitle: Text(
+            _devMode
+                ? 'Additional settings are enabled'
+                : 'Additional settings are hidden',
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          value: _devMode,
+          activeColor: theme.colorScheme.primary,
+          onChanged: (bool value) {
+            setState(() {
+              _devMode = value;
+            });
+            _saveDevMode(value);
+            if (widget.onDevModeChanged != null) {
+              widget.onDevModeChanged!(value);
+            }
+          },
+        ),
+        SwitchListTile(
           secondary: Icon(Icons.filter_list, color: theme.colorScheme.primary),
           title: Text(
             'Enable Screenshot Limit',
@@ -254,33 +281,6 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
               }
             },
           ),
-        ),
-        SwitchListTile(
-          secondary: Icon(
-            Icons.developer_mode,
-            color: theme.colorScheme.primary,
-          ),
-          title: Text(
-            'Developer Mode',
-            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
-          ),
-          subtitle: Text(
-            _devMode
-                ? 'Additional debug options are enabled'
-                : 'Debug options are hidden',
-            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-          ),
-          value: _devMode,
-          activeColor: theme.colorScheme.primary,
-          onChanged: (bool value) {
-            setState(() {
-              _devMode = value;
-            });
-            _saveDevMode(value);
-            if (widget.onDevModeChanged != null) {
-              widget.onDevModeChanged!(value);
-            }
-          },
         ),
         SwitchListTile(
           secondary: Icon(

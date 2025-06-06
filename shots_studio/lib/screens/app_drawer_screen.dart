@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shots_studio/widgets/app_drawer/index.dart';
 import 'package:shots_studio/services/analytics_service.dart';
 
@@ -52,9 +51,7 @@ class AppDrawer extends StatefulWidget {
 class _AppDrawerState extends State<AppDrawer> {
   String _appVersion = '...';
   int _aboutTapCount = 0;
-  bool _showAdvancedSettings = false;
   static const int _requiredTaps = 7;
-  static const String _advancedSettingsKey = 'show_advanced_settings';
 
   @override
   void initState() {
@@ -65,7 +62,6 @@ class _AppDrawerState extends State<AppDrawer> {
     AnalyticsService().logFeatureUsed('app_drawer');
 
     _loadAppVersion();
-    _loadAdvancedSettingsState();
   }
 
   Future<void> _loadAppVersion() async {
@@ -75,33 +71,23 @@ class _AppDrawerState extends State<AppDrawer> {
     });
   }
 
-  Future<void> _loadAdvancedSettingsState() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _showAdvancedSettings = prefs.getBool(_advancedSettingsKey) ?? false;
-    });
-  }
-
-  Future<void> _saveAdvancedSettingsState() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_advancedSettingsKey, _showAdvancedSettings);
-  }
-
   void _handleAboutTap() {
     setState(() {
       _aboutTapCount++;
       if (_aboutTapCount >= _requiredTaps) {
-        _showAdvancedSettings = true;
+        // Enable dev mode when 7 taps reached
+        if (widget.onDevModeChanged != null) {
+          widget.onDevModeChanged!(true);
+        }
         _aboutTapCount = 0; // Reset counter after unlocking
-        _saveAdvancedSettingsState(); // Save the new state
 
-        // Log analytics for advanced settings unlock
-        AnalyticsService().logFeatureUsed('advanced_settings_unlock');
-        AnalyticsService().logFeatureAdopted('advanced_settings');
+        // Log analytics for dev mode unlock
+        AnalyticsService().logFeatureUsed('dev_mode_unlock');
+        AnalyticsService().logFeatureAdopted('dev_mode');
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Advanced settings unlocked!'),
+            content: Text('Developer mode enabled!'),
             duration: Duration(seconds: 2),
           ),
         );
@@ -113,17 +99,16 @@ class _AppDrawerState extends State<AppDrawer> {
   }
 
   void _handleAboutLongPress() {
-    if (_showAdvancedSettings) {
-      setState(() {
-        _showAdvancedSettings = false;
-        _saveAdvancedSettingsState();
+    if (widget.currentDevMode == true) {
+      if (widget.onDevModeChanged != null) {
+        widget.onDevModeChanged!(false);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Advanced settings hidden'),
+            content: Text('Developer mode disabled'),
             duration: Duration(seconds: 2),
           ),
         );
-      });
+      }
     }
   }
 
@@ -147,7 +132,7 @@ class _AppDrawerState extends State<AppDrawer> {
               currentAutoProcessEnabled: widget.currentAutoProcessEnabled,
               onAutoProcessEnabledChanged: widget.onAutoProcessEnabledChanged,
             ),
-            if (_showAdvancedSettings)
+            if (widget.currentDevMode == true) ...[
               AdvancedSettingsSection(
                 currentLimit: widget.currentLimit,
                 onLimitChanged: widget.onLimitChanged,
@@ -160,7 +145,8 @@ class _AppDrawerState extends State<AppDrawer> {
                 currentAnalyticsEnabled: widget.currentAnalyticsEnabled,
                 onAnalyticsEnabledChanged: widget.onAnalyticsEnabledChanged,
               ),
-            const PerformanceSection(),
+              const PerformanceSection(),
+            ],
             AboutSection(
               appVersion: _appVersion,
               onTap: _handleAboutTap,
