@@ -21,27 +21,67 @@ class ScreenshotCard extends StatelessWidget {
 
     Widget imageWidget;
     if (screenshot.path != null) {
-      imageWidget = ClipRRect(
-        borderRadius: BorderRadius.circular(
-          borderRadius - 3.0,
-        ), // Adjust for border width
-        child: Image.file(
-          File(screenshot.path!),
-          fit: BoxFit.cover,
-          cacheWidth: 300,
-          frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
-            if (wasSynchronouslyLoaded) return child;
-            return AnimatedOpacity(
-              opacity: frame == null ? 0 : 1,
-              duration: const Duration(milliseconds: 200),
-              child: child,
-            );
-          },
-          errorBuilder: (context, error, stackTrace) {
-            return const SizedBox.shrink();
-          },
-        ),
-      );
+      final file = File(screenshot.path!);
+      if (file.existsSync()) {
+        imageWidget = ClipRRect(
+          borderRadius: BorderRadius.circular(
+            borderRadius - 3.0,
+          ), // Adjust for border width
+          child: Image.file(
+            file,
+            fit: BoxFit.cover,
+            cacheWidth: 300,
+            frameBuilder: (context, child, frame, wasSynchronouslyLoaded) {
+              if (wasSynchronouslyLoaded) return child;
+              return AnimatedOpacity(
+                opacity: frame == null ? 0 : 1,
+                duration: const Duration(milliseconds: 200),
+                child: child,
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return Container(
+                color: Theme.of(context).colorScheme.surface,
+                child: Center(
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    size: 24,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      } else {
+        imageWidget = ClipRRect(
+          borderRadius: BorderRadius.circular(borderRadius - 3.0),
+          child: Container(
+            color: Theme.of(context).colorScheme.surface,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.image_not_supported_outlined,
+                    size: 24,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'File not found',
+                    style: TextStyle(
+                      fontSize: 8,
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
     } else if (screenshot.bytes != null) {
       imageWidget = ClipRRect(
         borderRadius: BorderRadius.circular(
@@ -60,14 +100,32 @@ class ScreenshotCard extends StatelessWidget {
             );
           },
           errorBuilder: (context, error, stackTrace) {
-            return const SizedBox.shrink();
+            return Container(
+              color: Theme.of(context).colorScheme.surface,
+              child: Center(
+                child: Icon(
+                  Icons.broken_image_outlined,
+                  size: 24,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            );
           },
         ),
       );
     } else {
       imageWidget = ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius - 3.0),
-        child: const SizedBox.shrink(),
+        child: Container(
+          color: Theme.of(context).colorScheme.surface,
+          child: Center(
+            child: Icon(
+              Icons.broken_image_outlined,
+              size: 24,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
       );
     }
 

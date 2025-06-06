@@ -16,20 +16,103 @@ class FullScreenImageViewer extends StatelessWidget {
     Widget imageContent;
 
     if (screenshot.path != null) {
-      imageContent = Image.file(File(screenshot.path!));
+      final file = File(screenshot.path!);
+      if (file.existsSync()) {
+        imageContent = Image.file(
+          file,
+          errorBuilder: (context, error, stackTrace) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.broken_image_outlined,
+                    size: 100,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Image could not be loaded',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      } else {
+        imageContent = Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.image_not_supported_outlined,
+                size: 100,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Image file not found',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'The original file may have been moved or deleted',
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        );
+      }
     } else if (screenshot.bytes != null) {
-      imageContent = Image.memory(screenshot.bytes!);
+      imageContent = Image.memory(
+        screenshot.bytes!,
+        errorBuilder: (context, error, stackTrace) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.broken_image_outlined,
+                  size: 100,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Image could not be loaded',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 18,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
     } else {
       imageContent = Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              Icons.broken_image,
+              Icons.broken_image_outlined,
               size: 100,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
             Text(
               'Image not available',
               style: TextStyle(
