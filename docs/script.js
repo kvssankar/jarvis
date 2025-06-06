@@ -3,14 +3,35 @@ document.addEventListener('DOMContentLoaded', function() {
     const hamburger = document.querySelector('.hamburger');
     const navMenu = document.querySelector('.nav-menu');
     const navLinks = document.querySelectorAll('.nav-link');
+    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+
+    // Set active state for current page navigation
+    navLinks.forEach(link => {
+        const href = link.getAttribute('href');
+        // Check if this link corresponds to the current page
+        if ((href === currentPage) || 
+            (currentPage === 'index.html' && href === '#home') ||
+            (currentPage === '' && href === '#home') ||
+            (href === currentPage && !link.classList.contains('cta-button'))) {
+            link.classList.add('active');
+        }
+        
+        // Special handling for the current page with a different active link
+        if (currentPage === 'donation.html' && link.getAttribute('href') === 'donation.html') {
+            // Remove the active class if we're on the donation page but not the CTA button
+            if (!link.classList.contains('cta-button')) {
+                link.classList.remove('active');
+            }
+        }
+    });
 
     hamburger.addEventListener('click', function() {
         hamburger.classList.toggle('active');
         navMenu.classList.toggle('active');
     });
 
-    // Close mobile menu when clicking on a link
-    navLinks.forEach(link => {
+    // Close mobile menu when clicking on any link in nav menu
+    document.querySelectorAll('.nav-menu a').forEach(link => {
         link.addEventListener('click', function() {
             hamburger.classList.remove('active');
             navMenu.classList.remove('active');
@@ -20,6 +41,11 @@ document.addEventListener('DOMContentLoaded', function() {
     // Smooth scrolling for anchor links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
+            // Skip external links or links with full URLs
+            if (this.getAttribute('href').includes('://')) {
+                return;
+            }
+            
             e.preventDefault();
             const target = document.querySelector(this.getAttribute('href'));
             if (target) {

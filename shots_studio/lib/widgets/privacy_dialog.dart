@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
+import 'package:shots_studio/utils/privacy_content_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class PrivacyAcknowledgementDialog extends StatelessWidget {
@@ -35,57 +36,12 @@ class PrivacyAcknowledgementDialog extends StatelessWidget {
         child: ListBody(
           children: <Widget>[
             Text(
-              "By clicking 'Agree & Continue', you acknowledge and consent to the following:\n\n"
-              "Shots Studio utilizes Google Gemini, a third-party cloud-based AI service, to process and analyze your images for features such as generating searchable text, suggesting tags, and organizing collections. For these features to function, your images will be transmitted to and processed by Google's servers.\n",
+              "By clicking 'Agree & Continue', you acknowledge and consent to the following:\n",
               style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
             ),
-            const SizedBox(height: 10),
-            InkWell(
-              child: Text(
-                "This image processing is subject to Google's Privacy Policy.",
-                style: TextStyle(
-                  color: theme.colorScheme.primary,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-              onTap:
-                  () => _launchURL(
-                    context,
-                    'https://policies.google.com/privacy',
-                  ),
-            ),
-            const SizedBox(height: 5),
-            InkWell(
-              child: Text(
-                "And Google's Gemini API Terms of Service.",
-                style: TextStyle(
-                  color: theme.colorScheme.primary,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-              onTap: () => _launchURL(context, 'https://ai.google.dev/terms'),
-            ),
-            const SizedBox(height: 10),
-            InkWell(
-              child: Text(
-                "View our complete Privacy Policy for more details.",
-                style: TextStyle(
-                  color: theme.colorScheme.primary,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-              onTap:
-                  () => _launchURL(
-                    context,
-                    'https://ansahmohammad.github.io/shots-studio/privacy.html',
-                  ),
-            ),
-            const SizedBox(height: 10),
-            Text(
-              "\nShots Studio itself does not permanently store your original images on its own servers after they have been processed by Google Gemini for the aforementioned AI features.\n\n"
-              "Please ensure you review and are comfortable with Google's terms and privacy practices before proceeding. If you do not agree, you may not be able to use the AI-powered features of this application.\n"
-              "P.S. Don't worry, your cat memes are safe with us. 😺",
-              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+            ...PrivacyContentProvider.getPrivacyContent(
+              context,
+              launchUrlCallback: _launchURL,
             ),
           ],
         ),

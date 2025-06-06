@@ -76,7 +76,11 @@ class AboutSection extends StatelessWidget {
             AnalyticsService().logFeatureUsed('support_clicked');
 
             Navigator.pop(context);
-            _showSponsorshipDialog(context);
+            // temporarily disabled sponsorship dialog until stripe is fixed
+            // _showSponsorshipDialog(context);
+            _launchURL(
+              'https://Ansahmohammad.github.io/shots-studio/donation.html',
+            );
           },
         ),
         Divider(color: theme.colorScheme.outline),

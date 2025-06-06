@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/analytics_service.dart';
+import '../../utils/privacy_content_provider.dart';
 
 // Privacy dialog as a stateless widget
 class _PrivacyDialog extends StatelessWidget {
@@ -24,62 +25,39 @@ class _PrivacyDialog extends StatelessWidget {
         content: SingleChildScrollView(
           child: ListBody(
             children: <Widget>[
-              Text(
-                "Shots Studio utilizes Google Gemini, a third-party cloud-based AI service, to process and analyze your images for features such as generating searchable text, suggesting tags, and organizing collections. For these features to function, your images will be transmitted to and processed by Google's servers.\n",
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 10),
-              InkWell(
-                child: Text(
-                  "This image processing is subject to Google's Privacy Policy.",
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-                onTap: () {
-                  // Log analytics for privacy policy link click
-                  AnalyticsService().logFeatureUsed(
-                    'privacy_policy_link_clicked',
-                  );
-                  AnalyticsService().logFeatureUsed(
-                    'google_privacy_policy_clicked',
-                  );
+              ...PrivacyContentProvider.getPrivacyContent(
+                context,
+                launchUrlCallback: (BuildContext ctx, String urlString) {
+                  // Add analytics tracking for different links
+                  if (urlString.contains('policies.google.com')) {
+                    AnalyticsService().logFeatureUsed(
+                      'privacy_policy_link_clicked',
+                    );
+                    AnalyticsService().logFeatureUsed(
+                      'google_privacy_policy_clicked',
+                    );
+                  } else if (urlString.contains('ai.google.dev/terms')) {
+                    AnalyticsService().logFeatureUsed(
+                      'terms_of_service_link_clicked',
+                    );
+                    AnalyticsService().logFeatureUsed(
+                      'google_gemini_terms_clicked',
+                    );
+                  } else if (urlString.contains('ansahmohammad.github.io')) {
+                    AnalyticsService().logFeatureUsed(
+                      'app_privacy_policy_clicked',
+                    );
+                  }
 
-                  _launchURL(context, 'https://policies.google.com/privacy');
-                },
-              ),
-              const SizedBox(height: 5),
-              InkWell(
-                child: Text(
-                  "And Google's Gemini API Terms of Service.",
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.primary,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
-                onTap: () {
-                  // Log analytics for terms of service link click
-                  AnalyticsService().logFeatureUsed(
-                    'terms_of_service_link_clicked',
-                  );
-                  AnalyticsService().logFeatureUsed(
-                    'google_gemini_terms_clicked',
-                  );
-
-                  _launchURL(context, 'https://ai.google.dev/terms');
+                  _launchURL(ctx, urlString);
                 },
               ),
               const SizedBox(height: 10),
               Text(
-                "\nShots Studio itself does not permanently store your original images on its own servers after they have been processed by Google Gemini for the aforementioned AI features.\n\n"
-                "Anonymous usage analytics are collected to help improve the app experience. This includes basic feature usage patterns and performance metrics, but no personal information or image content is included. Analytics collection is optional and can be disabled in Advanced Settings (accessible by tapping 'About' 7 times in the app drawer).\n\n"
-                "Please ensure you review and are comfortable with Google's terms and privacy practices before using the AI features.\n"
-                "P.S. Don't worry, your cat memes are safe with us. 😺",
+                "Analytics collection is optional and can be disabled in Advanced Settings (accessible by tapping 'About' 7 times in the app drawer).",
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
                 ),
               ),
             ],

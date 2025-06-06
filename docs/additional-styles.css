@@ -1,0 +1,43 @@
+/* Additional styles for navigation with all items aligned properly */
+
+/* Ensure nav items have proper spacing */
+.nav-item {
+    display: flex;
+    align-items: center;
+}
+
+/* Enhance button spacing and appearance in navigation */
+.nav-item .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Mobile menu improvements */
+@media (max-width: 768px) {
+    /* Style nav buttons in mobile view */
+    .nav-item {
+        width: 100%;
+        justify-content: center;
+        margin: 8px 0;
+    }
+    
+    /* Ensure Star and Sponsor buttons look good on mobile */
+    .nav-item .nav-btn {
+        padding: 10px 20px;
+        justify-content: center;
+        width: 80%;
+        max-width: 200px;
+    }
+    
+    /* Fix button spacing in mobile view */
+    .nav-item:nth-last-child(2),
+    .nav-item:last-child {
+        margin-top: 10px;
+    }
+    
+    /* Make nav buttons text visible on mobile */
+    .btn-text {
+        display: inline-block !important;
+    }
+}

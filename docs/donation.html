@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Support Shots Studio - Donate</title>
+    <meta name="description" content="Support the development of Shots Studio, an AI-powered screenshot management tool. Your donations help us continue to improve and maintain this open-source project.">
+    <meta name="keywords" content="AI, screenshot management, donations, open source, support, sponsorship">
+    <meta name="author" content="Shots Studio Team">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://shotsstudio.com/donation.html">
+    <meta property="og:title" content="Support Shots Studio - Donate">
+    <meta property="og:description" content="Support the development of Shots Studio through donations. Help us continue to improve this open-source project.">
+    <meta property="og:image" content="https://shotsstudio.com/assets/og-image.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://shotsstudio.com/donation.html">
+    <meta property="twitter:title" content="Support Shots Studio - Donate">
+    <meta property="twitter:description" content="Support the development of Shots Studio through donations. Help us continue to improve this open-source project.">
+    <meta property="twitter:image" content="https://shotsstudio.com/assets/twitter-image.png">
+
+    <link rel="icon" type="image/x-icon" href="assets/favicon_io/favicon.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="assets/favicon_io/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="assets/favicon_io/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="assets/favicon_io/favicon-16x16.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="assets/favicon_io/android-chrome-192x192.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="assets/favicon_io/android-chrome-512x512.png">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Additional styles for donation page */
+        .donation-hero {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            padding: 120px 0 80px;
+            text-align: center;
+        }
+        
+        .donation-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 32px;
+            margin-top: 60px;
+        }
+        
+        .donation-card {
+            background: var(--bg-primary);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-lg);
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: var(--transition);
+            border: 1px solid var(--border-color);
+        }
+        
+        .donation-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--primary-color);
+        }
+        
+        .donation-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            font-size: 2.5rem;
+        }
+        
+        .donation-icon.github {
+            background: linear-gradient(135deg, #333 0%, #24292e 100%);
+            color: white;
+        }
+        
+        .donation-icon.heart {
+            background: linear-gradient(135deg, #ea4aaa 0%, #ff6b6b 100%);
+            color: white;
+        }
+        
+        .donation-icon.crypto {
+            background: linear-gradient(135deg, #f7931a 0%, #ff9500 100%);
+            color: white;
+        }
+        
+        .donation-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        
+        .donation-description {
+            color: var(--text-secondary);
+            margin-bottom: 32px;
+            flex-grow: 1;
+        }
+        
+        .supporters-section {
+            background: var(--bg-secondary);
+            padding: 100px 0;
+        }
+        
+        .supporter-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 24px;
+            margin-top: 40px;
+        }
+        
+        .supporter-card {
+            background: var(--bg-primary);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            border: 1px solid var(--border-color);
+        }
+        
+        .supporter-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .supporter-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            object-fit: cover;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border: 3px solid white;
+        }
+        
+        .supporter-name {
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .supporter-tier {
+            display: inline-block;
+            font-size: 0.875rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #6366f1, #a855f7);
+            color: white;
+            margin-bottom: 12px;
+        }
+        
+        .why-donate-section {
+            padding: 100px 0;
+        }
+        
+        .reasons-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 32px;
+            margin-top: 60px;
+        }
+        
+        .reason-card {
+            padding: 32px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+        }
+        
+        .reason-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .reason-icon {
+            font-size: 2rem;
+            color: var(--primary-color);
+            margin-bottom: 16px;
+        }
+        
+        .future-goals {
+            background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+            padding: 100px 0;
+            text-align: center;
+        }
+        
+        .goal-timeline {
+            max-width: 800px;
+            margin: 60px auto 0;
+            position: relative;
+        }
+        
+        .goal-timeline::before {
+            content: '';
+            position: absolute;
+            height: 100%;
+            width: 4px;
+            background: var(--primary-color);
+            left: 50%;
+            transform: translateX(-50%);
+            opacity: 0.3;
+        }
+        
+        .timeline-item {
+            display: flex;
+            justify-content: center;
+            position: relative;
+            margin-bottom: 60px;
+        }
+        
+        .timeline-content {
+            width: 60%;
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            padding: 24px;
+            position: relative;
+        }
+        
+        .timeline-dot {
+            width: 20px;
+            height: 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: 50%;
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 24px;
+            z-index: 2;
+            box-shadow: 0 0 0 5px rgba(99, 102, 241, 0.2);
+        }
+        
+        .timeline-date {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+        }
+        
+        @media (max-width: 768px) {
+            .goal-timeline::before {
+                left: 20px;
+            }
+            
+            .timeline-item {
+                justify-content: flex-start;
+                padding-left: 40px;
+            }
+            
+            .timeline-dot {
+                left: 20px;
+                transform: none;
+            }
+            
+            .timeline-content {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="index.html" class="nav-logo">
+                <img src="assets/logo.png" alt="Shots Studio Logo" class="logo-img">
+                <span class="logo-text">Shots Studio</span>
+            </a>
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="index.html#home" class="nav-link">Home</a>
+                </li>
+                <li class="nav-item">
+                    <a href="index.html#pricing" class="nav-link">Pricing</a>
+                </li>
+                <li class="nav-item">
+                    <a href="index.html#about" class="nav-link">About</a>
+                </li>
+                <li class="nav-item">
+                    <a href="documentation.html" class="nav-link">Documentation</a>
+                </li>
+                <li class="nav-item">
+                    <a href="index.html#download" class="nav-link">Download</a>
+                </li>
+                <li class="nav-item">
+                    <a href="https://github.com/AnsahMohammad/shots-studio" class="nav-link" title="Star on GitHub">
+                        <i class="fab fa-github"></i>
+                        Star
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#donation-options" class="nav-link cta-button active" title="Donate">
+                        <i class="fas fa-heart"></i>
+                        Donate
+                    </a>
+                </li>
+            </ul>
+            <div class="hamburger">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Donation Hero -->
+    <section class="donation-hero">
+        <div class="container">
+            <h1 class="section-title">Support Shots Studio</h1>
+            <p class="section-description">
+                Help us continue to build and improve the best AI-powered screenshot management tool
+            </p>
+            <div id="donation-options" class="donation-cards">
+                <div class="donation-card">
+                    <div class="donation-icon github">
+                        <i class="fab fa-github"></i>
+                    </div>
+                    <h3 class="donation-title">GitHub Sponsors</h3>
+                    <p class="donation-description">
+                        Support the project through GitHub Sponsors. Choose a monthly tier and receive exclusive benefits.
+                    </p>
+                    <a href="https://github.com/sponsors/AnsahMohammad" class="btn btn-primary">
+                        <i class="fab fa-github"></i>
+                        Become a Sponsor
+                    </a>
+                </div>
+                <div class="donation-card">
+                    <div class="donation-icon heart">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <h3 class="donation-title">One-time Donation</h3>
+                    <p class="donation-description">
+                        Make a one-time contribution to support the development and maintenance of Shots Studio.
+                        <br><br>
+                        <small>(Coming soon)</small>
+                    </p>
+                    <button disabled class="btn btn-secondary">
+                        <i class="fas fa-money-bill-wave"></i>
+                        Donate Once
+                    </button>
+                </div>
+                <div class="donation-card">
+                    <div class="donation-icon crypto">
+                        <i class="fab fa-bitcoin"></i>
+                    </div>
+                    <h3 class="donation-title">Cryptocurrency</h3>
+                    <p class="donation-description">
+                        Support Shots Studio using cryptocurrency. Send ETH, BTC, or other cryptocurrencies.
+                        <br><br>
+                        <small>(Coming soon)</small>
+                    </p>
+                    <button disabled class="btn btn-secondary">
+                        <i class="fab fa-ethereum"></i>
+                        Donate Crypto
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Donate Section -->
+    <section class="why-donate-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Why Your Support Matters</h2>
+                <p class="section-description">
+                    As an open source project, Shots Studio relies on community support to continue growing
+                </p>
+            </div>
+            <div class="reasons-grid">
+                <div class="reason-card">
+                    <div class="reason-icon">
+                        <i class="fas fa-code"></i>
+                    </div>
+                    <h3>Ongoing Development</h3>
+                    <p>
+                        Your donations directly fund the development of new features, improvements, and bug fixes. This helps us make Shots Studio more powerful and user-friendly with each update.
+                    </p>
+                </div>
+                <div class="reason-card">
+                    <div class="reason-icon">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <h3>Server & API Costs</h3>
+                    <p>
+                        While the app itself is free and processes data locally, we have ongoing costs for hosting documentation, websites, and API services that help the app function smoothly.
+                    </p>
+                </div>
+                <div class="reason-card">
+                    <div class="reason-icon">
+                        <i class="fas fa-hands-helping"></i>
+                    </div>
+                    <h3>Support Developers</h3>
+                    <p>
+                        Your contributions help compensate the developers who dedicate their time and expertise to building and maintaining Shots Studio. This helps us stay motivated and focused.
+                    </p>
+                </div>
+                <div class="reason-card">
+                    <div class="reason-icon">
+                        <i class="fas fa-bullhorn"></i>
+                    </div>
+                    <h3>Community Growth</h3>
+                    <p>
+                        Donations enable us to promote Shots Studio to a wider audience through marketing efforts and community events, helping our user base grow and thrive.
+                    </p>
+                </div>
+                <div class="reason-card">
+                    <div class="reason-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <h3>Better Tools</h3>
+                    <p>
+                        Your support helps us invest in better development tools, testing infrastructure, and other resources that improve the quality and reliability of the app.
+                    </p>
+                </div>
+                <div class="reason-card">
+                    <div class="reason-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <h3>Future Innovation</h3>
+                    <p>
+                        With steady support, we can invest in research and experimentation to bring cutting-edge features to Shots Studio ahead of other screenshot management tools.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Future Goals Section
+    <section class="future-goals">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">What's Next for Shots Studio</h2>
+                <p class="section-description">
+                    Here's what your donations will help us accomplish in the coming months
+                </p>
+            </div>
+            <div class="goal-timeline">
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">Q3 2025</div>
+                        <h3>Desktop App & Cross-Platform Support</h3>
+                        <p>
+                            We're working to bring Shots Studio to Windows, macOS, and Linux so you can manage screenshots across all your devices.
+                        </p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">Q4 2025</div>
+                        <h3>Cloud Sync & Backup</h3>
+                        <p>
+                            Securely sync your organized screenshots and metadata across multiple devices while maintaining our privacy-first approach.
+                        </p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">Q1 2026</div>
+                        <h3>Advanced AI Features</h3>
+                        <p>
+                            Implementing more intelligent organization tools, including smart collections, advanced search capabilities, and enhanced metadata extraction.
+                        </p>
+                    </div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-dot"></div>
+                    <div class="timeline-content">
+                        <div class="timeline-date">Q2 2026</div>
+                        <h3>Team Collaboration</h3>
+                        <p>
+                            Share and collaborate on collections with team members, perfect for designers, developers, and other collaborative environments.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section> -->
+
+    <!-- Supporters Section
+    <section class="supporters-section">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Our Supporters</h2>
+                <p class="section-description">
+                    Thank you to these amazing people who make Shots Studio possible
+                </p>
+            </div>
+            <div class="supporter-cards" id="supporters-container">
+                <!-- Placeholder supporter cards, will be replaced by JavaScript -->
+                <!-- <div class="supporter-card">
+                    <img src="https://github.com/github.png" alt="GitHub" class="supporter-avatar">
+                    <h3 class="supporter-name">GitHub</h3>
+                    <span class="supporter-tier">Platinum Sponsor</span>
+                    <p>Supporting open source since 2008</p>
+                </div>
+                <div class="supporter-card">
+                    <img src="https://avatars.githubusercontent.com/u/583231" alt="Octocat" class="supporter-avatar">
+                    <h3 class="supporter-name">Octocat</h3>
+                    <span class="supporter-tier">Gold Sponsor</span>
+                    <p>Passionate about innovative tools</p>
+                </div>
+                <div class="supporter-card">
+                    <div style="width: 80px; height: 80px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; background: #f0f0f0; border-radius: 50%; font-size: 2rem; color: #666;">
+                        <i class="fas fa-heart"></i>
+                    </div>
+                    <h3 class="supporter-name">Maybe You?</h3>
+                    <span class="supporter-tier">Become a Sponsor</span>
+                    <p>Join our community of supporters</p>
+                </div>
+            </div>
+        </div>
+    </section> --> -->
+
+    <!-- CTA Section -->
+    <section class="download" style="background: linear-gradient(135deg, #e0f2fe, #dbeafe);">
+        <div class="container">
+            <div class="download-content">
+                <h2 class="section-title">Ready to Support Us?</h2>
+                <p class="section-description">
+                    Join our growing community of sponsors and help shape the future of Shots Studio
+                </p>
+                <div class="download-buttons">
+                    <a href="https://github.com/sponsors/AnsahMohammad" class="btn btn-primary btn-large">
+                        <i class="fas fa-heart"></i>
+                        Become a Sponsor
+                    </a>
+                    <a href="index.html#download" class="btn btn-secondary btn-large">
+                        <i class="fas fa-download"></i>
+                        Try Shots Studio
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <div class="footer-logo">
+                        <img src="assets/logo.png" alt="Shots Studio Logo" class="logo-img">
+                        <span class="logo-text">Shots Studio</span>
+                    </div>
+                    <p class="footer-description">
+                        AI-powered screenshot management. Searchable. Organized. Decluttered.
+                    </p>
+                    <div class="social-links">
+                        <a href="#" class="social-link"><i class="fab fa-twitter"></i></a>
+                        <a href="https://github.com/AnsahMohammad/shots-studio" class="social-link"><i class="fab fa-github"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-linkedin"></i></a>
+                        <a href="#" class="social-link"><i class="fab fa-discord"></i></a>
+                    </div>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-title">Product</h4>
+                    <ul class="footer-links">
+                        <li><a href="index.html#features">Features</a></li>
+                        <li><a href="index.html#pricing">Pricing</a></li>
+                        <li><a href="index.html#download">Download</a></li>
+                        <li><a href="documentation.html">Documentation</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-title">Company</h4>
+                    <ul class="footer-links">
+                        <li><a href="index.html#about">About</a></li>
+                        <li><a href="index.html#contact">Contact</a></li>
+                        <li><a href="donation.html">Support Us</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4 class="footer-title">Legal</h4>
+                    <ul class="footer-links">
+                        <li><a href="privacy.html">Privacy Policy</a></li>
+                        <li><a href="terms.html">Terms of Service</a></li>
+                        <li><a href="https://github.com/AnsahMohammad/shots-studio/blob/main/LICENSE">License</a></li>
+                        <li><a href="#">Security</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 Shots Studio. All rights reserved.</p>
+                <p>Licensed under Business Source License 1.1</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        // Script to fetch GitHub sponsors (example)
+        // In a production environment, you would need to use GitHub's API
+        // with proper authentication to fetch actual sponsors data
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            // In a real implementation, you would fetch from GitHub API
+            // For example using:
+            // fetch('https://api.github.com/repos/AnsahMohammad/shots-studio/sponsors')
+            
+            // This is a placeholder that would be replaced with real API calls
+            // when you implement it on your actual website
+            console.log('Github sponsors would be fetched here in production.');
+            
+            // Example of how you might implement this with the GitHub GraphQL API
+            /*
+            async function fetchSponsors() {
+                // This would require a GitHub token with proper permissions
+                // and would typically be done server-side to protect the token
+                const response = await fetch('https://api.github.com/graphql', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer YOUR_GITHUB_TOKEN'
+                    },
+                    body: JSON.stringify({
+                        query: `{
+                            user(login: "AnsahMohammad") {
+                                sponsorshipsAsMaintainer(first: 10) {
+                                    nodes {
+                                        sponsor {
+                                            login
+                                            avatarUrl
+                                            url
+                                        }
+                                        tier {
+                                            name
+                                        }
+                                    }
+                                }
+                            }
+                        }`
+                    })
+                });
+                
+                const data = await response.json();
+                return data;
+            }
+            
+            fetchSponsors().then(data => {
+                // Process sponsor data and update the page
+                console.log(data);
+            });
+            */
+        });
+    </script>
+</body>
+</html>
