@@ -3,6 +3,7 @@ import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/screens/screenshot_swipe_detail_screen.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 
 class SearchScreen extends StatefulWidget {
   final List<Screenshot> allScreenshots;
@@ -28,6 +29,7 @@ class _SearchScreenState extends State<SearchScreen> {
   String _searchQuery = '';
   List<Screenshot> _filteredScreenshots = [];
   final TextEditingController _searchController = TextEditingController();
+  DateTime? _searchStartTime;
 
   @override
   void initState() {
@@ -54,7 +56,35 @@ class _SearchScreenState extends State<SearchScreen> {
   void _onSearchChanged() {
     setState(() {
       _searchQuery = _searchController.text.toLowerCase();
+
+      // Track search start time
+      if (_searchQuery.isNotEmpty && _searchStartTime == null) {
+        _searchStartTime = DateTime.now();
+      }
+
       _filterScreenshots();
+
+      // Log search analytics after filtering
+      if (_searchQuery.isNotEmpty) {
+        AnalyticsService().logSearchQuery(
+          _searchQuery,
+          _filteredScreenshots.length,
+        );
+
+        // Log successful search time if results found
+        if (_filteredScreenshots.isNotEmpty && _searchStartTime != null) {
+          final searchTime =
+              DateTime.now().difference(_searchStartTime!).inMilliseconds;
+          AnalyticsService().logSearchTimeToResult(searchTime, true);
+          AnalyticsService().logSearchSuccess(_searchQuery, searchTime);
+        } else if (_filteredScreenshots.isEmpty && _searchStartTime != null) {
+          final searchTime =
+              DateTime.now().difference(_searchStartTime!).inMilliseconds;
+          AnalyticsService().logSearchTimeToResult(searchTime, false);
+        }
+      } else {
+        _searchStartTime = null; // Reset when search is cleared
+      }
     });
   }
 

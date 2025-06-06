@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/services/ai_categorization_service.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
 import 'package:shots_studio/screens/manage_collection_screenshots_screen.dart';
 import 'package:shots_studio/screens/screenshot_swipe_detail_screen.dart';
@@ -55,6 +56,10 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
 
     if (_isAutoAddEnabled) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
+        // Log analytics for automatic auto-categorization trigger on screen load
+        AnalyticsService().logFeatureUsed(
+          'auto_categorization_automatic_trigger',
+        );
         _startAutoCategorization();
       });
     }
@@ -241,6 +246,9 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
     // to ensure we have the latest scannedSet
     Collection currentCollection = await _loadCurrentCollectionFromPrefs();
 
+    // Log analytics for manual auto-categorization trigger
+    AnalyticsService().logFeatureUsed('auto_categorization_manual_trigger');
+
     final result = await _aiCategorizer.startAutoCategorization(
       collection: currentCollection,
       allScreenshots: widget.allScreenshots,
@@ -256,6 +264,13 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
               ...addedScreenshotIds,
             ];
           });
+
+          // Log analytics for screenshots added to this specific collection
+          AnalyticsService().logScreenshotsInCollection(
+            widget.collection.hashCode, // Use collection hashCode as ID
+            _currentScreenshotIds.length,
+          );
+
           await _saveChanges();
         }
       },
@@ -288,6 +303,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
   }
 
   void _stopAutoCategorization() {
+    AnalyticsService().logFeatureUsed('auto_categorization_manual_stop');
     _aiCategorizer.stopAutoCategorization();
     if (mounted) {
       setState(() {
@@ -415,6 +431,13 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                     setState(() {
                       _isAutoAddEnabled = value;
                     });
+
+                    AnalyticsService().logFeatureUsed(
+                      value
+                          ? 'auto_categorization_enabled'
+                          : 'auto_categorization_disabled',
+                    );
+
                     await _saveChanges();
                   },
                 ),

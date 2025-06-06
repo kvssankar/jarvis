@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 
 class SettingsSection extends StatefulWidget {
   final String? currentApiKey;
@@ -41,6 +42,10 @@ class _SettingsSectionState extends State<SettingsSection> {
     super.initState();
     _apiKeyController = TextEditingController(text: widget.currentApiKey ?? '');
     _selectedModelName = widget.currentModelName;
+
+    // Track when settings are viewed
+    AnalyticsService().logScreenView('settings_section');
+    AnalyticsService().logFeatureUsed('view_settings');
 
     // Initialize auto-processing state
     if (widget.currentAutoProcessEnabled != null) {
@@ -140,6 +145,13 @@ class _SettingsSectionState extends State<SettingsSection> {
               _autoProcessEnabled = value;
             });
             _saveAutoProcessEnabled(value);
+
+            // Track settings change in analytics
+            AnalyticsService().logFeatureUsed('setting_changed_auto_process');
+            AnalyticsService().logFeatureAdopted(
+              value ? 'auto_process_enabled' : 'auto_process_disabled',
+            );
+
             if (widget.onAutoProcessEnabledChanged != null) {
               widget.onAutoProcessEnabledChanged!(value);
             }
@@ -170,6 +182,10 @@ class _SettingsSectionState extends State<SettingsSection> {
                 });
                 widget.onModelChanged(newValue);
                 _saveModelName(newValue);
+
+                // Track model change in analytics
+                AnalyticsService().logFeatureUsed('setting_changed_ai_model');
+                AnalyticsService().logFeatureAdopted('model_$newValue');
               }
             },
             items:
@@ -202,6 +218,9 @@ class _SettingsSectionState extends State<SettingsSection> {
               size: 20,
             ),
             onPressed: () async {
+              // Track when users seek API key help
+              AnalyticsService().logFeatureUsed('api_key_help_clicked');
+
               final Uri url = Uri.parse(
                 'https://aistudio.google.com/app/apikey',
               );
@@ -264,6 +283,17 @@ class _SettingsSectionState extends State<SettingsSection> {
             onChanged: (value) {
               widget.onApiKeyChanged(value);
               _saveApiKey(value);
+
+              // Track API key changes in analytics (only track if key was added or removed, not the actual key)
+              if (_apiKeyController.text.isEmpty && value.isNotEmpty) {
+                // API key was added
+                AnalyticsService().logFeatureUsed('api_key_added');
+                AnalyticsService().logFeatureAdopted('gemini_api_configured');
+              } else if (_apiKeyController.text.isNotEmpty && value.isEmpty) {
+                // API key was removed
+                AnalyticsService().logFeatureUsed('api_key_removed');
+              }
+
               setState(() {}); // Refresh to update the suffix icon
             },
           ),

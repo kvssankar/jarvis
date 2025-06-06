@@ -27,9 +27,18 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:shots_studio/widgets/ai_processing_container.dart';
 import 'package:shots_studio/services/background_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:shots_studio/services/analytics_service.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Initialize Analytics
+  await AnalyticsService().initialize();
 
   // Optimize image cache for better memory management
   MemoryUtils.optimizeImageCache();
@@ -194,6 +203,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isScreenshotLimitEnabled = false;
   bool _devMode = false;
   bool _autoProcessEnabled = true;
+  bool _analyticsEnabled = true;
 
   // update screenshots
   List<Screenshot> get _activeScreenshots {
@@ -208,6 +218,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // Log analytics for app startup and home screen view
+    AnalyticsService().logScreenView('home_screen');
+    AnalyticsService().logCurrentUsageTime();
+
     _loadDataFromPrefs();
     _loadSettings();
     if (!kIsWeb) {
@@ -219,6 +234,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       // Show privacy dialog and only proceed to API key guide if accepted
       bool privacyAccepted = await showPrivacyDialogIfNeeded(context);
       if (privacyAccepted && context.mounted) {
+        // Log install info when onboarding is completed
+        AnalyticsService().logInstallInfo();
+
         // API key guide will only show after privacy is accepted
         await showApiKeyGuideIfNeeded(context, _apiKey, _updateApiKey);
         // Automatically process any unprocessed screenshots
@@ -296,6 +314,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 }
               }
             });
+
+            // Log AI processing success analytics
+            AnalyticsService().logAIProcessingSuccess(
+              updatedScreenshots.length,
+            );
+            AnalyticsService().logTotalScreenshotsProcessed(
+              _screenshots.where((s) => s.aiProcessed).length,
+            );
 
             // Save updated data
             _saveDataToPrefs();
@@ -461,6 +487,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _isScreenshotLimitEnabled = prefs.getBool('limit_enabled') ?? false;
       _devMode = prefs.getBool('dev_mode') ?? false;
       _autoProcessEnabled = prefs.getBool('auto_process_enabled') ?? true;
+      _analyticsEnabled = prefs.getBool('analytics_consent_enabled') ?? true;
     });
   }
 
@@ -516,6 +543,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     SharedPreferences.getInstance().then((prefs) {
       prefs.setBool('auto_process_enabled', enabled);
     });
+  }
+
+  void _updateAnalyticsEnabled(bool enabled) {
+    setState(() {
+      _analyticsEnabled = enabled;
+    });
+    // Analytics consent is handled by the AnalyticsService directly
+    // The service saves the preference and manages the consent state
   }
 
   Future<void> _saveDevMode(bool value) async {
@@ -686,6 +721,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   Future<void> _takeScreenshot(ImageSource source) async {
     try {
+      final startTime = DateTime.now();
+
+      // Log feature usage
+      String sourceStr = source == ImageSource.camera ? 'camera' : 'gallery';
+      AnalyticsService().logFeatureUsed('image_picker_$sourceStr');
+
       List<XFile>? images;
 
       if (source == ImageSource.camera) {
@@ -749,6 +790,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         });
         await _saveDataToPrefs();
 
+        // Log image loading analytics
+        final loadTime = DateTime.now().difference(startTime).inMilliseconds;
+        String sourceStr = source == ImageSource.camera ? 'camera' : 'gallery';
+        AnalyticsService().logImageLoadTime(loadTime, sourceStr);
+        AnalyticsService().logTotalScreenshotsProcessed(_screenshots.length);
+
         // Auto-process the newly added screenshots
         if (newScreenshots.isNotEmpty) {
           _autoProcessWithGemini();
@@ -760,6 +807,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _loadingProgress = 0;
         _totalToLoad = 0;
       });
+
+      // Log error analytics
+      AnalyticsService().logNetworkError(e.toString(), 'image_picker');
+
       print('Error picking images: $e');
     }
   }
@@ -946,6 +997,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _collections.add(collection);
     });
     _saveDataToPrefs();
+
+    // Log analytics
+    AnalyticsService().logCollectionCreated();
+    AnalyticsService().logTotalCollections(_collections.length);
+    _logCollectionStats();
   }
 
   void _updateCollection(Collection updatedCollection) {
@@ -958,6 +1014,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
     });
     _saveDataToPrefs();
+
+    // Log collection stats after update
+    _logCollectionStats();
   }
 
   void _deleteCollection(String collectionId) {
@@ -968,6 +1027,34 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
     });
     _saveDataToPrefs();
+
+    // Log analytics
+    AnalyticsService().logCollectionDeleted();
+    AnalyticsService().logTotalCollections(_collections.length);
+    _logCollectionStats();
+  }
+
+  void _logCollectionStats() {
+    if (_collections.isEmpty) return;
+
+    // Calculate collection statistics
+    final screenshotCounts =
+        _collections.map((c) => c.screenshotIds.length).toList();
+    final totalScreenshots = screenshotCounts.fold(
+      0,
+      (sum, count) => sum + count,
+    );
+    final avgScreenshots = totalScreenshots / _collections.length;
+    final minScreenshots = screenshotCounts.reduce((a, b) => a < b ? a : b);
+    final maxScreenshots = screenshotCounts.reduce((a, b) => a > b ? a : b);
+
+    // Log collection statistics
+    AnalyticsService().logCollectionStats(
+      _collections.length,
+      avgScreenshots.round(),
+      minScreenshots,
+      maxScreenshots,
+    );
   }
 
   void _deleteScreenshot(String screenshotId) {
@@ -992,6 +1079,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   void _navigateToSearchScreen() {
+    // Log navigation analytics
+    AnalyticsService().logScreenView('search_screen');
+    AnalyticsService().logUserPath('home_screen', 'search_screen');
+    AnalyticsService().logFeatureUsed('search');
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder:
@@ -1054,6 +1146,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           print(
             "Main app: Auto-categorized screenshot ${screenshot.id} into $autoAddedCount collection(s)",
           );
+
+          // Log auto-categorization analytics
+          AnalyticsService().logScreenshotsAutoCategorized(autoAddedCount);
+          AnalyticsService().logFeatureUsed('auto_categorization');
         }
       }
     } catch (e) {
@@ -1108,6 +1204,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onDevModeChanged: _updateDevMode,
         currentAutoProcessEnabled: _autoProcessEnabled,
         onAutoProcessEnabledChanged: _updateAutoProcessEnabled,
+        currentAnalyticsEnabled: _analyticsEnabled,
+        onAnalyticsEnabledChanged: _updateAnalyticsEnabled,
         apiKeyFieldKey: _apiKeyFieldKey,
       ),
       floatingActionButton: FloatingActionButton(
@@ -1238,6 +1336,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   void _showScreenshotDetail(Screenshot screenshot) {
+    // Log navigation analytics
+    AnalyticsService().logScreenView('screenshot_detail_screen');
+    AnalyticsService().logUserPath('home_screen', 'screenshot_detail_screen');
+    AnalyticsService().logFeatureUsed('screenshot_detail_view');
+
     Navigator.of(context)
         .push(
           MaterialPageRoute(

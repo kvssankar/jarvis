@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/screens/collection_detail_screen.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 import 'package:shots_studio/widgets/collections/collection_list_item.dart';
 
 class AllCollectionsScreen extends StatelessWidget {
@@ -22,6 +23,9 @@ class AllCollectionsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Track screen access
+    AnalyticsService().logScreenView('all_collections_screen');
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Collections'),
@@ -53,6 +57,9 @@ class AllCollectionsScreen extends StatelessWidget {
                     child: CollectionListItem(
                       collection: collection,
                       onTap: () {
+                        AnalyticsService().logFeatureUsed(
+                          'collection_opened_from_all_collections',
+                        );
                         Navigator.of(context).push(
                           MaterialPageRoute(
                             builder:

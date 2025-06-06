@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shots_studio/widgets/app_drawer/index.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 
 class AppDrawer extends StatefulWidget {
   final String? currentApiKey;
@@ -19,6 +20,8 @@ class AppDrawer extends StatefulWidget {
   final Function(bool)? onDevModeChanged;
   final bool? currentAutoProcessEnabled;
   final Function(bool)? onAutoProcessEnabledChanged;
+  final bool? currentAnalyticsEnabled;
+  final Function(bool)? onAnalyticsEnabledChanged;
   final Key? apiKeyFieldKey;
 
   const AppDrawer({
@@ -37,6 +40,8 @@ class AppDrawer extends StatefulWidget {
     this.onDevModeChanged,
     this.currentAutoProcessEnabled,
     this.onAutoProcessEnabledChanged,
+    this.currentAnalyticsEnabled,
+    this.onAnalyticsEnabledChanged,
     this.apiKeyFieldKey,
   });
 
@@ -54,6 +59,11 @@ class _AppDrawerState extends State<AppDrawer> {
   @override
   void initState() {
     super.initState();
+
+    // Log analytics for app drawer view
+    AnalyticsService().logScreenView('app_drawer_screen');
+    AnalyticsService().logFeatureUsed('app_drawer');
+
     _loadAppVersion();
     _loadAdvancedSettingsState();
   }
@@ -84,6 +94,11 @@ class _AppDrawerState extends State<AppDrawer> {
         _showAdvancedSettings = true;
         _aboutTapCount = 0; // Reset counter after unlocking
         _saveAdvancedSettingsState(); // Save the new state
+
+        // Log analytics for advanced settings unlock
+        AnalyticsService().logFeatureUsed('advanced_settings_unlock');
+        AnalyticsService().logFeatureAdopted('advanced_settings');
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Advanced settings unlocked!'),
@@ -142,6 +157,8 @@ class _AppDrawerState extends State<AppDrawer> {
                 onLimitEnabledChanged: widget.onLimitEnabledChanged,
                 currentDevMode: widget.currentDevMode,
                 onDevModeChanged: widget.onDevModeChanged,
+                currentAnalyticsEnabled: widget.currentAnalyticsEnabled,
+                onAnalyticsEnabledChanged: widget.onAnalyticsEnabledChanged,
               ),
             const PerformanceSection(),
             AboutSection(

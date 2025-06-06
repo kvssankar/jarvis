@@ -5,6 +5,7 @@ import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/services/ai_service_manager.dart';
 import 'package:shots_studio/services/ai_service.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AICategorizer {
@@ -68,6 +69,9 @@ class AICategorizer {
     _totalCount = candidateScreenshots.length;
 
     onProgressUpdate(_processedCount, _totalCount);
+
+    // Log analytics for auto-categorization start
+    AnalyticsService().logFeatureUsed('auto_categorization_started');
 
     // If no candidate screenshots, silently return success without any snackbar
     if (candidateScreenshots.isEmpty) {
@@ -135,6 +139,11 @@ class AICategorizer {
                       }
                     }
 
+                    // Log analytics for auto-categorized screenshots
+                    AnalyticsService().logScreenshotsAutoCategorized(
+                      batchMatchingIds.length,
+                    );
+
                     // Notify about added screenshots
                     onScreenshotsAdded(batchMatchingIds);
                   }
@@ -153,6 +162,7 @@ class AICategorizer {
 
       if (result.cancelled) {
         SnackbarService().showInfo(context, 'Auto-categorization cancelled.');
+        AnalyticsService().logFeatureUsed('auto_categorization_cancelled');
         return AICategorizeResult(
           success: false,
           cancelled: true,
@@ -162,6 +172,14 @@ class AICategorizer {
 
       if (result.success) {
         final List<String> totalMatchingScreenshotIds = result.data ?? [];
+
+        // Log final analytics for total auto-categorized screenshots
+        if (totalMatchingScreenshotIds.isNotEmpty) {
+          AnalyticsService().logScreenshotsAutoCategorized(
+            totalMatchingScreenshotIds.length,
+          );
+          AnalyticsService().logFeatureUsed('auto_categorization_completed');
+        }
 
         // Show final summary
         if (totalMatchingScreenshotIds.isNotEmpty) {
@@ -185,6 +203,7 @@ class AICategorizer {
           context,
           result.error ?? 'Auto-categorization failed',
         );
+        AnalyticsService().logFeatureUsed('auto_categorization_failed');
         return AICategorizeResult(
           success: false,
           error: result.error ?? 'Auto-categorization failed',
@@ -193,6 +212,7 @@ class AICategorizer {
     } catch (e) {
       _isRunning = false;
       onCompleted?.call(); // Notify completion on error too
+      AnalyticsService().logFeatureUsed('auto_categorization_error');
       SnackbarService().showError(
         context,
         'Error during auto-categorization: ${e.toString()}',
@@ -203,7 +223,7 @@ class AICategorizer {
       );
     } finally {
       _isRunning = false;
-      onCompleted?.call(); // Ensure completion is always called
+      onCompleted?.call();
       _processedCount = 0;
       _totalCount = 0;
     }

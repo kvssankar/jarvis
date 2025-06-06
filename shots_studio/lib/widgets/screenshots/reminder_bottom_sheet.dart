@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 
 class ReminderBottomSheet extends StatefulWidget {
   final DateTime? initialReminderTime;
@@ -83,6 +84,10 @@ class _ReminderBottomSheetState extends State<ReminderBottomSheet> {
 
   void _setReminder() {
     if (_formKey.currentState!.validate() && _selectedDateTime != null) {
+      // Log reminder analytics
+      AnalyticsService().logReminderSet();
+      AnalyticsService().logFeatureUsed('reminder_set');
+
       Navigator.of(context).pop({
         'reminderTime': _selectedDateTime,
         'reminderText': _reminderTextController.text.trim(),

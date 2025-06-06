@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 
 class AdvancedSettingsSection extends StatefulWidget {
   final int currentLimit;
@@ -10,6 +11,8 @@ class AdvancedSettingsSection extends StatefulWidget {
   final Function(bool)? onLimitEnabledChanged;
   final bool? currentDevMode;
   final Function(bool)? onDevModeChanged;
+  final bool? currentAnalyticsEnabled;
+  final Function(bool)? onAnalyticsEnabledChanged;
 
   const AdvancedSettingsSection({
     super.key,
@@ -21,6 +24,8 @@ class AdvancedSettingsSection extends StatefulWidget {
     this.onLimitEnabledChanged,
     this.currentDevMode,
     this.onDevModeChanged,
+    this.currentAnalyticsEnabled,
+    this.onAnalyticsEnabledChanged,
   });
 
   @override
@@ -33,6 +38,7 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
   late TextEditingController _maxParallelController;
   bool _isLimitEnabled = true;
   bool _devMode = false;
+  bool _analyticsEnabled = true;
 
   static const String _limitPrefKey = 'limit';
   static const String _maxParallelPrefKey = 'maxParallel';
@@ -61,6 +67,13 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
     } else {
       _loadDevModePref();
     }
+
+    // Initialize analytics consent state
+    if (widget.currentAnalyticsEnabled != null) {
+      _analyticsEnabled = widget.currentAnalyticsEnabled!;
+    } else {
+      _loadAnalyticsEnabledPref();
+    }
   }
 
   Future<void> _loadLimitEnabledPref() async {
@@ -74,6 +87,13 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _devMode = prefs.getBool(_devModePrefKey) ?? false;
+    });
+  }
+
+  void _loadAnalyticsEnabledPref() async {
+    final analyticsService = AnalyticsService();
+    setState(() {
+      _analyticsEnabled = analyticsService.analyticsEnabled;
     });
   }
 
@@ -96,6 +116,10 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
         );
       }
     }
+    if (widget.currentAnalyticsEnabled != oldWidget.currentAnalyticsEnabled &&
+        widget.currentAnalyticsEnabled != null) {
+      _analyticsEnabled = widget.currentAnalyticsEnabled!;
+    }
   }
 
   Future<void> _saveLimit(int value) async {
@@ -116,6 +140,15 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
   Future<void> _saveDevMode(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_devModePrefKey, value);
+  }
+
+  Future<void> _saveAnalyticsEnabled(bool value) async {
+    final analyticsService = AnalyticsService();
+    if (value) {
+      await analyticsService.enableAnalytics();
+    } else {
+      await analyticsService.disableAnalytics();
+    }
   }
 
   @override
@@ -246,6 +279,33 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
             _saveDevMode(value);
             if (widget.onDevModeChanged != null) {
               widget.onDevModeChanged!(value);
+            }
+          },
+        ),
+        SwitchListTile(
+          secondary: Icon(
+            Icons.analytics_outlined,
+            color: theme.colorScheme.primary,
+          ),
+          title: Text(
+            'Analytics & Telemetry',
+            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+          ),
+          subtitle: Text(
+            _analyticsEnabled
+                ? 'Help improve the app by sharing usage data'
+                : 'Analytics and crash reporting disabled',
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          value: _analyticsEnabled,
+          activeColor: theme.colorScheme.primary,
+          onChanged: (bool value) {
+            setState(() {
+              _analyticsEnabled = value;
+            });
+            _saveAnalyticsEnabled(value);
+            if (widget.onAnalyticsEnabledChanged != null) {
+              widget.onAnalyticsEnabledChanged!(value);
             }
           },
         ),

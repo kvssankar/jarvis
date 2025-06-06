@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../../services/analytics_service.dart';
 
 // Privacy dialog as a stateless widget
 class _PrivacyDialog extends StatelessWidget {
@@ -38,11 +39,17 @@ class _PrivacyDialog extends StatelessWidget {
                     decoration: TextDecoration.underline,
                   ),
                 ),
-                onTap:
-                    () => _launchURL(
-                      context,
-                      'https://policies.google.com/privacy',
-                    ),
+                onTap: () {
+                  // Log analytics for privacy policy link click
+                  AnalyticsService().logFeatureUsed(
+                    'privacy_policy_link_clicked',
+                  );
+                  AnalyticsService().logFeatureUsed(
+                    'google_privacy_policy_clicked',
+                  );
+
+                  _launchURL(context, 'https://policies.google.com/privacy');
+                },
               ),
               const SizedBox(height: 5),
               InkWell(
@@ -53,7 +60,17 @@ class _PrivacyDialog extends StatelessWidget {
                     decoration: TextDecoration.underline,
                   ),
                 ),
-                onTap: () => _launchURL(context, 'https://ai.google.dev/terms'),
+                onTap: () {
+                  // Log analytics for terms of service link click
+                  AnalyticsService().logFeatureUsed(
+                    'terms_of_service_link_clicked',
+                  );
+                  AnalyticsService().logFeatureUsed(
+                    'google_gemini_terms_clicked',
+                  );
+
+                  _launchURL(context, 'https://ai.google.dev/terms');
+                },
               ),
               const SizedBox(height: 10),
               Text(
@@ -128,6 +145,10 @@ class PrivacySection extends StatelessWidget {
             style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
           ),
           onTap: () {
+            // Log analytics for privacy dialog access
+            AnalyticsService().logFeatureUsed('privacy_dialog_opened');
+            AnalyticsService().logScreenView('privacy_dialog');
+
             // Close drawer
             Navigator.pop(context);
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/utils/memory_utils.dart';
 
@@ -16,6 +17,9 @@ class _PerformanceMonitorState extends State<PerformanceMonitor> {
   void initState() {
     super.initState();
     _updateStats();
+
+    // Track performance monitor screen access
+    AnalyticsService().logScreenView('performance_monitor_screen');
   }
 
   void _updateStats() {
@@ -44,7 +48,10 @@ class _PerformanceMonitorState extends State<PerformanceMonitor> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _updateStats,
+            onPressed: () {
+              _updateStats();
+              AnalyticsService().logFeatureUsed('performance_stats_refreshed');
+            },
             tooltip: 'Refresh Stats',
           ),
         ],
@@ -96,6 +103,7 @@ class _PerformanceMonitorState extends State<PerformanceMonitor> {
                   await MemoryUtils.clearImageCacheAndGC();
                   _updateStats();
                   SnackbarService().showSuccess(context, 'Image cache cleared');
+                  AnalyticsService().logFeatureUsed('cache_cleared');
                 },
                 icon: const Icon(Icons.cleaning_services),
                 label: const Text('Clear Image Cache'),

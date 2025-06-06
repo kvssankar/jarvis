@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shots_studio/screens/performance_monitor_screen.dart';
+import '../../services/analytics_service.dart';
 
 class PerformanceSection extends StatelessWidget {
   const PerformanceSection({super.key});
@@ -31,6 +32,10 @@ class PerformanceSection extends StatelessWidget {
             size: 16,
           ),
           onTap: () {
+            // Log analytics for performance section access
+            AnalyticsService().logFeatureUsed('performance_menu_accessed');
+            AnalyticsService().logScreenView('performance_monitor_screen');
+
             Navigator.pop(context);
             Navigator.push(
               context,

@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 
 class FullScreenImageViewer extends StatelessWidget {
   final Screenshot screenshot;
@@ -9,6 +10,9 @@ class FullScreenImageViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Track full screen viewer access
+    AnalyticsService().logScreenView('full_screen_image_viewer');
+
     Widget imageContent;
 
     if (screenshot.path != null) {

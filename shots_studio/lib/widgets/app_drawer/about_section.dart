@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/sponsorship_service.dart';
+import '../../services/analytics_service.dart';
 import '../sponsorship/sponsorship_dialog.dart';
 
 class AboutSection extends StatelessWidget {
@@ -54,6 +55,10 @@ class AboutSection extends StatelessWidget {
             style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
           ),
           onTap: () {
+            // Log analytics for source code access
+            AnalyticsService().logFeatureUsed('source_code_accessed');
+            AnalyticsService().logFeatureUsed('github_link_clicked');
+
             Navigator.pop(context);
             _launchURL('https://github.com/AnsahMohammad/shots-studio');
           },
@@ -66,6 +71,10 @@ class AboutSection extends StatelessWidget {
             style: TextStyle(color: Colors.greenAccent),
           ),
           onTap: () {
+            // Log analytics for sponsorship access
+            AnalyticsService().logFeatureUsed('sponsorship_dialog_opened');
+            AnalyticsService().logFeatureUsed('support_clicked');
+
             Navigator.pop(context);
             _showSponsorshipDialog(context);
           },
@@ -82,6 +91,9 @@ class AboutSection extends StatelessWidget {
             style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
           ),
           onTap: () {
+            // Log analytics for about section interactions
+            AnalyticsService().logFeatureUsed('about_section_clicked');
+
             if (onTap != null) {
               onTap!();
             }

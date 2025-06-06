@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/sponsorship_option.dart';
+import '../../services/analytics_service.dart';
 
 class SponsorshipDialog extends StatelessWidget {
   final List<SponsorshipOption> sponsorshipOptions;
@@ -8,6 +9,10 @@ class SponsorshipDialog extends StatelessWidget {
   const SponsorshipDialog({super.key, required this.sponsorshipOptions});
 
   Future<void> _launchURL(String urlString) async {
+    // Log analytics for sponsorship URL clicks
+    AnalyticsService().logFeatureUsed('sponsorship_url_clicked');
+    AnalyticsService().logFeatureUsed('external_sponsorship_link');
+
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       throw Exception('Could not launch $urlString');
@@ -61,7 +66,12 @@ class SponsorshipDialog extends StatelessWidget {
                 Icons.close_rounded,
                 color: theme.colorScheme.onSurface,
               ),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                // Log analytics for sponsorship dialog closed
+                AnalyticsService().logFeatureUsed('sponsorship_dialog_closed');
+
+                Navigator.pop(context);
+              },
             ),
             title: Text(
               'Support the project',
@@ -272,9 +282,17 @@ class SponsorshipDialog extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       TextButton(
-                        onPressed:
-                            () =>
-                                _launchURL('https://github.com/AnsahMohammad'),
+                        onPressed: () {
+                          // Log analytics for GitHub contact button
+                          AnalyticsService().logFeatureUsed(
+                            'github_contact_clicked',
+                          );
+                          AnalyticsService().logFeatureUsed(
+                            'sponsorship_contact_button',
+                          );
+
+                          _launchURL('https://github.com/AnsahMohammad');
+                        },
                         child: Text(
                           'Contact on GitHub',
                           style: theme.textTheme.labelLarge?.copyWith(
@@ -333,6 +351,17 @@ class SponsorshipDialog extends StatelessWidget {
             onTap:
                 isEnabled
                     ? () {
+                      // Log analytics for sponsorship option click
+                      AnalyticsService().logFeatureUsed(
+                        'sponsorship_option_clicked',
+                      );
+                      AnalyticsService().logFeatureUsed(
+                        'sponsorship_${option.title.toLowerCase().replaceAll(' ', '_')}_clicked',
+                      );
+                      AnalyticsService().logFeatureAdopted(
+                        'sponsorship_engagement',
+                      );
+
                       Navigator.pop(context);
                       _launchURL(option.url);
                     }

@@ -6,6 +6,7 @@ import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/screens/full_screen_image_viewer.dart';
 import 'package:shots_studio/screens/search_screen.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/widgets/screenshots/tags/tag_input_field.dart';
 import 'package:shots_studio/widgets/screenshots/tags/tag_chip.dart';
@@ -56,6 +57,9 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       text: widget.screenshot.description,
     );
 
+    // Track screenshot details screen access
+    AnalyticsService().logScreenView('screenshot_details_screen');
+
     // Check for expired reminders
     _checkExpiredReminders();
   }
@@ -87,6 +91,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       if (!_tags.contains(tag)) {
         _tags.add(tag);
         widget.screenshot.tags = _tags;
+        AnalyticsService().logFeatureUsed('tag_added');
       }
     });
   }
@@ -95,6 +100,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     setState(() {
       _tags.remove(tag);
       widget.screenshot.tags = _tags;
+      AnalyticsService().logFeatureUsed('tag_removed');
     });
   }
 
@@ -128,6 +134,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   }
 
   void _showAddToCollectionDialog() {
+    AnalyticsService().logFeatureUsed('collection_dialog_opened');
     showModalBottomSheet(
       context: context,
       backgroundColor: Theme.of(context).colorScheme.surface,
@@ -152,6 +159,14 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     final bool isCurrentlyIn = collection.screenshotIds.contains(
       widget.screenshot.id,
     );
+
+    // Track collection additions/removals
+    if (isCurrentlyIn) {
+      AnalyticsService().logFeatureUsed('screenshot_removed_from_collection');
+    } else {
+      AnalyticsService().logFeatureUsed('screenshot_added_to_collection');
+    }
+
     List<String> updatedScreenshotIds = List.from(collection.screenshotIds);
     List<String> updatedCollectionIdsInScreenshot = List.from(
       widget.screenshot.collectionIds,
@@ -178,6 +193,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   }
 
   void _clearAndRequestAiReprocessing() {
+    AnalyticsService().logFeatureUsed('ai_analysis_cleared');
     setState(() {
       widget.screenshot.aiProcessed = false;
     });
@@ -190,6 +206,8 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   }
 
   Future<void> _processSingleScreenshotWithAI() async {
+    // Track AI reprocessing requests
+    AnalyticsService().logFeatureUsed('ai_reprocessing_requested');
     // Check if already processed and confirmed by user
     if (widget.screenshot.aiProcessed) {
       final bool? shouldReprocess = await showDialog<bool>(
@@ -403,6 +421,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   }
 
   Future<void> _confirmDeleteScreenshot() async {
+    AnalyticsService().logFeatureUsed('screenshot_deletion_initiated');
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -445,6 +464,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       // Call the delete callback
       widget.screenshot.isDeleted = true;
       widget.onDeleteScreenshot(widget.screenshot.id);
+      AnalyticsService().logFeatureUsed('screenshot_deleted');
 
       Navigator.of(context).pop();
 
@@ -525,6 +545,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
           children: [
             InkWell(
               onTap: () {
+                AnalyticsService().logFeatureUsed('full_screen_image_viewer');
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -786,6 +807,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                 color: Theme.of(context).colorScheme.secondary,
               ),
               onPressed: () async {
+                AnalyticsService().logFeatureUsed('screenshot_shared');
                 final file = File(widget.screenshot.path!);
                 if (await file.exists()) {
                   await SharePlus.instance.share(
@@ -812,6 +834,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                         : Theme.of(context).colorScheme.secondary,
               ),
               onPressed: () async {
+                AnalyticsService().logFeatureUsed('reminder_dialog_opened');
                 final result = await ReminderUtils.showReminderBottomSheet(
                   context,
                   widget.screenshot.reminderTime,
@@ -843,6 +866,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                     });
 
                     if (result['reminderTime'] != null) {
+                      AnalyticsService().logFeatureUsed('reminder_set');
                       ReminderUtils.setReminder(
                         context,
                         widget.screenshot,
@@ -850,6 +874,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                         customMessage: result['reminderText'],
                       );
                     } else {
+                      AnalyticsService().logFeatureUsed('reminder_cleared');
                       ReminderUtils.clearReminder(context, widget.screenshot);
                     }
                   }

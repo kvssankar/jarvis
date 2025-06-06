@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "332927903377",
+    "project_id": "shots-studio-c3fc0",
+    "storage_bucket": "shots-studio-c3fc0.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:332927903377:android:1fb6e81f231af2bbbd8130",
+        "android_client_info": {
+          "package_name": "com.ansah.shots_studio"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCiN1VZB8RHEsIbSdi0skY3jRllZWQQfs0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

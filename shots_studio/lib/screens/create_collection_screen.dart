@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
@@ -32,6 +33,13 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
   void initState() {
     super.initState();
 
+    // Track screen access
+    if (widget.existingCollection != null) {
+      AnalyticsService().logScreenView('edit_collection_screen');
+    } else {
+      AnalyticsService().logScreenView('create_collection_screen');
+    }
+
     // If editing an existing collection, populate the fields
     if (widget.existingCollection != null) {
       _titleController.text = widget.existingCollection!.name ?? '';
@@ -64,8 +72,12 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
     setState(() {
       if (_selectedScreenshotIds.contains(screenshotId)) {
         _selectedScreenshotIds.remove(screenshotId);
+        AnalyticsService().logFeatureUsed(
+          'screenshot_deselected_in_collection',
+        );
       } else {
         _selectedScreenshotIds.add(screenshotId);
+        AnalyticsService().logFeatureUsed('screenshot_selected_in_collection');
       }
     });
   }
@@ -84,6 +96,7 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
     final Collection collection;
     if (widget.existingCollection != null) {
       // Update existing collection
+      AnalyticsService().logFeatureUsed('collection_edited');
       collection = widget.existingCollection!.copyWith(
         name: title,
         description: _descriptionController.text.trim(),
@@ -94,6 +107,7 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
       );
     } else {
       // Create new collection
+      AnalyticsService().logFeatureUsed('collection_created');
       collection = Collection(
         id: _uuid.v4(),
         name: title,
@@ -205,6 +219,13 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                     setState(() {
                       _isAutoAddEnabled = value;
                     });
+
+                    // Track auto-add toggle interactions
+                    if (value) {
+                      AnalyticsService().logFeatureUsed('auto_add_enabled');
+                    } else {
+                      AnalyticsService().logFeatureUsed('auto_add_disabled');
+                    }
                   },
                 ),
               ],
