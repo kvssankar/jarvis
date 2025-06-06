@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/utils/memory_utils.dart';
 
@@ -16,6 +17,9 @@ class _PerformanceMonitorState extends State<PerformanceMonitor> {
   void initState() {
     super.initState();
     _updateStats();
+
+    // Track performance monitor screen access
+    AnalyticsService().logScreenView('performance_monitor_screen');
   }
 
   void _updateStats() {
@@ -41,27 +45,29 @@ class _PerformanceMonitorState extends State<PerformanceMonitor> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Performance Monitor'),
-        backgroundColor: Colors.black,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _updateStats,
+            onPressed: () {
+              _updateStats();
+              AnalyticsService().logFeatureUsed('performance_stats_refreshed');
+            },
             tooltip: 'Refresh Stats',
           ),
         ],
       ),
-      backgroundColor: Colors.black,
+      backgroundColor: Theme.of(context).colorScheme.surface,
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Image Cache Statistics',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSecondaryContainer,
               ),
             ),
             const SizedBox(height: 16),
@@ -81,12 +87,12 @@ class _PerformanceMonitorState extends State<PerformanceMonitor> {
               Icons.hourglass_empty,
             ),
             const SizedBox(height: 24),
-            const Text(
+            Text(
               'Memory Management',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Theme.of(context).colorScheme.onSecondaryContainer,
               ),
             ),
             const SizedBox(height: 16),
@@ -97,17 +103,19 @@ class _PerformanceMonitorState extends State<PerformanceMonitor> {
                   await MemoryUtils.clearImageCacheAndGC();
                   _updateStats();
                   SnackbarService().showSuccess(context, 'Image cache cleared');
+                  AnalyticsService().logFeatureUsed('cache_cleared');
                 },
                 icon: const Icon(Icons.cleaning_services),
                 label: const Text('Clear Image Cache'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber.shade200,
-                  foregroundColor: Colors.black,
+                  backgroundColor:
+                      Theme.of(context).colorScheme.primaryContainer,
                 ),
               ),
             ),
             const SizedBox(height: 16),
-            const Card(
+            Card(
+              color: Theme.of(context).colorScheme.tertiaryContainer,
               child: Padding(
                 padding: EdgeInsets.all(16.0),
                 child: Column(
@@ -118,7 +126,8 @@ class _PerformanceMonitorState extends State<PerformanceMonitor> {
                       style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
+                        color:
+                            Theme.of(context).colorScheme.onTertiaryContainer,
                       ),
                     ),
                     SizedBox(height: 8),
@@ -127,7 +136,10 @@ class _PerformanceMonitorState extends State<PerformanceMonitor> {
                       '• Clear image cache if app becomes slow\n'
                       '• Restart app if memory usage becomes high\n'
                       '• Consider deleting unused screenshots',
-                      style: TextStyle(color: Colors.white70),
+                      style: TextStyle(
+                        color:
+                            Theme.of(context).colorScheme.onTertiaryContainer,
+                      ),
                     ),
                   ],
                 ),
@@ -142,16 +154,20 @@ class _PerformanceMonitorState extends State<PerformanceMonitor> {
   Widget _buildStatCard(String title, String value, IconData icon) {
     return Card(
       margin: const EdgeInsets.only(bottom: 8),
+      color:
+          Theme.of(context).colorScheme.secondaryContainer
+            ..withValues(alpha: 0.1),
       child: ListTile(
-        leading: Icon(icon, color: Colors.amber.shade200),
-        title: Text(title, style: const TextStyle(color: Colors.white)),
+        leading: Icon(icon, color: Theme.of(context).colorScheme.primary),
+        title: Text(title),
         trailing: Text(
           value,
           style: TextStyle(
-            color: Colors.amber.shade200,
+            color: Theme.of(context).colorScheme.primary,
             fontWeight: FontWeight.bold,
           ),
         ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }

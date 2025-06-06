@@ -1,12 +1,16 @@
 plugins {
     id("com.android.application")
+    // START: FlutterFire Configuration
+    id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
+    // END: FlutterFire Configuration
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
 android {
-    namespace = "com.example.shots_studio"
+    namespace = "com.ansah.shots_studio"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = "27.0.12077973"
 
@@ -23,13 +27,17 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.shots_studio"
+        applicationId = "com.ansah.shots_studio"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // Add Firebase Analytics debug logging flags
+        manifestPlaceholders["firebase_analytics_collection_enabled"] = "true"
+        manifestPlaceholders["firebase_analytics_collection_deactivated"] = "false"
     }
 
     buildTypes {
@@ -42,12 +50,13 @@ android {
 
     applicationVariants.all {
         val variant = this
-        variant.outputs.all {
-            val output = this
-            if (output is com.android.build.gradle.internal.api.ApkVariantOutputImpl) {
-                output.outputFileName = "${variant.name}-${variant.versionName}.apk"
+        variant.outputs
+            .map { it as com.android.build.gradle.internal.api.BaseVariantOutputImpl }
+            .forEach { output ->
+                val outputFileName = "shots_studio-${variant.buildType.name}-${variant.versionName}.apk"
+                output.outputFileName = outputFileName
+                println("Setting APK output name to: $outputFileName")
             }
-        }
     }
 }
 

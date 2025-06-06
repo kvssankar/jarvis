@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 
 class FullScreenImageViewer extends StatelessWidget {
   final Screenshot screenshot;
@@ -9,22 +10,115 @@ class FullScreenImageViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Track full screen viewer access
+    AnalyticsService().logScreenView('full_screen_image_viewer');
+
     Widget imageContent;
 
     if (screenshot.path != null) {
-      imageContent = Image.file(File(screenshot.path!));
+      final file = File(screenshot.path!);
+      if (file.existsSync()) {
+        imageContent = Image.file(
+          file,
+          errorBuilder: (context, error, stackTrace) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.broken_image_outlined,
+                    size: 100,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Image could not be loaded',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 18,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      } else {
+        imageContent = Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.image_not_supported_outlined,
+                size: 100,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Image file not found',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontSize: 18,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'The original file may have been moved or deleted',
+                style: TextStyle(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        );
+      }
     } else if (screenshot.bytes != null) {
-      imageContent = Image.memory(screenshot.bytes!);
+      imageContent = Image.memory(
+        screenshot.bytes!,
+        errorBuilder: (context, error, stackTrace) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.broken_image_outlined,
+                  size: 100,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Image could not be loaded',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 18,
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
     } else {
-      imageContent = const Center(
+      imageContent = Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.broken_image, size: 100, color: Colors.white54),
-            SizedBox(height: 16),
+            Icon(
+              Icons.broken_image_outlined,
+              size: 100,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 16),
             Text(
               'Image not available',
-              style: TextStyle(color: Colors.white70, fontSize: 18),
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                fontSize: 18,
+              ),
             ),
           ],
         ),
@@ -32,17 +126,19 @@ class FullScreenImageViewer extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
+          icon: const Icon(Icons.close),
           onPressed: () => Navigator.of(context).pop(),
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         title: Text(
           screenshot.title ?? 'Screenshot',
-          style: const TextStyle(color: Colors.white, fontSize: 18),
+          style: TextStyle(
+            fontSize: 18,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
           overflow: TextOverflow.ellipsis,
         ),
       ),

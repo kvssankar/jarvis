@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:shots_studio/screens/screenshot_details_screen.dart';
+import 'package:shots_studio/screens/screenshot_swipe_detail_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shots_studio/widgets/home_app_bar.dart';
-import 'package:shots_studio/widgets/collections_section.dart';
-import 'package:shots_studio/widgets/screenshots_section.dart';
+import 'package:shots_studio/widgets/collections/collections_section.dart';
+import 'package:shots_studio/widgets/screenshots/screenshots_section.dart';
 import 'package:shots_studio/screens/app_drawer_screen.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
@@ -12,23 +14,67 @@ import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
-import 'package:shots_studio/models/gemini_model.dart';
 import 'package:shots_studio/screens/search_screen.dart';
 import 'package:shots_studio/widgets/privacy_dialog.dart';
+import 'package:shots_studio/widgets/onboarding/api_key_guide_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:shots_studio/services/notification_service.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/utils/memory_utils.dart';
+import 'package:dynamic_color/dynamic_color.dart';
+import 'package:shots_studio/widgets/ai_processing_container.dart';
+import 'package:shots_studio/services/background_service.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:shots_studio/services/analytics_service.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Initialize Analytics
+  await AnalyticsService().initialize();
 
   // Optimize image cache for better memory management
   MemoryUtils.optimizeImageCache();
 
   await NotificationService().init();
+
+  // Initialize background service for AI processing only on non-web platforms
+  if (!kIsWeb) {
+    print("Main: Initial background service setup");
+    // Set up notification channel for background service
+    await _setupBackgroundServiceNotificationChannel();
+    // Don't initialize service at app startup - we'll do it when needed
+    // This prevents unnecessary background service running when not needed
+    print("Main: Background service will be initialized when needed");
+  }
+
   runApp(const MyApp());
+}
+
+// Set up notification channel for background service
+Future<void> _setupBackgroundServiceNotificationChannel() async {
+  const AndroidNotificationChannel channel = AndroidNotificationChannel(
+    'ai_processing_channel', // id - matches BackgroundProcessingService.notificationChannelId
+    'AI Processing Service', // title
+    description: 'Channel for AI screenshot processing notifications',
+    importance: Importance.low, // importance must be at low or higher level
+  );
+
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >()
+      ?.createNotificationChannel(channel);
 }
 
 class MyApp extends StatelessWidget {
@@ -36,23 +82,92 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Shots Studio',
-      theme: ThemeData.dark().copyWith(
-        scaffoldBackgroundColor: Colors.black,
-        colorScheme: ColorScheme.dark(
-          primary: Colors.amber.shade200,
-          secondary: Colors.amber.shade100,
-          surface: Colors.black,
-        ),
-        cardTheme: CardThemeData(
-          color: Colors.grey[900],
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+    return DynamicColorBuilder(
+      builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
+        ColorScheme lightScheme;
+        ColorScheme darkScheme;
+
+        if (lightDynamic != null && darkDynamic != null) {
+          // Use dynamic colors if available (Material You)
+          lightScheme = lightDynamic.harmonized();
+          darkScheme = darkDynamic.harmonized();
+        } else {
+          // Fallback to custom color schemes if dynamic colors are not available
+          lightScheme = ColorScheme.fromSeed(
+            seedColor: Colors.amber,
+            brightness: Brightness.light,
+          );
+          darkScheme = ColorScheme.fromSeed(
+            seedColor: Colors.amber,
+            brightness: Brightness.dark,
+          );
+        }
+
+        return MaterialApp(
+          title: 'Shots Studio',
+          theme: ThemeData(
+            useMaterial3: true,
+            colorScheme: lightScheme,
+            cardTheme: CardThemeData(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            filledButtonTheme: FilledButtonThemeData(
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            floatingActionButtonTheme: FloatingActionButtonThemeData(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
           ),
-        ),
-      ),
-      home: const HomeScreen(),
+          darkTheme: ThemeData(
+            useMaterial3: true,
+            colorScheme: darkScheme,
+            cardTheme: CardThemeData(
+              elevation: 2,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+            filledButtonTheme: FilledButtonThemeData(
+              style: FilledButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            elevatedButtonTheme: ElevatedButtonThemeData(
+              style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+            floatingActionButtonTheme: FloatingActionButtonThemeData(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+            ),
+          ),
+          themeMode:
+              ThemeMode.system, // Automatically switch between light and dark
+          home: const HomeScreen(),
+        );
+      },
     );
   }
 }
@@ -73,7 +188,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isProcessingAI = false;
   int _aiProcessedCount = 0;
   int _aiTotalToProcess = 0;
-  GeminiModel? _geminiModelInstance;
+
+  // Add a global key for the API key text field
+  final GlobalKey<State> _apiKeyFieldKey = GlobalKey();
 
   // Add loading progress tracking
   int _loadingProgress = 0;
@@ -81,22 +198,51 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   String? _apiKey;
   String _selectedModelName = 'gemini-2.0-flash';
-  int _screenshotLimit = 120;
+  int _screenshotLimit = 1200;
   int _maxParallelAI = 4;
+  bool _isScreenshotLimitEnabled = false;
+  bool _devMode = false;
+  bool _autoProcessEnabled = true;
+  bool _analyticsEnabled = true;
+
+  // update screenshots
+  List<Screenshot> get _activeScreenshots {
+    final activeScreenshots =
+        _screenshots.where((screenshot) => !screenshot.isDeleted).toList();
+    // Sort by addedOn date in descending order (newest first)
+    activeScreenshots.sort((a, b) => b.addedOn.compareTo(a.addedOn));
+    return activeScreenshots;
+  }
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    // Log analytics for app startup and home screen view
+    AnalyticsService().logScreenView('home_screen');
+    AnalyticsService().logCurrentUsageTime();
+
     _loadDataFromPrefs();
     _loadSettings();
     if (!kIsWeb) {
       _loadAndroidScreenshots();
+      _setupBackgroundServiceListeners();
     }
     // Show privacy dialog after the first frame
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => showPrivacyDialogIfNeeded(context),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // Show privacy dialog and only proceed to API key guide if accepted
+      bool privacyAccepted = await showPrivacyDialogIfNeeded(context);
+      if (privacyAccepted && context.mounted) {
+        // Log install info when onboarding is completed
+        AnalyticsService().logInstallInfo();
+
+        // API key guide will only show after privacy is accepted
+        await showApiKeyGuideIfNeeded(context, _apiKey, _updateApiKey);
+        // Automatically process any unprocessed screenshots
+        _autoProcessWithGemini();
+      }
+    });
   }
 
   @override
@@ -105,13 +251,184 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  /// Setup listeners for background service events
+  void _setupBackgroundServiceListeners() {
+    print("Setting up background service listeners...");
+
+    final service = FlutterBackgroundService();
+
+    // Listen for batch processing updates with the new channel name
+    service.on('batch_processed').listen((event) {
+      try {
+        if (event != null && mounted) {
+          final data = Map<String, dynamic>.from(event);
+          final updatedScreenshotsJson = data['updatedScreenshots'] as String?;
+          final responseJson = data['response'] as String?;
+          final processedCount = data['processedCount'] as int? ?? 0;
+          final totalCount = data['totalCount'] as int? ?? 0;
+
+          print(
+            "Main app: Processing batch update - $processedCount/$totalCount",
+          );
+
+          if (updatedScreenshotsJson != null) {
+            final List<dynamic> updatedScreenshotsList = jsonDecode(
+              updatedScreenshotsJson,
+            );
+            final List<Screenshot> updatedScreenshots =
+                updatedScreenshotsList
+                    .map(
+                      (json) =>
+                          Screenshot.fromJson(json as Map<String, dynamic>),
+                    )
+                    .toList();
+
+            // Process auto-categorization if response data is available
+            Map<String, dynamic>? response;
+            if (responseJson != null) {
+              try {
+                response = jsonDecode(responseJson) as Map<String, dynamic>;
+              } catch (e) {
+                print("Main app: Error parsing response JSON: $e");
+              }
+            }
+
+            setState(() {
+              _aiProcessedCount = processedCount;
+              _aiTotalToProcess = totalCount;
+
+              // Update screenshots in our list and handle auto-categorization
+              for (var updatedScreenshot in updatedScreenshots) {
+                final index = _screenshots.indexWhere(
+                  (s) => s.id == updatedScreenshot.id,
+                );
+                if (index != -1) {
+                  _screenshots[index] = updatedScreenshot;
+                  print("Main app: Updated screenshot ${updatedScreenshot.id}");
+
+                  // Handle auto-categorization for this screenshot
+                  if (response != null &&
+                      response['suggestedCollections'] != null) {
+                    _handleAutoCategorization(updatedScreenshot, response);
+                  }
+                }
+              }
+            });
+
+            // Log AI processing success analytics
+            AnalyticsService().logAIProcessingSuccess(
+              updatedScreenshots.length,
+            );
+            AnalyticsService().logTotalScreenshotsProcessed(
+              _screenshots.where((s) => s.aiProcessed).length,
+            );
+
+            // Save updated data
+            _saveDataToPrefs();
+          }
+        }
+      } catch (e) {
+        print("Main app: Error processing batch update: $e");
+      }
+    });
+
+    // Listen for processing completion with the new channel name
+    service.on('processing_completed').listen((event) {
+      print("Main app: Received processing completed event: $event");
+
+      try {
+        if (event != null && mounted) {
+          final data = Map<String, dynamic>.from(event);
+          final success = data['success'] as bool? ?? false;
+          final processedCount = data['processedCount'] as int? ?? 0;
+          final totalCount = data['totalCount'] as int? ?? 0;
+          final error = data['error'] as String?;
+          final cancelled = data['cancelled'] as bool? ?? false;
+
+          print(
+            "Main app: Processing completed - Success: $success, Processed: $processedCount/$totalCount",
+          );
+
+          setState(() {
+            _isProcessingAI = false;
+            _aiProcessedCount = 0;
+            _aiTotalToProcess = 0;
+          });
+
+          if (cancelled) {
+            SnackbarService().showWarning(
+              context,
+              'Processing cancelled. Processed $processedCount of $totalCount screenshots.',
+            );
+          } else if (success) {
+            SnackbarService().showSuccess(
+              context,
+              'Completed processing $processedCount of $totalCount screenshots.',
+            );
+          } else {
+            SnackbarService().showError(
+              context,
+              error ?? 'Failed to process screenshots',
+            );
+          }
+
+          // Save final data
+          _saveDataToPrefs();
+        }
+      } catch (e) {
+        print("Main app: Error processing completion event: $e");
+      }
+    });
+
+    // Listen for processing errors with the new channel name
+    service.on('processing_error').listen((event) {
+      print("Main app: Received processing error event: $event");
+
+      try {
+        if (event != null && mounted) {
+          final data = Map<String, dynamic>.from(event);
+          final error = data['error'] as String? ?? 'Unknown error';
+
+          print("Main app: Processing error: $error");
+
+          setState(() {
+            _isProcessingAI = false;
+            _aiProcessedCount = 0;
+            _aiTotalToProcess = 0;
+          });
+
+          SnackbarService().showError(context, 'Processing error: $error');
+
+          // Save data even on error
+          _saveDataToPrefs();
+        }
+      } catch (e) {
+        print("Main app: Error handling processing error event: $e");
+      }
+    });
+
+    // Listen for initialization confirmation
+    service.on('initialize').listen((event) {
+      print("Main app: Received service initialization event: $event");
+    });
+
+    print("Background service listeners setup complete");
+  }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    // Clear image cache when app goes to background to free memory
-    if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.detached) {
+    // Only clear cache when app is completely detached to preserve collection thumbnails
+    if (state == AppLifecycleState.detached) {
       MemoryUtils.clearImageCache();
+    }
+
+    // Auto-process unprocessed screenshots when the app comes to foreground
+    if (state == AppLifecycleState.resumed) {
+      // Add a small delay to ensure the UI is ready
+      Future.delayed(const Duration(milliseconds: 500), () {
+        _autoProcessWithGemini();
+      });
     }
   }
 
@@ -165,14 +482,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(() {
       _apiKey = prefs.getString('apiKey');
       _selectedModelName = prefs.getString('modelName') ?? 'gemini-2.0-flash';
-      _screenshotLimit = prefs.getInt('limit') ?? 120;
+      _screenshotLimit = prefs.getInt('limit') ?? 1200;
       _maxParallelAI = prefs.getInt('maxParallel') ?? 4;
+      _isScreenshotLimitEnabled = prefs.getBool('limit_enabled') ?? false;
+      _devMode = prefs.getBool('dev_mode') ?? false;
+      _autoProcessEnabled = prefs.getBool('auto_process_enabled') ?? true;
+      _analyticsEnabled = prefs.getBool('analytics_consent_enabled') ?? true;
     });
   }
 
   void _updateApiKey(String newApiKey) {
     setState(() {
       _apiKey = newApiKey;
+    });
+    // Save to SharedPreferences
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setString('apiKey', newApiKey);
     });
   }
 
@@ -188,54 +513,89 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
   }
 
+  void _updateScreenshotLimitEnabled(bool enabled) {
+    setState(() {
+      _isScreenshotLimitEnabled = enabled;
+    });
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setBool('limit_enabled', enabled);
+    });
+  }
+
   void _updateMaxParallelAI(int newMaxParallel) {
     setState(() {
       _maxParallelAI = newMaxParallel;
     });
   }
 
-  void _showSnackbarWrapper({
-    required String message,
-    Color? backgroundColor,
-    Duration? duration,
-  }) {
-    SnackbarService().showSnackbar(
-      context,
-      message: message,
-      backgroundColor: backgroundColor,
-      duration: duration,
-    );
+  void _updateDevMode(bool value) {
+    setState(() {
+      _devMode = value;
+    });
+    // Save to SharedPreferences
+    _saveDevMode(value);
+  }
+
+  void _updateAutoProcessEnabled(bool enabled) {
+    setState(() {
+      _autoProcessEnabled = enabled;
+    });
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setBool('auto_process_enabled', enabled);
+    });
+  }
+
+  void _updateAnalyticsEnabled(bool enabled) {
+    setState(() {
+      _analyticsEnabled = enabled;
+    });
+    // Analytics consent is handled by the AnalyticsService directly
+    // The service saves the preference and manages the consent state
+  }
+
+  Future<void> _saveDevMode(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('dev_mode', value);
   }
 
   Future<void> _processWithGemini() async {
+    print("Main app: _processWithGemini called");
+
+    // Check for API key
     if (_apiKey == null || _apiKey!.isEmpty) {
+      print("Main app: No API key configured");
       SnackbarService().showError(
         context,
-        'API Key is not set. Please set it in the drawer.',
+        'Gemini API key not configured. Please check app settings.',
       );
       return;
     }
 
-    // Filter unprocessed screenshots
+    // Get unprocessed screenshots
     final unprocessedScreenshots =
-        _screenshots.where((s) => !s.aiProcessed).toList();
+        _activeScreenshots.where((s) => !s.aiProcessed).toList();
 
     if (unprocessedScreenshots.isEmpty) {
-      SnackbarService().showSnackbar(
+      print("Main app: No unprocessed screenshots found");
+      SnackbarService().showInfo(
         context,
-        message: 'All screenshots are already processed.',
+        'All screenshots have already been processed.',
       );
       return;
     }
 
+    print(
+      "Main app: Starting background processing for ${unprocessedScreenshots.length} screenshots",
+    );
+
+    // Update UI to show processing state
     setState(() {
       _isProcessingAI = true;
-      _aiTotalToProcess = unprocessedScreenshots.length;
       _aiProcessedCount = 0;
+      _aiTotalToProcess = unprocessedScreenshots.length;
     });
 
-    // Create a list of collections with isAutoAddEnabled set to true
-    // Include both name and description for each collection
+    // Get list of collections that have auto-add enabled
     final autoAddCollections =
         _collections
             .where((collection) => collection.isAutoAddEnabled)
@@ -248,159 +608,125 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             )
             .toList();
 
-    _geminiModelInstance = GeminiModel(
-      modelName: _selectedModelName,
-      apiKey: _apiKey!,
-      maxParallel: _maxParallelAI,
-      showMessage: _showSnackbarWrapper,
-    );
+    print("Main app: Auto-add collections count: ${autoAddCollections.length}");
 
-    final results = await _geminiModelInstance!.processBatchedImages(
-      unprocessedScreenshots,
-      (batch, result) {
-        // This callback is called after each batch is processed
-        final updatedScreenshots = _geminiModelInstance!
-            .parseResponseAndUpdateScreenshots(batch, result);
+    try {
+      // Use the background processing approach
+      final backgroundService = BackgroundProcessingService();
 
+      print("Main app: Initializing background service...");
+
+      // Simple service initialization
+      final serviceInitialized = await backgroundService.initializeService();
+
+      if (!serviceInitialized) {
+        print("Main app: Service initialization failed");
         setState(() {
-          _aiProcessedCount += updatedScreenshots.length;
-          for (var updatedScreenshot in updatedScreenshots) {
-            final index = _screenshots.indexWhere(
-              (s) => s.id == updatedScreenshot.id,
-            );
-            if (index != -1) {
-              _screenshots[index] = updatedScreenshot;
-
-              List<String> suggestedCollections = [];
-              try {
-                if (result['suggestedCollections'] != null) {
-                  Map<dynamic, dynamic>? suggestionsMap;
-
-                  // Handle different types of map that might come from the AI response
-                  if (result['suggestedCollections']
-                      is Map<String, List<String>>) {
-                    suggestionsMap =
-                        result['suggestedCollections']
-                            as Map<String, List<String>>;
-                  } else if (result['suggestedCollections']
-                      is Map<dynamic, dynamic>) {
-                    suggestionsMap =
-                        result['suggestedCollections'] as Map<dynamic, dynamic>;
-                  } else if (result['suggestedCollections'] is Map) {
-                    suggestionsMap = Map<dynamic, dynamic>.from(
-                      result['suggestedCollections'] as Map,
-                    );
-                  }
-
-                  // Now safely extract the suggestions list
-                  if (suggestionsMap != null &&
-                      suggestionsMap.containsKey(updatedScreenshot.id)) {
-                    final suggestions = suggestionsMap[updatedScreenshot.id];
-                    if (suggestions is List) {
-                      suggestedCollections = List<String>.from(
-                        suggestions.whereType<String>(),
-                      );
-                    } else if (suggestions is String) {
-                      // Handle case where a single string might be returned instead of a list
-                      suggestedCollections = [suggestions];
-                    }
-                  }
-                }
-              } catch (e) {
-                print('Error accessing suggested collections: $e');
-              }
-
-              if (suggestedCollections.isNotEmpty) {
-                for (var collection in _collections) {
-                  if (collection.isAutoAddEnabled &&
-                      suggestedCollections.contains(collection.name) &&
-                      !updatedScreenshot.collectionIds.contains(
-                        collection.id,
-                      ) &&
-                      !collection.screenshotIds.contains(
-                        updatedScreenshot.id,
-                      )) {
-                    // Auto-add screenshot to this collection
-                    final updatedCollection = collection.addScreenshot(
-                      updatedScreenshot.id,
-                    );
-                    _updateCollection(updatedCollection);
-
-                    updatedScreenshot.collectionIds.add(collection.id);
-                  }
-                }
-              }
-            }
-          }
+          _isProcessingAI = false;
+          _aiProcessedCount = 0;
+          _aiTotalToProcess = 0;
         });
-      },
-      autoAddCollections: autoAddCollections,
-    );
 
-    final processedCount = results['processedCount'] as int;
-
-    // Count how many screenshots were auto-categorized
-    int autoCategorizedCount = 0;
-    for (var screenshot in _screenshots.where((s) => s.aiProcessed)) {
-      if (screenshot.collectionIds.isNotEmpty) {
-        autoCategorizedCount++;
+        SnackbarService().showError(
+          context,
+          'Failed to initialize background service. Please try again.',
+        );
+        return;
       }
+
+      print("Main app: Background service initialized, starting processing...");
+
+      // Start the processing with the initialized service
+      print(
+        "Main app: Calling startBackgroundProcessing with ${unprocessedScreenshots.length} screenshots",
+      );
+      final success = await backgroundService.startBackgroundProcessing(
+        screenshots: unprocessedScreenshots,
+        apiKey: _apiKey!,
+        modelName: _selectedModelName,
+        maxParallel: _maxParallelAI,
+        autoAddCollections: autoAddCollections,
+      );
+      print("Main app: startBackgroundProcessing returned: $success");
+
+      if (success) {
+        print("Main app: Background processing started successfully");
+        SnackbarService().showInfo(
+          context,
+          'Processing started for ${unprocessedScreenshots.length} screenshots.',
+        );
+      } else {
+        print("Main app: Failed to start background processing");
+        setState(() {
+          _isProcessingAI = false;
+          _aiProcessedCount = 0;
+          _aiTotalToProcess = 0;
+        });
+
+        SnackbarService().showError(
+          context,
+          'Failed to start background processing. Please try again.',
+        );
+      }
+    } catch (e) {
+      print("Main app: Error starting background processing: $e");
+
+      setState(() {
+        _isProcessingAI = false;
+        _aiProcessedCount = 0;
+        _aiTotalToProcess = 0;
+      });
+
+      // Show error notification
+      SnackbarService().showError(
+        context,
+        'Error starting background processing: $e',
+      );
     }
-
-    // Show completion message with auto-categorization info
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Completed processing $processedCount of ${unprocessedScreenshots.length} screenshots.',
-            ),
-            if (autoCategorizedCount > 0)
-              Text(
-                'Auto-categorized $autoCategorizedCount screenshots based on content.',
-                style: const TextStyle(
-                  fontSize: 12,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
-          ],
-        ),
-        duration: const Duration(seconds: 4),
-      ),
-    );
-
-    // Save data after all processing is done
-    await _saveDataToPrefs();
-
-    setState(() {
-      _isProcessingAI = false;
-      _geminiModelInstance = null;
-      // _aiProcessedCount = 0;
-      // _aiTotalToProcess = 0;
-    });
   }
 
   Future<void> _stopProcessingAI() async {
     if (_isProcessingAI) {
+      print("Main app: Stopping background processing...");
+
+      // Update UI immediately to reflect stopping state
       setState(() {
         _aiTotalToProcess = 0;
       });
-      _geminiModelInstance?.cancel();
-      _geminiModelInstance = null;
 
-      SnackbarService().showWarning(context, 'AI processing stopped by user.');
+      try {
+        // Use the new stopBackgroundProcessing method that doesn't shut down the service
+        final backgroundService = BackgroundProcessingService();
+        await backgroundService.stopBackgroundProcessing();
+        print("Main app: Background processing stop requested");
+
+        // No need to show notification here, the service will report back with a cancelled status
+        // and the listener will handle showing the notification
+      } catch (e) {
+        print("Main app: Error stopping background processing: $e");
+
+        // Show error notification only if an exception occurred during the stop request
+        SnackbarService().showWarning(
+          context,
+          'Error stopping AI processing: $e',
+        );
+      }
 
       await _saveDataToPrefs();
       setState(() {
-        _isProcessingAI = false; // Now set to false
+        _isProcessingAI = false;
       });
     }
   }
 
   Future<void> _takeScreenshot(ImageSource source) async {
     try {
+      final startTime = DateTime.now();
+
+      // Log feature usage
+      String sourceStr = source == ImageSource.camera ? 'camera' : 'gallery';
+      AnalyticsService().logFeatureUsed('image_picker_$sourceStr');
+
       List<XFile>? images;
 
       if (source == ImageSource.camera) {
@@ -463,6 +789,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           _totalToLoad = 0;
         });
         await _saveDataToPrefs();
+
+        // Log image loading analytics
+        final loadTime = DateTime.now().difference(startTime).inMilliseconds;
+        String sourceStr = source == ImageSource.camera ? 'camera' : 'gallery';
+        AnalyticsService().logImageLoadTime(loadTime, sourceStr);
+        AnalyticsService().logTotalScreenshotsProcessed(_screenshots.length);
+
+        // Auto-process the newly added screenshots
+        if (newScreenshots.isNotEmpty) {
+          _autoProcessWithGemini();
+        }
       }
     } catch (e) {
       setState(() {
@@ -470,6 +807,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _loadingProgress = 0;
         _totalToLoad = 0;
       });
+
+      // Log error analytics
+      AnalyticsService().logNetworkError(e.toString(), 'image_picker');
+
       print('Error picking images: $e');
     }
   }
@@ -523,8 +864,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         ).lastModifiedSync().compareTo(File(a.path).lastModifiedSync());
       });
 
-      // Limit number of screenshots to prevent memory issues (adjust as needed)
-      final limitedFiles = allFiles.take(_screenshotLimit).toList();
+      // Apply limit if enabled
+      final limitedFiles =
+          _isScreenshotLimitEnabled
+              ? allFiles.take(_screenshotLimit).toList()
+              : allFiles.toList();
 
       setState(() {
         _totalToLoad = limitedFiles.length;
@@ -563,7 +907,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           // Skip very large files to prevent memory issues
           if (fileSize > 50 * 1024 * 1024) {
             // Skip files larger than 50MB
-            print('Skipping large file: ${file.path} (${fileSize} bytes)');
+            print('Skipping large file: ${file.path} ($fileSize bytes)');
             setState(() {
               _loadingProgress++;
             });
@@ -611,6 +955,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _totalToLoad = 0;
       });
       await _saveDataToPrefs();
+
+      // Auto-process newly loaded screenshots
+      if (_screenshots.isNotEmpty) {
+        _autoProcessWithGemini();
+      }
     } catch (e) {
       setState(() {
         _isLoading = false;
@@ -648,6 +997,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _collections.add(collection);
     });
     _saveDataToPrefs();
+
+    // Log analytics
+    AnalyticsService().logCollectionCreated();
+    AnalyticsService().logTotalCollections(_collections.length);
+    _logCollectionStats();
   }
 
   void _updateCollection(Collection updatedCollection) {
@@ -660,6 +1014,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
     });
     _saveDataToPrefs();
+
+    // Log collection stats after update
+    _logCollectionStats();
   }
 
   void _deleteCollection(String collectionId) {
@@ -670,12 +1027,45 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
     });
     _saveDataToPrefs();
+
+    // Log analytics
+    AnalyticsService().logCollectionDeleted();
+    AnalyticsService().logTotalCollections(_collections.length);
+    _logCollectionStats();
+  }
+
+  void _logCollectionStats() {
+    if (_collections.isEmpty) return;
+
+    // Calculate collection statistics
+    final screenshotCounts =
+        _collections.map((c) => c.screenshotIds.length).toList();
+    final totalScreenshots = screenshotCounts.fold(
+      0,
+      (sum, count) => sum + count,
+    );
+    final avgScreenshots = totalScreenshots / _collections.length;
+    final minScreenshots = screenshotCounts.reduce((a, b) => a < b ? a : b);
+    final maxScreenshots = screenshotCounts.reduce((a, b) => a > b ? a : b);
+
+    // Log collection statistics
+    AnalyticsService().logCollectionStats(
+      _collections.length,
+      avgScreenshots.round(),
+      minScreenshots,
+      maxScreenshots,
+    );
   }
 
   void _deleteScreenshot(String screenshotId) {
     setState(() {
-      // Remove screenshot from the main list
-      _screenshots.removeWhere((s) => s.id == screenshotId);
+      // Mark screenshot as deleted instead of removing it
+      final screenshotIndex = _screenshots.indexWhere(
+        (s) => s.id == screenshotId,
+      );
+      if (screenshotIndex != -1) {
+        _screenshots[screenshotIndex].isDeleted = true;
+      }
 
       // Remove screenshot from all collections
       for (var collection in _collections) {
@@ -689,17 +1079,101 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   void _navigateToSearchScreen() {
+    // Log navigation analytics
+    AnalyticsService().logScreenView('search_screen');
+    AnalyticsService().logUserPath('home_screen', 'search_screen');
+    AnalyticsService().logFeatureUsed('search');
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder:
             (context) => SearchScreen(
-              allScreenshots: _screenshots,
+              allScreenshots: _activeScreenshots,
               allCollections: _collections,
               onUpdateCollection: _updateCollection,
               onDeleteScreenshot: _deleteScreenshot,
             ),
       ),
     );
+  }
+
+  /// Handle auto-categorization for a screenshot based on AI suggestions
+  void _handleAutoCategorization(
+    Screenshot screenshot,
+    Map<String, dynamic> response,
+  ) {
+    try {
+      Map<dynamic, dynamic>? suggestionsMap;
+      if (response['suggestedCollections'] is Map<String, List<String>>) {
+        suggestionsMap =
+            response['suggestedCollections'] as Map<String, List<String>>;
+      } else if (response['suggestedCollections'] is Map<dynamic, dynamic>) {
+        suggestionsMap =
+            response['suggestedCollections'] as Map<dynamic, dynamic>;
+      }
+
+      List<String> suggestedCollections = [];
+      if (suggestionsMap != null && suggestionsMap.containsKey(screenshot.id)) {
+        final suggestions = suggestionsMap[screenshot.id];
+        if (suggestions is List) {
+          suggestedCollections = List<String>.from(
+            suggestions.whereType<String>(),
+          );
+        } else if (suggestions is String) {
+          suggestedCollections = [suggestions];
+        }
+      }
+
+      if (suggestedCollections.isNotEmpty) {
+        int autoAddedCount = 0;
+        for (var collection in _collections) {
+          if (collection.isAutoAddEnabled &&
+              suggestedCollections.contains(collection.name) &&
+              !screenshot.collectionIds.contains(collection.id) &&
+              !collection.screenshotIds.contains(screenshot.id)) {
+            // Auto-add screenshot to this collection
+            final updatedCollection = collection.addScreenshot(
+              screenshot.id,
+              isAutoCategorized: true,
+            );
+            _updateCollection(updatedCollection);
+            screenshot.collectionIds.add(collection.id);
+            autoAddedCount++;
+          }
+        }
+
+        if (autoAddedCount > 0) {
+          print(
+            "Main app: Auto-categorized screenshot ${screenshot.id} into $autoAddedCount collection(s)",
+          );
+
+          // Log auto-categorization analytics
+          AnalyticsService().logScreenshotsAutoCategorized(autoAddedCount);
+          AnalyticsService().logFeatureUsed('auto_categorization');
+        }
+      }
+    } catch (e) {
+      print('Main app: Error handling auto-categorization: $e');
+    }
+  }
+
+  // Helper method to check and auto-process screenshots
+  Future<void> _autoProcessWithGemini() async {
+    // Only auto-process if enabled, we have an API key, we're not already processing,
+    if (_autoProcessEnabled &&
+        _apiKey != null &&
+        _apiKey!.isNotEmpty &&
+        !_isProcessingAI) {
+      // Check if there are any unprocessed screenshots
+      final unprocessedScreenshots =
+          _activeScreenshots.where((s) => !s.aiProcessed).toList();
+      if (unprocessedScreenshots.isNotEmpty) {
+        // Add a small delay to allow UI to update before processing starts
+        await Future.delayed(const Duration(milliseconds: 300));
+
+        await _processWithGemini();
+      }
+    }
   }
 
   @override
@@ -712,6 +1186,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         aiTotalToProcess: _aiTotalToProcess,
         onSearchPressed: _navigateToSearchScreen,
         onStopProcessingAI: _stopProcessingAI,
+        devMode: _devMode,
+        autoProcessEnabled: _autoProcessEnabled,
       ),
       drawer: AppDrawer(
         currentApiKey: _apiKey,
@@ -722,13 +1198,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onLimitChanged: _updateScreenshotLimit,
         currentMaxParallel: _maxParallelAI,
         onMaxParallelChanged: _updateMaxParallelAI,
+        currentLimitEnabled: _isScreenshotLimitEnabled,
+        onLimitEnabledChanged: _updateScreenshotLimitEnabled,
+        currentDevMode: _devMode,
+        onDevModeChanged: _updateDevMode,
+        currentAutoProcessEnabled: _autoProcessEnabled,
+        onAutoProcessEnabledChanged: _updateAutoProcessEnabled,
+        currentAnalyticsEnabled: _analyticsEnabled,
+        onAnalyticsEnabledChanged: _updateAnalyticsEnabled,
+        apiKeyFieldKey: _apiKeyFieldKey,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           // Show options for selecting screenshots
           showModalBottomSheet(
             context: context,
-            backgroundColor: Colors.grey[900],
+            backgroundColor: Theme.of(context).colorScheme.surface,
             shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
@@ -770,7 +1255,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           );
         },
         backgroundColor: Theme.of(context).colorScheme.primary,
-        child: const Icon(Icons.add_a_photo, color: Colors.black),
+        child: Icon(
+          Icons.add_a_photo,
+          color: Theme.of(context).colorScheme.onPrimary,
+        ),
       ),
       body:
           _isLoading
@@ -795,33 +1283,64 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   ],
                 ),
               )
-              : CustomScrollView(
-                slivers: [
-                  SliverToBoxAdapter(
-                    child: CollectionsSection(
-                      collections: _collections,
-                      screenshots: _screenshots,
-                      onCollectionAdded: _addCollection,
-                      onUpdateCollection: _updateCollection,
-                      onDeleteCollection: _deleteCollection,
+              : NestedScrollView(
+                headerSliverBuilder: (context, innerBoxIsScrolled) {
+                  return [
+                    SliverToBoxAdapter(
+                      child: Column(
+                        children: [
+                          // AI Processing Container
+                          AIProcessingContainer(
+                            isProcessing: _isProcessingAI,
+                            processedCount: _aiProcessedCount,
+                            totalCount: _aiTotalToProcess,
+                          ),
+                          // Collections Section
+                          CollectionsSection(
+                            collections: _collections,
+                            screenshots: _activeScreenshots,
+                            onCollectionAdded: _addCollection,
+                            onUpdateCollection: _updateCollection,
+                            onDeleteCollection: _deleteCollection,
+                            onDeleteScreenshot: _deleteScreenshot,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ];
+                },
+                body: ScreenshotsSection(
+                  screenshots: _activeScreenshots,
+                  onScreenshotTap: _showScreenshotDetail,
+                  screenshotDetailBuilder: (context, screenshot) {
+                    final int initialIndex = _activeScreenshots.indexWhere(
+                      (s) => s.id == screenshot.id,
+                    );
+                    return ScreenshotSwipeDetailScreen(
+                      screenshots: List.from(_activeScreenshots),
+                      initialIndex: initialIndex >= 0 ? initialIndex : 0,
+                      allCollections: _collections,
+                      allScreenshots: _screenshots,
+                      onUpdateCollection: (updatedCollection) {
+                        _updateCollection(updatedCollection);
+                      },
                       onDeleteScreenshot: _deleteScreenshot,
-                    ),
-                  ),
-                  SliverToBoxAdapter(
-                    child: ScreenshotsSection(
-                      screenshots: _screenshots,
-                      onScreenshotTap: _showScreenshotDetail,
-                    ),
-                  ),
-                  const SliverToBoxAdapter(
-                    child: SizedBox(height: 80), // Space for FAB
-                  ),
-                ],
+                      onScreenshotUpdated: () {
+                        setState(() {});
+                      },
+                    );
+                  },
+                ),
               ),
     );
   }
 
   void _showScreenshotDetail(Screenshot screenshot) {
+    // Log navigation analytics
+    AnalyticsService().logScreenView('screenshot_detail_screen');
+    AnalyticsService().logUserPath('home_screen', 'screenshot_detail_screen');
+    AnalyticsService().logFeatureUsed('screenshot_detail_view');
+
     Navigator.of(context)
         .push(
           MaterialPageRoute(
@@ -829,17 +1348,20 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 (context) => ScreenshotDetailScreen(
                   screenshot: screenshot,
                   allCollections: _collections,
+                  allScreenshots: _screenshots,
                   onUpdateCollection: (updatedCollection) {
                     _updateCollection(updatedCollection);
                   },
                   onDeleteScreenshot: _deleteScreenshot,
+                  onScreenshotUpdated: () {
+                    setState(() {});
+                  },
                 ),
           ),
         )
         .then((_) {
           _saveDataToPrefs();
-          // Clear image cache after returning from detail screen to free memory
-          MemoryUtils.clearImageCache();
+          // Don't clear cache to preserve collection thumbnails
         });
   }
 }

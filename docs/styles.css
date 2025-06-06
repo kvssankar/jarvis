@@ -42,6 +42,113 @@ body {
 h1, h2, h3, h4, h5, h6 {
     font-weight: 600;
     line-height: 1.2;
+    margin-top: 1.5em;
+    margin-bottom: 0.75em;
+}
+
+/* Policy Pages */
+.policy-content {
+    font-size: 16px;
+    line-height: 1.7;
+}
+
+.policy-content h1 {
+    font-size: 2.5rem;
+    margin-top: 0;
+    margin-bottom: 0.5em;
+}
+
+.policy-content h2 {
+    font-size: 1.8rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+    margin-top: 2em;
+}
+
+.policy-content h3 {
+    font-size: 1.4rem;
+    color: var(--primary-dark);
+}
+
+.policy-content h4 {
+    font-size: 1.2rem;
+}
+
+.policy-content p {
+    margin: 1em 0;
+}
+
+.policy-content ul, .policy-content ol {
+    margin: 1em 0;
+    padding-left: 2em;
+}
+
+.policy-content li {
+    margin: 0.5em 0;
+}
+
+.policy-content .date {
+    color: var(--text-secondary);
+    margin-bottom: 2em;
+}
+
+.policy-content section {
+    margin-bottom: 2em;
+}
+
+.policy-content .subsection {
+    margin-bottom: 1.5em;
+}
+
+.policy-content a {
+    color: var(--primary-color);
+    text-decoration: none;
+    transition: color 0.2s ease-in-out;
+}
+
+.policy-content a:hover {
+    color: var(--primary-dark);
+    text-decoration: underline;
+}
+
+.policy-content section {
+    position: relative;
+    padding-bottom: 1.5em;
+}
+
+.policy-content strong {
+    color: var(--text-primary);
+}
+
+.policy-content ul {
+    list-style-type: square;
+}
+
+.policy-content ul li {
+    position: relative;
+    padding-left: 0.5em;
+}
+
+@media (max-width: 768px) {
+    .policy-content {
+        padding: 25px !important;
+    }
+    
+    .policy-content h1 {
+        font-size: 2rem;
+    }
+    
+    .policy-content h2 {
+        font-size: 1.5rem;
+    }
+    
+    .policy-content h3 {
+        font-size: 1.25rem;
+    }
+    
+    .policy-content h4 {
+        font-size: 1.1rem;
+    }
 }
 
 .gradient-text {
@@ -148,8 +255,9 @@ h1, h2, h3, h4, h5, h6 {
 .nav-menu {
     display: flex;
     list-style: none;
-    gap: 32px;
+    gap: 24px;
     align-items: center;
+    margin-left: auto; /* This pushes the nav menu to the right */
 }
 
 .nav-link {
@@ -163,11 +271,15 @@ h1, h2, h3, h4, h5, h6 {
     color: var(--primary-color);
 }
 
-/* Navigation Actions */
-.nav-actions {
+.nav-link.active {
+    color: var(--primary-color);
+    font-weight: 600;
+}
+
+/* Navigation items */
+.nav-item {
     display: flex;
     align-items: center;
-    gap: 12px;
 }
 
 .nav-btn {
@@ -244,22 +356,44 @@ h1, h2, h3, h4, h5, h6 {
 /* Mobile Navigation Improvements */
 @media (max-width: 768px) {
     .nav-menu {
-        height: calc(100vh - 70px) !important;
-        z-index: 999 !important;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        -webkit-overflow-scrolling: touch !important;
+        position: fixed;
+        left: -100%;
+        top: 70px;
+        flex-direction: column;
+        width: 100%;
+        height: calc(100vh - 70px);
+        background-color: var(--bg-primary);
+        text-align: center;
+        transition: 0.3s;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        z-index: 999;
+        overflow-y: auto;
+        overflow-x: hidden;
+        -webkit-overflow-scrolling: touch;
+        padding: 20px 0;
+    }
+    
+    .nav-menu.active {
+        left: 0;
     }
 
     .nav-item {
-        margin: 10px 0;
+        margin: 8px 0;
+        width: 100%;
     }
 
     .nav-link {
         display: block;
-        padding: 15px;
+        padding: 12px 20px;
         font-size: 18px;
         border-bottom: 1px solid var(--border-color);
+        width: 100%;
+    }
+    
+    .nav-link.cta-button {
+        margin: 10px 20px;
+        width: calc(100% - 40px);
+        text-align: center;
     }
 
     .nav-actions {

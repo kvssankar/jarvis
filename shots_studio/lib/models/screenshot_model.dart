@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 import 'dart:convert';
-import 'package:shots_studio/models/gemini_model.dart';
+import 'package:shots_studio/services/ai_service.dart';
 
 class Screenshot {
   String id;
@@ -14,6 +14,9 @@ class Screenshot {
   DateTime addedOn;
   AiMetaData? aiMetadata;
   int? fileSize;
+  bool isDeleted;
+  DateTime? reminderTime;
+  String? reminderText;
 
   Screenshot({
     required this.id,
@@ -27,6 +30,9 @@ class Screenshot {
     required this.addedOn,
     this.aiMetadata,
     this.fileSize,
+    this.isDeleted = false,
+    this.reminderTime,
+    this.reminderText,
   }) : collectionIds = collectionIds ?? [];
 
   void addToCollections(List<String> collections) {
@@ -49,6 +55,9 @@ class Screenshot {
       'addedOn': addedOn.toIso8601String(),
       'aiMetadata': aiMetadata?.toJson(),
       'fileSize': fileSize,
+      'isDeleted': isDeleted,
+      'reminderTime': reminderTime?.toIso8601String(),
+      'reminderText': reminderText,
     };
   }
 
@@ -70,6 +79,22 @@ class Screenshot {
               ? AiMetaData.fromJson(json['aiMetadata'] as Map<String, dynamic>)
               : null,
       fileSize: json['fileSize'] as int?,
+      isDeleted: json['isDeleted'] as bool? ?? false,
+      reminderTime:
+          json['reminderTime'] != null
+              ? DateTime.parse(json['reminderTime'] as String)
+              : null,
+      reminderText: json['reminderText'] as String?,
     );
+  }
+
+  void removeReminder() {
+    reminderTime = null;
+    reminderText = null;
+  }
+
+  void setReminder(DateTime time, {String? text}) {
+    reminderTime = time;
+    reminderText = text;
   }
 }
