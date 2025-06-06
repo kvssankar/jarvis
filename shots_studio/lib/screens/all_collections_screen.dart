@@ -5,7 +5,7 @@ import 'package:shots_studio/screens/collection_detail_screen.dart';
 import 'package:shots_studio/services/analytics_service.dart';
 import 'package:shots_studio/widgets/collections/collection_list_item.dart';
 
-class AllCollectionsScreen extends StatelessWidget {
+class AllCollectionsScreen extends StatefulWidget {
   final List<Collection> collections;
   final List<Screenshot> allScreenshots;
   final Function(Collection) onUpdateCollection;
@@ -22,6 +22,11 @@ class AllCollectionsScreen extends StatelessWidget {
   });
 
   @override
+  State<AllCollectionsScreen> createState() => _AllCollectionsScreenState();
+}
+
+class _AllCollectionsScreenState extends State<AllCollectionsScreen> {
+  @override
   Widget build(BuildContext context) {
     // Track screen access
     AnalyticsService().logScreenView('all_collections_screen');
@@ -36,7 +41,7 @@ class AllCollectionsScreen extends StatelessWidget {
         ),
       ),
       body:
-          collections.isEmpty
+          widget.collections.isEmpty
               ? Center(
                 child: Text(
                   'No collections yet. Create one from the home screen!',
@@ -49,9 +54,9 @@ class AllCollectionsScreen extends StatelessWidget {
               )
               : ListView.builder(
                 padding: const EdgeInsets.all(16.0),
-                itemCount: collections.length,
+                itemCount: widget.collections.length,
                 itemBuilder: (context, index) {
-                  final collection = collections[index];
+                  final collection = widget.collections[index];
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 16.0),
                     child: CollectionListItem(
@@ -60,19 +65,33 @@ class AllCollectionsScreen extends StatelessWidget {
                         AnalyticsService().logFeatureUsed(
                           'collection_opened_from_all_collections',
                         );
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder:
-                                (context) => CollectionDetailScreen(
-                                  collection: collection,
-                                  allCollections: collections,
-                                  allScreenshots: allScreenshots,
-                                  onUpdateCollection: onUpdateCollection,
-                                  onDeleteCollection: onDeleteCollection,
-                                  onDeleteScreenshot: onDeleteScreenshot,
-                                ),
-                          ),
-                        );
+                        Navigator.of(context)
+                            .push(
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => CollectionDetailScreen(
+                                      collection: collection,
+                                      allCollections: widget.collections,
+                                      allScreenshots: widget.allScreenshots,
+                                      onUpdateCollection: (updatedCollection) {
+                                        widget.onUpdateCollection(
+                                          updatedCollection,
+                                        );
+                                        setState(() {
+                                          // This will trigger a rebuild of the UI
+                                        });
+                                      },
+                                      onDeleteCollection:
+                                          widget.onDeleteCollection,
+                                      onDeleteScreenshot:
+                                          widget.onDeleteScreenshot,
+                                    ),
+                              ),
+                            )
+                            .then((_) {
+                              // Refresh the UI when returning from collection detail
+                              setState(() {});
+                            });
                       },
                     ),
                   );
