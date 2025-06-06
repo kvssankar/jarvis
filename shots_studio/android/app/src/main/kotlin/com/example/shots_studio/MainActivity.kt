@@ -1,4 +1,4 @@
-package com.example.shots_studio
+package com.ansah.shots_studio
 
 import io.flutter.embedding.android.FlutterActivity
 
