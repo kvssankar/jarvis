@@ -94,34 +94,6 @@ That’s it! You can now search, tag and browse your screenshots with AI-powered
 
 ---
 
-## Screenshots
-
-<table>
-  <tr>
-    <td align="center">
-      <img src="assets/home_page.png" alt="Shots Studio Home Page" width="300"/>
-      <br/>
-      <em>Fig 1: Main screen of Shots Studio, showing a gallery of screenshots.</em>
-    </td>
-    <td align="center">
-      <img src="assets/screenshot_details.png" alt="Screenshot Details View" width="300"/>
-      <br/>
-      <em>Fig 2: Detailed view of a screenshot with its AI-generated tags and description.</em>
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <img src="assets/collection_add.png" alt="Adding to Collection" width="300"/>
-      <br/>
-      <em>Fig 3: Adding a screenshot to a new or existing collection.</em>
-    </td>
-    <td align="center">
-      <img src="assets/collection_add2.png" alt="Auto-add to Collection Toggle" width="300"/>
-      <br/>
-      <em>Fig 4: Enabling the "Auto-Add" feature for a collection.</em>
-    </td>
-  </tr>
-</table>
 
 ## Contributing
 
