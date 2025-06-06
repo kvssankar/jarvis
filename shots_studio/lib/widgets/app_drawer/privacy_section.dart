@@ -75,6 +75,7 @@ class _PrivacyDialog extends StatelessWidget {
               const SizedBox(height: 10),
               Text(
                 "\nShots Studio itself does not permanently store your original images on its own servers after they have been processed by Google Gemini for the aforementioned AI features.\n\n"
+                "Anonymous usage analytics are collected to help improve the app experience. This includes basic feature usage patterns and performance metrics, but no personal information or image content is included. Analytics collection is optional and can be disabled in Advanced Settings (accessible by tapping 'About' 7 times in the app drawer).\n\n"
                 "Please ensure you review and are comfortable with Google's terms and privacy practices before using the AI features.\n"
                 "P.S. Don't worry, your cat memes are safe with us. 😺",
                 style: TextStyle(
