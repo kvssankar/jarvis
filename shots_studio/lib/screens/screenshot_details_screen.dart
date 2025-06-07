@@ -26,6 +26,7 @@ class ScreenshotDetailScreen extends StatefulWidget {
   final VoidCallback? onScreenshotUpdated;
   final int? currentIndex;
   final int? totalCount;
+  final VoidCallback? onNavigateAfterDelete;
 
   const ScreenshotDetailScreen({
     super.key,
@@ -37,6 +38,7 @@ class ScreenshotDetailScreen extends StatefulWidget {
     this.onScreenshotUpdated,
     this.currentIndex,
     this.totalCount,
+    this.onNavigateAfterDelete,
   });
 
   @override
@@ -466,7 +468,12 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       widget.onDeleteScreenshot(widget.screenshot.id);
       AnalyticsService().logFeatureUsed('screenshot_deleted');
 
-      Navigator.of(context).pop();
+      // Use navigation callback if provided, otherwise pop
+      if (widget.onNavigateAfterDelete != null) {
+        widget.onNavigateAfterDelete!();
+      } else {
+        Navigator.of(context).pop();
+      }
 
       // Show confirmation message
       SnackbarService().showSuccess(context, 'Screenshot deleted successfully');

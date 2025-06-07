@@ -573,32 +573,74 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                           final screenshot = screenshotsInCollection[index];
                           return Stack(
                             children: [
-                              ScreenshotCard(
-                                screenshot: screenshot,
-                                destinationBuilder: (context) {
+                              GestureDetector(
+                                onTap: () async {
                                   final int initialIndex =
                                       screenshotsInCollection.indexWhere(
                                         (s) => s.id == screenshot.id,
                                       );
-                                  return ScreenshotSwipeDetailScreen(
-                                    screenshots: List.from(
-                                      screenshotsInCollection,
+
+                                  await Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder:
+                                          (
+                                            context,
+                                          ) => ScreenshotSwipeDetailScreen(
+                                            screenshots: List.from(
+                                              screenshotsInCollection,
+                                            ),
+                                            initialIndex:
+                                                initialIndex >= 0
+                                                    ? initialIndex
+                                                    : 0,
+                                            allCollections:
+                                                widget.allCollections,
+                                            allScreenshots:
+                                                widget.allScreenshots,
+                                            onUpdateCollection:
+                                                widget.onUpdateCollection,
+                                            onDeleteScreenshot:
+                                                widget.onDeleteScreenshot,
+                                            onScreenshotUpdated: () {
+                                              // This callback is called from the detail screen
+                                              // We don't need to do anything here as we'll handle
+                                              // cleanup when we return
+                                            },
+                                          ),
                                     ),
-                                    initialIndex:
-                                        initialIndex >= 0 ? initialIndex : 0,
-                                    allCollections: widget.allCollections,
-                                    allScreenshots: widget.allScreenshots,
-                                    onUpdateCollection:
-                                        widget.onUpdateCollection,
-                                    onDeleteScreenshot:
-                                        widget.onDeleteScreenshot,
-                                    onScreenshotUpdated: () {
-                                      if (mounted) {
-                                        setState(() {});
-                                      }
-                                    },
                                   );
+
+                                  // When we return from the detail screen, clean up deleted screenshots
+                                  if (mounted) {
+                                    final originalCount =
+                                        _currentScreenshotIds.length;
+                                    _currentScreenshotIds.removeWhere((id) {
+                                      final screenshot = widget.allScreenshots
+                                          .firstWhere(
+                                            (s) => s.id == id,
+                                            orElse:
+                                                () => Screenshot(
+                                                  id: '',
+                                                  path: null,
+                                                  addedOn: DateTime.now(),
+                                                  collectionIds: [],
+                                                  tags: [],
+                                                  aiProcessed: false,
+                                                  isDeleted: true,
+                                                ),
+                                          );
+                                      return screenshot.isDeleted;
+                                    });
+
+                                    // Only update if something was actually removed
+                                    if (_currentScreenshotIds.length !=
+                                        originalCount) {
+                                      setState(() {});
+                                      await _saveChanges();
+                                    }
+                                  }
                                 },
+                                child: ScreenshotCard(screenshot: screenshot),
                               ),
                               Positioned(
                                 top: 0,

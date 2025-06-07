@@ -7,12 +7,20 @@ class ScreenshotCard extends StatelessWidget {
   final Screenshot screenshot;
   final VoidCallback? onTap;
   final Widget Function(BuildContext)? destinationBuilder;
+  final bool isSelectionMode;
+  final bool isSelected;
+  final VoidCallback? onLongPress;
+  final VoidCallback? onSelectionToggle;
 
   const ScreenshotCard({
     super.key,
     required this.screenshot,
     this.onTap,
     this.destinationBuilder,
+    this.isSelectionMode = false,
+    this.isSelected = false,
+    this.onLongPress,
+    this.onSelectionToggle,
   });
 
   @override
@@ -132,8 +140,11 @@ class ScreenshotCard extends StatelessWidget {
     Widget cardContent = Container(
       decoration: BoxDecoration(
         border: Border.all(
-          color: Theme.of(context).colorScheme.secondaryContainer,
-          width: 3.0,
+          color:
+              isSelected
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.secondaryContainer,
+          width: isSelected ? 4.0 : 3.0,
         ),
         borderRadius: BorderRadius.circular(borderRadius),
       ),
@@ -144,12 +155,65 @@ class ScreenshotCard extends StatelessWidget {
             margin: EdgeInsets.zero,
             clipBehavior: Clip.antiAlias,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(borderRadius - 3.0),
+              borderRadius: BorderRadius.circular(
+                borderRadius - (isSelected ? 4.0 : 3.0),
+              ),
               color: Theme.of(context).cardColor,
             ),
             child: SizedBox.expand(child: imageWidget),
           ),
-          if (screenshot.aiProcessed)
+
+          // Selection overlay
+          if (isSelectionMode)
+            Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(
+                  borderRadius - (isSelected ? 4.0 : 3.0),
+                ),
+                color:
+                    isSelected
+                        ? Theme.of(context).colorScheme.primary.withOpacity(0.3)
+                        : Colors.black.withOpacity(0.1),
+              ),
+            ),
+
+          // Selection indicator
+          if (isSelectionMode)
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color:
+                      isSelected
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(
+                            context,
+                          ).colorScheme.surface.withOpacity(0.8),
+                  border: Border.all(
+                    color:
+                        isSelected
+                            ? Theme.of(context).colorScheme.primary
+                            : Theme.of(context).colorScheme.outline,
+                    width: 2,
+                  ),
+                ),
+                child:
+                    isSelected
+                        ? Icon(
+                          Icons.check,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        )
+                        : null,
+              ),
+            ),
+
+          // AI processed indicator (only show when not in selection mode)
+          if (screenshot.aiProcessed && !isSelectionMode)
             Positioned(
               bottom: 4,
               right: 4,
@@ -163,10 +227,10 @@ class ScreenshotCard extends StatelessWidget {
       ),
     );
 
-    // If a destination builder is provided, use OpenContainer for transitions
+    // If a destination builder is provided and not in selection mode, use OpenContainer for transitions
     return RepaintBoundary(
       child:
-          destinationBuilder != null
+          destinationBuilder != null && !isSelectionMode
               ? OpenContainer(
                 transitionType: ContainerTransitionType.fade,
                 transitionDuration: const Duration(milliseconds: 250),
@@ -177,10 +241,19 @@ class ScreenshotCard extends StatelessWidget {
                 ),
                 closedColor: Colors.transparent,
                 openColor: Theme.of(context).colorScheme.surface,
-                closedBuilder: (context, action) => cardContent,
+                closedBuilder:
+                    (context, action) => _buildGestureDetector(cardContent),
                 openBuilder: (context, action) => destinationBuilder!(context),
               )
-              : InkWell(onTap: onTap, child: cardContent),
+              : _buildGestureDetector(cardContent),
+    );
+  }
+
+  Widget _buildGestureDetector(Widget child) {
+    return GestureDetector(
+      onTap: onTap,
+      onLongPress: isSelectionMode ? null : onLongPress,
+      child: child,
     );
   }
 }

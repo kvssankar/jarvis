@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/sponsorship_service.dart';
 import '../../services/analytics_service.dart';
+import '../../services/update_checker_service.dart';
 import '../sponsorship/sponsorship_dialog.dart';
+import '../update_dialog.dart';
 
 class AboutSection extends StatelessWidget {
   final String appVersion;
@@ -20,6 +22,44 @@ class AboutSection extends StatelessWidget {
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       throw Exception('Could not launch $urlString');
+    }
+  }
+
+  Future<void> _checkForUpdatesManually(BuildContext context) async {
+    // Show loading indicator
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Checking for updates...')));
+
+    try {
+      final updateInfo = await UpdateCheckerService.checkForUpdates();
+
+      if (updateInfo != null) {
+        // Update is available, show dialog
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => UpdateDialog(updateInfo: updateInfo),
+          );
+        }
+      } else {
+        // No update available
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('You are running the latest version!'),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Error occurred
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to check for updates: $e')),
+        );
+      }
     }
   }
 
@@ -107,6 +147,30 @@ class AboutSection extends StatelessWidget {
             if (onLongPress != null) {
               onLongPress!();
             }
+          },
+        ),
+        ListTile(
+          leading: Icon(Icons.system_update, color: theme.colorScheme.primary),
+          title: Text(
+            'Check for Updates',
+            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+          ),
+          subtitle: Text(
+            'Check for app updates',
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          onTap: () {
+            // Log analytics for update check access
+            AnalyticsService().logFeatureUsed('manual_update_check');
+
+            // Close drawer first, then check for updates with a fresh context
+            Navigator.pop(context);
+
+            // Use a post-frame callback to ensure the drawer is closed before checking updates
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final navigatorContext = Navigator.of(context).context;
+              _checkForUpdatesManually(navigatorContext);
+            });
           },
         ),
       ],

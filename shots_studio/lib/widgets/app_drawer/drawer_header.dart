@@ -12,12 +12,13 @@ class AppDrawerHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.end,
+        mainAxisSize: MainAxisSize.min,
         children: [
           // App icon with theme coloring
           Container(
             width: 48,
             height: 48,
-            margin: const EdgeInsets.only(bottom: 16),
+            margin: const EdgeInsets.only(bottom: 12),
             decoration: BoxDecoration(
               color: theme.colorScheme.onPrimaryContainer.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
@@ -41,7 +42,7 @@ class AppDrawerHeader extends StatelessWidget {
               fontWeight: FontWeight.bold,
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             'Screenshot Manager',
             style: TextStyle(

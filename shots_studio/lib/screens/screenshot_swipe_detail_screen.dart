@@ -59,8 +59,29 @@ class _ScreenshotSwipeDetailScreenState
     );
 
     if (deletedIndex != -1) {
-      // Remove the screenshot from our local list
-      widget.screenshots.removeAt(deletedIndex);
+      setState(() {
+        // Remove the screenshot from our local list
+        widget.screenshots.removeAt(deletedIndex);
+
+        // Determine the new index to navigate to
+        if (widget.screenshots.isEmpty) {
+          // Will navigate back below
+          print('DEBUG: No screenshots remaining, will go back');
+        } else if (deletedIndex == _currentIndex) {
+          // We deleted the current screenshot, stay at same index or go to previous
+          if (_currentIndex >= widget.screenshots.length) {
+            _currentIndex = widget.screenshots.length - 1;
+          }
+          // If we deleted the last screenshot, current index is now the previous one
+          // If we deleted any other screenshot, current index now shows the next one
+        } else if (deletedIndex < _currentIndex) {
+          // We deleted a screenshot before the current one, adjust index down
+          _currentIndex--;
+        } else {
+          // Deleted screenshot after current, index stays $_currentIndex
+        }
+        // If deletedIndex > _currentIndex, no change needed to _currentIndex
+      });
 
       // Call the parent's delete callback
       widget.onDeleteScreenshot(screenshotId);
@@ -71,18 +92,23 @@ class _ScreenshotSwipeDetailScreenState
         return;
       }
 
-      // Adjust current index if necessary
-      if (_currentIndex >= widget.screenshots.length) {
-        _currentIndex = widget.screenshots.length - 1;
-      }
-
-      // Navigate to the adjusted index
-      _pageController.animateToPage(
-        _currentIndex,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
-      );
+      // Navigate to the adjusted index immediately
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_pageController.hasClients) {
+          print('DEBUG: Navigating to index $_currentIndex');
+          _pageController.animateToPage(
+            _currentIndex,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
     }
+  }
+
+  void _onNavigateAfterDelete() {
+    // Do nothing - the navigation is handled by _onScreenshotDeleted
+    // This callback just prevents the default Navigator.pop() behavior
   }
 
   @override
@@ -108,6 +134,7 @@ class _ScreenshotSwipeDetailScreenState
           onScreenshotUpdated: widget.onScreenshotUpdated,
           currentIndex: index,
           totalCount: widget.screenshots.length,
+          onNavigateAfterDelete: _onNavigateAfterDelete,
         );
       },
     );

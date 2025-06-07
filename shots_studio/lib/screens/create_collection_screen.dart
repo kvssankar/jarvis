@@ -143,218 +143,236 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _titleController,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSecondaryContainer,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Collection Title',
-                hintStyle: TextStyle(
-                  color: Theme.of(context).colorScheme.onSecondaryContainer,
-                ),
-                border: InputBorder.none,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _descriptionController,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSecondaryContainer,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Add a description...',
-                filled: true,
-                fillColor: Theme.of(context).colorScheme.secondaryContainer,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-              ),
-              maxLines: 3,
-            ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Tooltip(
-                    message:
-                        'When enabled, AI will automatically add relevant screenshots to this collection',
-                    child: Row(
-                      children: [
-                        Flexible(
-                          child: Text(
-                            'Smart Categorization',
-                            style: TextStyle(
-                              fontSize: 16,
-                              color:
-                                  Theme.of(
-                                    context,
-                                  ).colorScheme.onSecondaryContainer,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Icon(
-                          Icons.info_outline,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.secondary,
-                        ),
-                      ],
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextField(
+                    controller: _titleController,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
+                    ),
+                    decoration: InputDecoration(
+                      hintText: 'Collection Title',
+                      hintStyle: TextStyle(
+                        color:
+                            Theme.of(context).colorScheme.onSecondaryContainer,
+                      ),
+                      border: InputBorder.none,
                     ),
                   ),
-                ),
-                Switch(
-                  value: _isAutoAddEnabled,
-                  activeColor: Theme.of(context).colorScheme.primary,
-                  onChanged: (bool value) {
-                    setState(() {
-                      _isAutoAddEnabled = value;
-                    });
-
-                    // Track auto-add toggle interactions
-                    if (value) {
-                      AnalyticsService().logFeatureUsed('auto_add_enabled');
-                    } else {
-                      AnalyticsService().logFeatureUsed('auto_add_disabled');
-                    }
-                  },
-                ),
-              ],
-            ),
-            if (_isAutoAddEnabled)
-              Container(
-                margin: const EdgeInsets.only(top: 8, bottom: 16),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.tertiaryContainer.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.tertiary.withValues(alpha: 0.3),
-                    width: 0.5,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.auto_awesome,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.tertiary,
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: _descriptionController,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Gemini AI will automatically categorize new screenshots into this collection based on content analysis.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color:
-                              Theme.of(context).colorScheme.onTertiaryContainer,
-                        ),
+                    decoration: InputDecoration(
+                      hintText: 'Add a description...',
+                      filled: true,
+                      fillColor:
+                          Theme.of(context).colorScheme.secondaryContainer,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
                       ),
                     ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 8),
-            Text(
-              'Select Screenshots',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSecondaryContainer,
-              ),
-            ),
-            const SizedBox(height: 16),
-
-            // Screenshots grid
-            Expanded(
-              child:
-                  widget.availableScreenshots.isEmpty
-                      ? Center(
-                        child: Text(
-                          'No screenshots available',
-                          style: TextStyle(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
+                    maxLines: 3,
+                  ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Tooltip(
+                          message:
+                              'When enabled, AI will automatically add relevant screenshots to this collection',
+                          child: Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  'Smart Categorization',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    color:
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.onSecondaryContainer,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              Icon(
+                                Icons.info_outline,
+                                size: 16,
+                                color: Theme.of(context).colorScheme.secondary,
+                              ),
+                            ],
                           ),
                         ),
-                      )
-                      : GridView.builder(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              childAspectRatio: 1,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                            ),
-                        itemCount: widget.availableScreenshots.length,
-                        cacheExtent: 1200,
-                        itemBuilder: (context, index) {
-                          final screenshot = widget.availableScreenshots[index];
-                          final isSelected = _selectedScreenshotIds.contains(
-                            screenshot.id,
-                          );
+                      ),
+                      Switch(
+                        value: _isAutoAddEnabled,
+                        activeColor: Theme.of(context).colorScheme.primary,
+                        onChanged: (bool value) {
+                          setState(() {
+                            _isAutoAddEnabled = value;
+                          });
 
-                          return GestureDetector(
-                            onTap:
-                                () => _toggleScreenshotSelection(screenshot.id),
-                            child: Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                ScreenshotCard(
-                                  screenshot: screenshot,
+                          // Track auto-add toggle interactions
+                          if (value) {
+                            AnalyticsService().logFeatureUsed(
+                              'auto_add_enabled',
+                            );
+                          } else {
+                            AnalyticsService().logFeatureUsed(
+                              'auto_add_disabled',
+                            );
+                          }
+                        },
+                      ),
+                    ],
+                  ),
+                  if (_isAutoAddEnabled)
+                    Container(
+                      margin: const EdgeInsets.only(top: 8, bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.tertiaryContainer.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.tertiary.withValues(alpha: 0.3),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.auto_awesome,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.tertiary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Gemini AI will automatically categorize new screenshots into this collection based on content analysis.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.onTertiaryContainer,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Select Screenshots',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  // Screenshots grid container with fixed height
+                  SizedBox(
+                    height: 400, // Fixed height for the grid
+                    child:
+                        widget.availableScreenshots.isEmpty
+                            ? Center(
+                              child: Text(
+                                'No screenshots available',
+                                style: TextStyle(
+                                  color:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            )
+                            : GridView.builder(
+                              gridDelegate:
+                                  const SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: 3,
+                                    childAspectRatio: 1,
+                                    crossAxisSpacing: 12,
+                                    mainAxisSpacing: 12,
+                                  ),
+                              itemCount: widget.availableScreenshots.length,
+                              cacheExtent: 1200,
+                              itemBuilder: (context, index) {
+                                final screenshot =
+                                    widget.availableScreenshots[index];
+                                final isSelected = _selectedScreenshotIds
+                                    .contains(screenshot.id);
+
+                                return GestureDetector(
                                   onTap:
                                       () => _toggleScreenshotSelection(
                                         screenshot.id,
                                       ),
-                                ),
+                                  child: Stack(
+                                    fit: StackFit.expand,
+                                    children: [
+                                      ScreenshotCard(
+                                        screenshot: screenshot,
+                                        onTap:
+                                            () => _toggleScreenshotSelection(
+                                              screenshot.id,
+                                            ),
+                                      ),
 
-                                if (isSelected)
-                                  Container(
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context)
-                                          .colorScheme
-                                          .surface
-                                          .withValues(alpha: 0.7),
-                                      border: Border.all(
-                                        color:
-                                            Theme.of(
-                                              context,
-                                            ).colorScheme.primary,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    child: Center(
-                                      child: Icon(
-                                        Icons.check_circle,
-                                        color:
-                                            Theme.of(
-                                              context,
-                                            ).colorScheme.primary,
-                                        size: 36,
-                                      ),
-                                    ),
+                                      if (isSelected)
+                                        Container(
+                                          decoration: BoxDecoration(
+                                            color: Theme.of(context)
+                                                .colorScheme
+                                                .surface
+                                                .withValues(alpha: 0.7),
+                                            border: Border.all(
+                                              color:
+                                                  Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                              width: 2,
+                                            ),
+                                          ),
+                                          child: Center(
+                                            child: Icon(
+                                              Icons.check_circle,
+                                              color:
+                                                  Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                              size: 36,
+                                            ),
+                                          ),
+                                        ),
+                                    ],
                                   ),
-                              ],
+                                );
+                              },
                             ),
-                          );
-                        },
-                      ),
+                  ),
+                ],
+              ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

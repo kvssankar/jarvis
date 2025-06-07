@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:io';
 import 'package:shots_studio/screens/screenshot_details_screen.dart';
 import 'package:shots_studio/screens/screenshot_swipe_detail_screen.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,7 +13,6 @@ import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
-import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shots_studio/screens/search_screen.dart';
 import 'package:shots_studio/widgets/privacy_dialog.dart';
@@ -30,6 +30,9 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shots_studio/services/analytics_service.dart';
 import 'firebase_options.dart';
+import 'package:shots_studio/services/file_watcher_service.dart';
+import 'package:shots_studio/services/update_checker_service.dart';
+import 'package:shots_studio/widgets/update_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -192,6 +195,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // Add a global key for the API key text field
   final GlobalKey<State> _apiKeyFieldKey = GlobalKey();
 
+  // File watcher service for seamless autoscanning
+  final FileWatcherService _fileWatcher = FileWatcherService();
+  StreamSubscription<List<Screenshot>>? _fileWatcherSubscription;
+
   // Add loading progress tracking
   int _loadingProgress = 0;
   int _totalToLoad = 0;
@@ -228,6 +235,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (!kIsWeb) {
       _loadAndroidScreenshots();
       _setupBackgroundServiceListeners();
+      _setupFileWatcher();
     }
     // Show privacy dialog after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -239,6 +247,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
         // API key guide will only show after privacy is accepted
         await showApiKeyGuideIfNeeded(context, _apiKey, _updateApiKey);
+
+        // Check for app updates after initial setup
+        _checkForUpdates();
+
         // Automatically process any unprocessed screenshots
         _autoProcessWithGemini();
       }
@@ -248,6 +260,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+
+    // Clean up file watcher
+    _fileWatcherSubscription?.cancel();
+    _fileWatcher.dispose();
+
     super.dispose();
   }
 
@@ -423,6 +440,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       MemoryUtils.clearImageCache();
     }
 
+    // Manage file watcher based on app lifecycle
+    if (!kIsWeb) {
+      if (state == AppLifecycleState.resumed) {
+        // Start file watching when app comes to foreground
+        _fileWatcher.startWatching();
+      } else if (state == AppLifecycleState.paused) {
+        // Stop file watching when app goes to background to save resources
+        _fileWatcher.stopWatching();
+      }
+    }
+
     // Auto-process unprocessed screenshots when the app comes to foreground
     if (state == AppLifecycleState.resumed) {
       // Add a small delay to ensure the UI is ready
@@ -556,6 +584,33 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _saveDevMode(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('dev_mode', value);
+  }
+
+  /// Check for app updates from GitHub releases
+  Future<void> _checkForUpdates() async {
+    try {
+      final updateInfo = await UpdateCheckerService.checkForUpdates();
+
+      if (updateInfo != null && mounted) {
+        // Show update dialog
+        showDialog(
+          context: context,
+          builder: (context) => UpdateDialog(updateInfo: updateInfo),
+        );
+
+        AnalyticsService().logFeatureUsed('update_available');
+      } else if (updateInfo == null) {
+        print('MainApp: No update available');
+      } else if (!mounted) {
+        print('MainApp: Widget not mounted, cannot show dialog');
+      }
+    } catch (e) {
+      // as this is a background feature and errors shouldn't interrupt user flow
+      print('MainApp: Update check failed: $e');
+
+      // Log analytics for update check failures
+      AnalyticsService().logFeatureUsed('update_check_failed');
+    }
   }
 
   Future<void> _processWithGemini() async {
@@ -719,6 +774,52 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
+  /// Restart AI processing when a new auto-add enabled collection is created or enabled
+  /// This ensures seamless operation by including the new collection in the processing workflow
+  Future<void> _restartProcessingForNewAutoAddCollection() async {
+    print("Main app: Restarting processing for new auto-add collection...");
+
+    // Log analytics for restart operation
+    AnalyticsService().logFeatureUsed('auto_add_processing_restart_initiated');
+
+    try {
+      // Stop current processing
+      await _stopProcessingAI();
+
+      // Wait a moment for the stop to complete
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Check if there are any unprocessed screenshots to restart processing
+      final unprocessedScreenshots =
+          _activeScreenshots.where((s) => !s.aiProcessed).toList();
+
+      if (unprocessedScreenshots.isNotEmpty) {
+        // Restart processing with the updated collection list (including new auto-add collection)
+        print(
+          "Main app: Restarting processing with ${unprocessedScreenshots.length} unprocessed screenshots",
+        );
+        AnalyticsService().logFeatureUsed(
+          'auto_add_processing_restart_success',
+        );
+        await _processWithGemini();
+      } else {
+        print("Main app: No unprocessed screenshots to restart processing");
+        AnalyticsService().logFeatureUsed(
+          'auto_add_processing_restart_no_screenshots',
+        );
+      }
+    } catch (e) {
+      print(
+        "Main app: Error restarting processing for new auto-add collection: $e",
+      );
+      AnalyticsService().logFeatureUsed('auto_add_processing_restart_error');
+      SnackbarService().showWarning(
+        context,
+        'Error restarting processing for new collection: $e',
+      );
+    }
+  }
+
   Future<void> _takeScreenshot(ImageSource source) async {
     try {
       final startTime = DateTime.now();
@@ -826,12 +927,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // }
 
     try {
+      // Android API level specific permission handling
       var status = await Permission.photos.request();
+
+      // For Android 11 specifically, also check storage permission as a fallback
+      if (!status.isGranted && Platform.isAndroid) {
+        // Try legacy storage permission for Android 10/11 compatibility
+        var storageStatus = await Permission.storage.request();
+        if (storageStatus.isGranted) {
+          status = storageStatus;
+        }
+      }
+
       if (!status.isGranted) {
-        SnackbarService().showError(
-          context,
-          'Photos permission denied. Cannot load screenshots.',
-        );
+        String errorMessage =
+            'Photos permission denied. Cannot load screenshots.';
+        if (Platform.isAndroid) {
+          errorMessage +=
+              '\n\nFor Android 11 users: Please ensure both Photos and Files permissions are granted in your device settings.';
+        }
+        SnackbarService().showError(context, errorMessage);
         return;
       }
 
@@ -1002,13 +1117,40 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     AnalyticsService().logCollectionCreated();
     AnalyticsService().logTotalCollections(_collections.length);
     _logCollectionStats();
+
+    // If the new collection has autoAddEnabled, ensure processing starts/restarts
+    // to include the new auto-add enabled collection
+    if (collection.isAutoAddEnabled) {
+      // Log analytics for auto-add collection creation
+      AnalyticsService().logFeatureUsed('auto_add_collection_created');
+
+      if (_isProcessingAI) {
+        // If already processing, restart to include the new collection
+        AnalyticsService().logFeatureUsed(
+          'auto_add_collection_restart_processing',
+        );
+        _restartProcessingForNewAutoAddCollection();
+      } else {
+        // If not processing, start processing to handle the new auto-add collection
+        AnalyticsService().logFeatureUsed(
+          'auto_add_collection_start_processing',
+        );
+        _autoProcessWithGemini();
+      }
+    }
   }
 
   void _updateCollection(Collection updatedCollection) {
+    // Check if autoAddEnabled was just turned on
+    bool wasAutoAddJustEnabled = false;
+    final index = _collections.indexWhere((c) => c.id == updatedCollection.id);
+    if (index != -1) {
+      final oldCollection = _collections[index];
+      wasAutoAddJustEnabled =
+          !oldCollection.isAutoAddEnabled && updatedCollection.isAutoAddEnabled;
+    }
+
     setState(() {
-      final index = _collections.indexWhere(
-        (c) => c.id == updatedCollection.id,
-      );
       if (index != -1) {
         _collections[index] = updatedCollection;
       }
@@ -1017,6 +1159,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // Log collection stats after update
     _logCollectionStats();
+
+    // If autoAddEnabled was just turned on, ensure processing starts/restarts
+    // to include the newly auto-add enabled collection
+    if (wasAutoAddJustEnabled) {
+      // Log analytics for auto-add being enabled on existing collection
+      AnalyticsService().logFeatureUsed('auto_add_collection_enabled');
+
+      if (_isProcessingAI) {
+        // If already processing, restart to include the updated collection
+        AnalyticsService().logFeatureUsed(
+          'auto_add_enabled_restart_processing',
+        );
+        _restartProcessingForNewAutoAddCollection();
+      } else {
+        // If not processing, start processing to handle the newly enabled auto-add collection
+        AnalyticsService().logFeatureUsed('auto_add_enabled_start_processing');
+        _autoProcessWithGemini();
+      }
+    }
   }
 
   void _deleteCollection(String collectionId) {
@@ -1076,6 +1237,40 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       }
     });
     _saveDataToPrefs();
+  }
+
+  void _bulkDeleteScreenshots(List<String> screenshotIds) {
+    if (screenshotIds.isEmpty) return;
+
+    // Log bulk delete analytics
+    AnalyticsService().logFeatureUsed('bulk_delete_screenshots');
+
+    setState(() {
+      // Mark all screenshots as deleted
+      for (String screenshotId in screenshotIds) {
+        final screenshotIndex = _screenshots.indexWhere(
+          (s) => s.id == screenshotId,
+        );
+        if (screenshotIndex != -1) {
+          _screenshots[screenshotIndex].isDeleted = true;
+        }
+
+        // Remove screenshot from all collections
+        for (var collection in _collections) {
+          if (collection.screenshotIds.contains(screenshotId)) {
+            final updatedCollection = collection.removeScreenshot(screenshotId);
+            _updateCollection(updatedCollection);
+          }
+        }
+      }
+    });
+
+    _saveDataToPrefs();
+
+    // Log analytics for the number of screenshots deleted
+    AnalyticsService().logFeatureUsed(
+      'bulk_delete_count_${screenshotIds.length}',
+    );
   }
 
   void _navigateToSearchScreen() {
@@ -1176,6 +1371,127 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
+  /// Setup file watcher for seamless autoscanning
+  void _setupFileWatcher() {
+    print("Setting up file watcher for seamless autoscanning...");
+
+    // Listen to new screenshots from file watcher
+    _fileWatcherSubscription = _fileWatcher.newScreenshotsStream.listen((
+      newScreenshots,
+    ) {
+      print("FileWatcher: Detected ${newScreenshots.length} new screenshots");
+
+      if (newScreenshots.isNotEmpty && mounted) {
+        // Filter out screenshots we already have
+        final uniqueScreenshots = <Screenshot>[];
+        for (final screenshot in newScreenshots) {
+          final exists = _screenshots.any((s) => s.path == screenshot.path);
+          if (!exists) {
+            uniqueScreenshots.add(screenshot);
+          }
+        }
+
+        if (uniqueScreenshots.isNotEmpty) {
+          setState(() {
+            _screenshots.addAll(uniqueScreenshots);
+          });
+
+          // Save data and auto-process the new screenshots
+          _saveDataToPrefs();
+
+          print(
+            "FileWatcher: Added ${uniqueScreenshots.length} new screenshots",
+          );
+
+          // Auto-process newly detected screenshots if enabled
+          if (_autoProcessEnabled) {
+            _autoProcessWithGemini();
+          }
+
+          // Show a subtle notification
+          if (mounted && context.mounted) {
+            SnackbarService().showInfo(
+              context,
+              'Found ${uniqueScreenshots.length} new screenshot${uniqueScreenshots.length == 1 ? '' : 's'}',
+            );
+          }
+        }
+      }
+    });
+
+    // Start watching for files
+    _fileWatcher.startWatching();
+    print("File watcher setup complete");
+  }
+
+  /// Reset AI processing status for all screenshots
+  Future<void> _resetAiMetaData() async {
+    // Show confirmation dialog
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'Reset AI Processing',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
+          ),
+          content: Text(
+            'This will reset the AI processing status for all screenshots, allowing you to re-request AI analysis. This action cannot be undone.\n\nContinue?',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+              ),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            TextButton(
+              child: Text(
+                'Reset',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      // Reset aiProcessed status for all screenshots
+      setState(() {
+        for (var screenshot in _screenshots) {
+          screenshot.aiProcessed = false;
+          screenshot.aiMetadata = null;
+          // Optionally clear AI-generated data
+          // screenshot.title = null;
+          // screenshot.description = null;
+          // screenshot.tags.clear();
+        }
+
+        // clear scannedSet from collections
+        for (var collection in _collections) {
+          collection.scannedSet.clear();
+        }
+      });
+
+      // Save the updated data
+      await _saveDataToPrefs();
+
+      AnalyticsService().logFeatureUsed('ai_processing_reset');
+
+      SnackbarService().showSuccess(context, 'AI processing status reset');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1207,6 +1523,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         currentAnalyticsEnabled: _analyticsEnabled,
         onAnalyticsEnabledChanged: _updateAnalyticsEnabled,
         apiKeyFieldKey: _apiKeyFieldKey,
+        onResetAiProcessing: _resetAiMetaData,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -1312,6 +1629,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 body: ScreenshotsSection(
                   screenshots: _activeScreenshots,
                   onScreenshotTap: _showScreenshotDetail,
+                  onBulkDelete: _bulkDeleteScreenshots,
                   screenshotDetailBuilder: (context, screenshot) {
                     final int initialIndex = _activeScreenshots.indexWhere(
                       (s) => s.id == screenshot.id,

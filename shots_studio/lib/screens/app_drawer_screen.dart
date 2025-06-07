@@ -22,6 +22,7 @@ class AppDrawer extends StatefulWidget {
   final bool? currentAnalyticsEnabled;
   final Function(bool)? onAnalyticsEnabledChanged;
   final Key? apiKeyFieldKey;
+  final VoidCallback? onResetAiProcessing;
 
   const AppDrawer({
     super.key,
@@ -42,6 +43,7 @@ class AppDrawer extends StatefulWidget {
     this.currentAnalyticsEnabled,
     this.onAnalyticsEnabledChanged,
     this.apiKeyFieldKey,
+    this.onResetAiProcessing,
   });
 
   @override
@@ -144,6 +146,7 @@ class _AppDrawerState extends State<AppDrawer> {
                 onDevModeChanged: widget.onDevModeChanged,
                 currentAnalyticsEnabled: widget.currentAnalyticsEnabled,
                 onAnalyticsEnabledChanged: widget.onAnalyticsEnabledChanged,
+                onResetAiProcessing: widget.onResetAiProcessing,
               ),
               const PerformanceSection(),
             ],
