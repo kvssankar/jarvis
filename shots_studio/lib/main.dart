@@ -30,6 +30,9 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:shots_studio/services/analytics_service.dart';
 import 'firebase_options.dart';
+import 'package:shots_studio/services/file_watcher_service.dart';
+import 'package:shots_studio/services/update_checker_service.dart';
+import 'package:shots_studio/widgets/update_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -192,6 +195,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   // Add a global key for the API key text field
   final GlobalKey<State> _apiKeyFieldKey = GlobalKey();
 
+  // File watcher service for seamless autoscanning
+  final FileWatcherService _fileWatcher = FileWatcherService();
+  StreamSubscription<List<Screenshot>>? _fileWatcherSubscription;
+
   // Add loading progress tracking
   int _loadingProgress = 0;
   int _totalToLoad = 0;
@@ -228,6 +235,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (!kIsWeb) {
       _loadAndroidScreenshots();
       _setupBackgroundServiceListeners();
+      _setupFileWatcher();
     }
     // Show privacy dialog after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -239,6 +247,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
         // API key guide will only show after privacy is accepted
         await showApiKeyGuideIfNeeded(context, _apiKey, _updateApiKey);
+
+        // Check for app updates after initial setup
+        _checkForUpdates();
+
         // Automatically process any unprocessed screenshots
         _autoProcessWithGemini();
       }
@@ -248,6 +260,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+
+    // Clean up file watcher
+    _fileWatcherSubscription?.cancel();
+    _fileWatcher.dispose();
+
     super.dispose();
   }
 
@@ -423,6 +440,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       MemoryUtils.clearImageCache();
     }
 
+    // Manage file watcher based on app lifecycle
+    if (!kIsWeb) {
+      if (state == AppLifecycleState.resumed) {
+        // Start file watching when app comes to foreground
+        _fileWatcher.startWatching();
+      } else if (state == AppLifecycleState.paused) {
+        // Stop file watching when app goes to background to save resources
+        _fileWatcher.stopWatching();
+      }
+    }
+
     // Auto-process unprocessed screenshots when the app comes to foreground
     if (state == AppLifecycleState.resumed) {
       // Add a small delay to ensure the UI is ready
@@ -556,6 +584,33 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Future<void> _saveDevMode(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('dev_mode', value);
+  }
+
+  /// Check for app updates from GitHub releases
+  Future<void> _checkForUpdates() async {
+    try {
+      final updateInfo = await UpdateCheckerService.checkForUpdates();
+
+      if (updateInfo != null && mounted) {
+        // Show update dialog
+        showDialog(
+          context: context,
+          builder: (context) => UpdateDialog(updateInfo: updateInfo),
+        );
+
+        AnalyticsService().logFeatureUsed('update_available');
+      } else if (updateInfo == null) {
+        print('MainApp: No update available');
+      } else if (!mounted) {
+        print('MainApp: Widget not mounted, cannot show dialog');
+      }
+    } catch (e) {
+      // as this is a background feature and errors shouldn't interrupt user flow
+      print('MainApp: Update check failed: $e');
+
+      // Log analytics for update check failures
+      AnalyticsService().logFeatureUsed('update_check_failed');
+    }
   }
 
   Future<void> _processWithGemini() async {
@@ -1174,6 +1229,59 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         await _processWithGemini();
       }
     }
+  }
+
+  /// Setup file watcher for seamless autoscanning
+  void _setupFileWatcher() {
+    print("Setting up file watcher for seamless autoscanning...");
+
+    // Listen to new screenshots from file watcher
+    _fileWatcherSubscription = _fileWatcher.newScreenshotsStream.listen((
+      newScreenshots,
+    ) {
+      print("FileWatcher: Detected ${newScreenshots.length} new screenshots");
+
+      if (newScreenshots.isNotEmpty && mounted) {
+        // Filter out screenshots we already have
+        final uniqueScreenshots = <Screenshot>[];
+        for (final screenshot in newScreenshots) {
+          final exists = _screenshots.any((s) => s.path == screenshot.path);
+          if (!exists) {
+            uniqueScreenshots.add(screenshot);
+          }
+        }
+
+        if (uniqueScreenshots.isNotEmpty) {
+          setState(() {
+            _screenshots.addAll(uniqueScreenshots);
+          });
+
+          // Save data and auto-process the new screenshots
+          _saveDataToPrefs();
+
+          print(
+            "FileWatcher: Added ${uniqueScreenshots.length} new screenshots",
+          );
+
+          // Auto-process newly detected screenshots if enabled
+          if (_autoProcessEnabled) {
+            _autoProcessWithGemini();
+          }
+
+          // Show a subtle notification
+          if (mounted && context.mounted) {
+            SnackbarService().showInfo(
+              context,
+              'Found ${uniqueScreenshots.length} new screenshot${uniqueScreenshots.length == 1 ? '' : 's'}',
+            );
+          }
+        }
+      }
+    });
+
+    // Start watching for files
+    _fileWatcher.startWatching();
+    print("File watcher setup complete");
   }
 
   @override
