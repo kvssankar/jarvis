@@ -774,6 +774,52 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
+  /// Restart AI processing when a new auto-add enabled collection is created or enabled
+  /// This ensures seamless operation by including the new collection in the processing workflow
+  Future<void> _restartProcessingForNewAutoAddCollection() async {
+    print("Main app: Restarting processing for new auto-add collection...");
+
+    // Log analytics for restart operation
+    AnalyticsService().logFeatureUsed('auto_add_processing_restart_initiated');
+
+    try {
+      // Stop current processing
+      await _stopProcessingAI();
+
+      // Wait a moment for the stop to complete
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      // Check if there are any unprocessed screenshots to restart processing
+      final unprocessedScreenshots =
+          _activeScreenshots.where((s) => !s.aiProcessed).toList();
+
+      if (unprocessedScreenshots.isNotEmpty) {
+        // Restart processing with the updated collection list (including new auto-add collection)
+        print(
+          "Main app: Restarting processing with ${unprocessedScreenshots.length} unprocessed screenshots",
+        );
+        AnalyticsService().logFeatureUsed(
+          'auto_add_processing_restart_success',
+        );
+        await _processWithGemini();
+      } else {
+        print("Main app: No unprocessed screenshots to restart processing");
+        AnalyticsService().logFeatureUsed(
+          'auto_add_processing_restart_no_screenshots',
+        );
+      }
+    } catch (e) {
+      print(
+        "Main app: Error restarting processing for new auto-add collection: $e",
+      );
+      AnalyticsService().logFeatureUsed('auto_add_processing_restart_error');
+      SnackbarService().showWarning(
+        context,
+        'Error restarting processing for new collection: $e',
+      );
+    }
+  }
+
   Future<void> _takeScreenshot(ImageSource source) async {
     try {
       final startTime = DateTime.now();
@@ -1057,13 +1103,40 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     AnalyticsService().logCollectionCreated();
     AnalyticsService().logTotalCollections(_collections.length);
     _logCollectionStats();
+
+    // If the new collection has autoAddEnabled, ensure processing starts/restarts
+    // to include the new auto-add enabled collection
+    if (collection.isAutoAddEnabled) {
+      // Log analytics for auto-add collection creation
+      AnalyticsService().logFeatureUsed('auto_add_collection_created');
+
+      if (_isProcessingAI) {
+        // If already processing, restart to include the new collection
+        AnalyticsService().logFeatureUsed(
+          'auto_add_collection_restart_processing',
+        );
+        _restartProcessingForNewAutoAddCollection();
+      } else {
+        // If not processing, start processing to handle the new auto-add collection
+        AnalyticsService().logFeatureUsed(
+          'auto_add_collection_start_processing',
+        );
+        _autoProcessWithGemini();
+      }
+    }
   }
 
   void _updateCollection(Collection updatedCollection) {
+    // Check if autoAddEnabled was just turned on
+    bool wasAutoAddJustEnabled = false;
+    final index = _collections.indexWhere((c) => c.id == updatedCollection.id);
+    if (index != -1) {
+      final oldCollection = _collections[index];
+      wasAutoAddJustEnabled =
+          !oldCollection.isAutoAddEnabled && updatedCollection.isAutoAddEnabled;
+    }
+
     setState(() {
-      final index = _collections.indexWhere(
-        (c) => c.id == updatedCollection.id,
-      );
       if (index != -1) {
         _collections[index] = updatedCollection;
       }
@@ -1072,6 +1145,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // Log collection stats after update
     _logCollectionStats();
+
+    // If autoAddEnabled was just turned on, ensure processing starts/restarts
+    // to include the newly auto-add enabled collection
+    if (wasAutoAddJustEnabled) {
+      // Log analytics for auto-add being enabled on existing collection
+      AnalyticsService().logFeatureUsed('auto_add_collection_enabled');
+
+      if (_isProcessingAI) {
+        // If already processing, restart to include the updated collection
+        AnalyticsService().logFeatureUsed(
+          'auto_add_enabled_restart_processing',
+        );
+        _restartProcessingForNewAutoAddCollection();
+      } else {
+        // If not processing, start processing to handle the newly enabled auto-add collection
+        AnalyticsService().logFeatureUsed('auto_add_enabled_start_processing');
+        _autoProcessWithGemini();
+      }
+    }
   }
 
   void _deleteCollection(String collectionId) {
