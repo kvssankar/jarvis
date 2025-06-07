@@ -1225,6 +1225,40 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _saveDataToPrefs();
   }
 
+  void _bulkDeleteScreenshots(List<String> screenshotIds) {
+    if (screenshotIds.isEmpty) return;
+
+    // Log bulk delete analytics
+    AnalyticsService().logFeatureUsed('bulk_delete_screenshots');
+
+    setState(() {
+      // Mark all screenshots as deleted
+      for (String screenshotId in screenshotIds) {
+        final screenshotIndex = _screenshots.indexWhere(
+          (s) => s.id == screenshotId,
+        );
+        if (screenshotIndex != -1) {
+          _screenshots[screenshotIndex].isDeleted = true;
+        }
+
+        // Remove screenshot from all collections
+        for (var collection in _collections) {
+          if (collection.screenshotIds.contains(screenshotId)) {
+            final updatedCollection = collection.removeScreenshot(screenshotId);
+            _updateCollection(updatedCollection);
+          }
+        }
+      }
+    });
+
+    _saveDataToPrefs();
+
+    // Log analytics for the number of screenshots deleted
+    AnalyticsService().logFeatureUsed(
+      'bulk_delete_count_${screenshotIds.length}',
+    );
+  }
+
   void _navigateToSearchScreen() {
     // Log navigation analytics
     AnalyticsService().logScreenView('search_screen');
@@ -1581,6 +1615,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                 body: ScreenshotsSection(
                   screenshots: _activeScreenshots,
                   onScreenshotTap: _showScreenshotDetail,
+                  onBulkDelete: _bulkDeleteScreenshots,
                   screenshotDetailBuilder: (context, screenshot) {
                     final int initialIndex = _activeScreenshots.indexWhere(
                       (s) => s.id == screenshot.id,
