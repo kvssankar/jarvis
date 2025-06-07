@@ -13,6 +13,7 @@ class AdvancedSettingsSection extends StatefulWidget {
   final Function(bool)? onDevModeChanged;
   final bool? currentAnalyticsEnabled;
   final Function(bool)? onAnalyticsEnabledChanged;
+  final VoidCallback? onResetAiProcessing;
 
   const AdvancedSettingsSection({
     super.key,
@@ -26,6 +27,7 @@ class AdvancedSettingsSection extends StatefulWidget {
     this.onDevModeChanged,
     this.currentAnalyticsEnabled,
     this.onAnalyticsEnabledChanged,
+    this.onResetAiProcessing,
   });
 
   @override
@@ -308,6 +310,29 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
               widget.onAnalyticsEnabledChanged!(value);
             }
           },
+        ),
+        // Reset AI Processing Button
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: widget.onResetAiProcessing,
+              icon: Icon(Icons.refresh, color: theme.colorScheme.onPrimary),
+              label: Text(
+                'Reset AI Processing',
+                style: TextStyle(color: theme.colorScheme.onPrimary),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: theme.colorScheme.primary,
+                foregroundColor: theme.colorScheme.onPrimary,
+                padding: const EdgeInsets.symmetric(vertical: 12.0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.0),
+                ),
+              ),
+            ),
+          ),
         ),
       ],
     );

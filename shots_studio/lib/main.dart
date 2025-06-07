@@ -1376,6 +1376,74 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     print("File watcher setup complete");
   }
 
+  /// Reset AI processing status for all screenshots
+  Future<void> _resetAiMetaData() async {
+    // Show confirmation dialog
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text(
+            'Reset AI Processing',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
+          ),
+          content: Text(
+            'This will reset the AI processing status for all screenshots, allowing you to re-request AI analysis. This action cannot be undone.\n\nContinue?',
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+              ),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            TextButton(
+              child: Text(
+                'Reset',
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      // Reset aiProcessed status for all screenshots
+      setState(() {
+        for (var screenshot in _screenshots) {
+          screenshot.aiProcessed = false;
+          screenshot.aiMetadata = null;
+          // Optionally clear AI-generated data
+          // screenshot.title = null;
+          // screenshot.description = null;
+          // screenshot.tags.clear();
+        }
+
+        // clear scannedSet from collections
+        for (var collection in _collections) {
+          collection.scannedSet.clear();
+        }
+      });
+
+      // Save the updated data
+      await _saveDataToPrefs();
+
+      AnalyticsService().logFeatureUsed('ai_processing_reset');
+
+      SnackbarService().showSuccess(context, 'AI processing status reset');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1407,6 +1475,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         currentAnalyticsEnabled: _analyticsEnabled,
         onAnalyticsEnabledChanged: _updateAnalyticsEnabled,
         apiKeyFieldKey: _apiKeyFieldKey,
+        onResetAiProcessing: _resetAiMetaData,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
