@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:io';
 import 'package:shots_studio/screens/screenshot_details_screen.dart';
 import 'package:shots_studio/screens/screenshot_swipe_detail_screen.dart';
 import 'package:image_picker/image_picker.dart';
@@ -12,7 +13,6 @@ import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:uuid/uuid.dart';
 import 'package:path_provider/path_provider.dart';
-import 'dart:io';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:shots_studio/screens/search_screen.dart';
 import 'package:shots_studio/widgets/privacy_dialog.dart';
@@ -927,12 +927,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // }
 
     try {
+      // Android API level specific permission handling
       var status = await Permission.photos.request();
+
+      // For Android 11 specifically, also check storage permission as a fallback
+      if (!status.isGranted && Platform.isAndroid) {
+        // Try legacy storage permission for Android 10/11 compatibility
+        var storageStatus = await Permission.storage.request();
+        if (storageStatus.isGranted) {
+          status = storageStatus;
+        }
+      }
+
       if (!status.isGranted) {
-        SnackbarService().showError(
-          context,
-          'Photos permission denied. Cannot load screenshots.',
-        );
+        String errorMessage =
+            'Photos permission denied. Cannot load screenshots.';
+        if (Platform.isAndroid) {
+          errorMessage +=
+              '\n\nFor Android 11 users: Please ensure both Photos and Files permissions are granted in your device settings.';
+        }
+        SnackbarService().showError(context, errorMessage);
         return;
       }
 
