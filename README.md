@@ -100,16 +100,6 @@ That’s it! You can now search, tag and browse your screenshots with AI-powered
 We welcome your help! Whether it’s code, bug reports, feature ideas, or documentation — we’d love your input.
 Start by checking out `CONTRIBUTING.md` or opening an issue/pull request.
 
----
-
-## License
-
-This project is licensed under the Business Source License 1.1 (BSL 1.1).  
-Use of the software is restricted to non-commercial, non-production purposes only until May 25, 2032.  
-After that date, the license will automatically convert to the GNU General Public License v2.0 or later.  
-
-See the [LICENSE](LICENSE) file for full details.
-
 ## Setting Up Git Hooks
 
 This project uses Git hooks to automate certain tasks (e.g., version bumping). To enable these hooks in your local clone, please run the following command from the root of the repository after cloning:
