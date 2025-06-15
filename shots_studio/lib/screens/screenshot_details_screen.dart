@@ -536,6 +536,8 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
           },
         );
       } else {
+        // File not found - mark as AI processed to prevent sending to AI
+        widget.screenshot.aiProcessed = true;
         imageWidget = Container(
           color: Theme.of(context).colorScheme.surface,
           child: Column(
@@ -574,6 +576,8 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         widget.screenshot.bytes!,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
+          // Mark as AI processed to prevent sending to AI if image is corrupt or unreadable
+          widget.screenshot.aiProcessed = true;
           return Container(
             color: Theme.of(context).colorScheme.surface,
             child: Column(
@@ -597,6 +601,8 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         },
       );
     } else {
+      // No image data available - mark as AI processed to prevent sending to AI
+      widget.screenshot.aiProcessed = true;
       imageWidget = Container(
         color: Theme.of(context).colorScheme.surface,
         child: Column(

@@ -57,7 +57,7 @@ void main() async {
         'https://6f96d22977b283fc325e038ac45e6e5e@o4509484018958336.ingest.us.sentry.io/4509484020072448';
 
     options.tracesSampleRate =
-        kDebugMode ? 1.0 : 0.5; // 100% in debug, 50% in production
+        kDebugMode ? 0.3 : 0.1; // 30% in debug, 10% in production
   }, appRunner: () => runApp(SentryWidget(child: const MyApp())));
 }
 
