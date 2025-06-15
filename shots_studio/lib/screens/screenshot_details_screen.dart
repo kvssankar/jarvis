@@ -146,12 +146,17 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
             return ScreenshotCollectionDialog(
               collections: widget.allCollections,
               screenshot: widget.screenshot,
-              onCollectionToggle: _toggleScreenshotInCollection,
+              onCollectionToggle:
+                  (collection, dialogSetState) =>
+                      _toggleScreenshotInCollection(collection, dialogSetState),
             );
           },
         );
       },
-    );
+    ).then((_) {
+      // Force refresh the main screen state when dialog closes
+      setState(() {});
+    });
   }
 
   void _toggleScreenshotInCollection(
@@ -182,16 +187,22 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       updatedCollectionIdsInScreenshot.add(collection.id);
     }
 
+    // Update the screenshot's collection IDs immediately
     widget.screenshot.collectionIds = updatedCollectionIdsInScreenshot;
 
+    // Create updated collection
     Collection updatedCollection = collection.copyWith(
       screenshotIds: updatedScreenshotIds,
       screenshotCount: updatedScreenshotIds.length,
       lastModified: DateTime.now(),
     );
+
+    // Call the update callback to persist changes
     widget.onUpdateCollection(updatedCollection);
     setModalState(() {});
     setState(() {});
+    widget.onScreenshotUpdated?.call();
+    _updateScreenshotDetails();
   }
 
   void _clearAndRequestAiReprocessing() {

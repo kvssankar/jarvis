@@ -56,8 +56,13 @@ class _ScreenshotCollectionDialogState
                       itemCount: widget.collections.length,
                       itemBuilder: (context, index) {
                         final collection = widget.collections[index];
-                        final bool isAlreadyIn = collection.screenshotIds
-                            .contains(widget.screenshot.id);
+                        final bool isAlreadyIn =
+                            widget.screenshot.collectionIds.contains(
+                              collection.id,
+                            ) ||
+                            collection.screenshotIds.contains(
+                              widget.screenshot.id,
+                            );
                         return ListTile(
                           title: Text(
                             collection.name ?? 'Untitled',

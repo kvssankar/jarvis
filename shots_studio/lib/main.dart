@@ -1110,7 +1110,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _addCollection(Collection collection) {
     setState(() {
       _collections.add(collection);
+
+      // Update screenshots' collectionIds to maintain bidirectional relationship
+      for (String screenshotId in collection.screenshotIds) {
+        final screenshotIndex = _screenshots.indexWhere(
+          (s) => s.id == screenshotId,
+        );
+        if (screenshotIndex != -1) {
+          final screenshot = _screenshots[screenshotIndex];
+          if (!screenshot.collectionIds.contains(collection.id)) {
+            screenshot.collectionIds.add(collection.id);
+          }
+        }
+      }
     });
+
+    // Force immediate save to ensure consistency
     _saveDataToPrefs();
 
     // Log analytics
@@ -1144,8 +1159,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Check if autoAddEnabled was just turned on
     bool wasAutoAddJustEnabled = false;
     final index = _collections.indexWhere((c) => c.id == updatedCollection.id);
+
+    Collection? oldCollection;
     if (index != -1) {
-      final oldCollection = _collections[index];
+      oldCollection = _collections[index];
       wasAutoAddJustEnabled =
           !oldCollection.isAutoAddEnabled && updatedCollection.isAutoAddEnabled;
     }
@@ -1153,8 +1170,49 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(() {
       if (index != -1) {
         _collections[index] = updatedCollection;
+
+        // Maintain bidirectional relationship between screenshots and collections
+        if (oldCollection != null) {
+          // Find screenshots that were added to the collection
+          final addedScreenshots =
+              updatedCollection.screenshotIds
+                  .where((id) => !oldCollection!.screenshotIds.contains(id))
+                  .toList();
+
+          // Find screenshots that were removed from the collection
+          final removedScreenshots =
+              oldCollection.screenshotIds
+                  .where((id) => !updatedCollection.screenshotIds.contains(id))
+                  .toList();
+
+          // Update added screenshots' collectionIds
+          for (String screenshotId in addedScreenshots) {
+            final screenshotIndex = _screenshots.indexWhere(
+              (s) => s.id == screenshotId,
+            );
+            if (screenshotIndex != -1) {
+              final screenshot = _screenshots[screenshotIndex];
+              if (!screenshot.collectionIds.contains(updatedCollection.id)) {
+                screenshot.collectionIds.add(updatedCollection.id);
+              }
+            }
+          }
+
+          // Update removed screenshots' collectionIds
+          for (String screenshotId in removedScreenshots) {
+            final screenshotIndex = _screenshots.indexWhere(
+              (s) => s.id == screenshotId,
+            );
+            if (screenshotIndex != -1) {
+              final screenshot = _screenshots[screenshotIndex];
+              screenshot.collectionIds.remove(updatedCollection.id);
+            }
+          }
+        }
       }
     });
+
+    // Force immediate save to prevent data loss and ensure consistency
     _saveDataToPrefs();
 
     // Log collection stats after update
@@ -1673,11 +1731,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   onDeleteScreenshot: _deleteScreenshot,
                   onScreenshotUpdated: () {
                     setState(() {});
+                    // Force save when screenshot is updated
+                    _saveDataToPrefs();
                   },
                 ),
           ),
         )
         .then((_) {
+          // Force save and refresh when returning from screenshot detail
+          setState(() {});
           _saveDataToPrefs();
           // Don't clear cache to preserve collection thumbnails
         });
