@@ -161,11 +161,15 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
 
   void _toggleScreenshotInCollection(
     Collection collection,
-    StateSetter setModalState,
+    StateSetter dialogSetState,
   ) {
-    final bool isCurrentlyIn = collection.screenshotIds.contains(
-      widget.screenshot.id,
-    );
+    // Use the same logic as the dialog to determine current state
+    // Check both sides of the bidirectional relationship to ensure consistency
+    // This fixes the issue where toggle could only tick but not untick when
+    // opened from collection detail screen
+    final bool isCurrentlyIn =
+        widget.screenshot.collectionIds.contains(collection.id) ||
+        collection.screenshotIds.contains(widget.screenshot.id);
 
     // Track collection additions/removals
     if (isCurrentlyIn) {
@@ -180,11 +184,17 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     );
 
     if (isCurrentlyIn) {
+      // Remove from both sides of the relationship
       updatedScreenshotIds.remove(widget.screenshot.id);
       updatedCollectionIdsInScreenshot.remove(collection.id);
     } else {
-      updatedScreenshotIds.add(widget.screenshot.id);
-      updatedCollectionIdsInScreenshot.add(collection.id);
+      // Add to both sides of the relationship if not already present
+      if (!updatedScreenshotIds.contains(widget.screenshot.id)) {
+        updatedScreenshotIds.add(widget.screenshot.id);
+      }
+      if (!updatedCollectionIdsInScreenshot.contains(collection.id)) {
+        updatedCollectionIdsInScreenshot.add(collection.id);
+      }
     }
 
     // Update the screenshot's collection IDs immediately
@@ -197,9 +207,21 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       lastModified: DateTime.now(),
     );
 
+    // Update the collection in the allCollections list immediately so dialog sees the change
+    final collectionIndex = widget.allCollections.indexWhere(
+      (c) => c.id == collection.id,
+    );
+    if (collectionIndex != -1) {
+      widget.allCollections[collectionIndex] = updatedCollection;
+    } else {
+      print(
+        'DEBUG: WARNING - Could not find collection in allCollections list',
+      );
+    }
+
     // Call the update callback to persist changes
     widget.onUpdateCollection(updatedCollection);
-    setModalState(() {});
+    dialogSetState(() {});
     setState(() {});
     widget.onScreenshotUpdated?.call();
     _updateScreenshotDetails();
@@ -389,7 +411,6 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                         isAutoCategorized: true,
                       );
                       widget.onUpdateCollection(updatedCollection);
-                      updatedScreenshot.collectionIds.add(collection.id);
                       autoAddedCount++;
                     }
                   }

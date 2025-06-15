@@ -1402,7 +1402,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               isAutoCategorized: true,
             );
             _updateCollection(updatedCollection);
-            screenshot.collectionIds.add(collection.id);
             autoAddedCount++;
           }
         }
