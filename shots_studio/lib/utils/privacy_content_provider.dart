@@ -79,7 +79,7 @@ class PrivacyContentProvider {
       ),
       const SizedBox(height: 10),
       Text(
-        "\nShots Studio itself does not permanently store your original images on its own servers after they have been processed by Google Gemini for the aforementioned AI features.\n\n"
+        "\nShots Studio itself does not permanently store your original images for the aforementioned AI features.\n\n"
         "Anonymous usage analytics are collected to help improve the app experience. This includes basic feature usage patterns and performance metrics, but no personal information or image content is included.\n\n"
         "Please ensure you review and are comfortable with Google's terms and privacy practices before proceeding. If you do not agree, you may not be able to use the AI-powered features of this application.\n"
         "P.S. Don't worry, your cat memes are safe with us. 😺",
