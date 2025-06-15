@@ -146,21 +146,30 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
             return ScreenshotCollectionDialog(
               collections: widget.allCollections,
               screenshot: widget.screenshot,
-              onCollectionToggle: _toggleScreenshotInCollection,
+              onCollectionToggle:
+                  (collection, dialogSetState) =>
+                      _toggleScreenshotInCollection(collection, dialogSetState),
             );
           },
         );
       },
-    );
+    ).then((_) {
+      // Force refresh the main screen state when dialog closes
+      setState(() {});
+    });
   }
 
   void _toggleScreenshotInCollection(
     Collection collection,
-    StateSetter setModalState,
+    StateSetter dialogSetState,
   ) {
-    final bool isCurrentlyIn = collection.screenshotIds.contains(
-      widget.screenshot.id,
-    );
+    // Use the same logic as the dialog to determine current state
+    // Check both sides of the bidirectional relationship to ensure consistency
+    // This fixes the issue where toggle could only tick but not untick when
+    // opened from collection detail screen
+    final bool isCurrentlyIn =
+        widget.screenshot.collectionIds.contains(collection.id) ||
+        collection.screenshotIds.contains(widget.screenshot.id);
 
     // Track collection additions/removals
     if (isCurrentlyIn) {
@@ -175,23 +184,47 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     );
 
     if (isCurrentlyIn) {
+      // Remove from both sides of the relationship
       updatedScreenshotIds.remove(widget.screenshot.id);
       updatedCollectionIdsInScreenshot.remove(collection.id);
     } else {
-      updatedScreenshotIds.add(widget.screenshot.id);
-      updatedCollectionIdsInScreenshot.add(collection.id);
+      // Add to both sides of the relationship if not already present
+      if (!updatedScreenshotIds.contains(widget.screenshot.id)) {
+        updatedScreenshotIds.add(widget.screenshot.id);
+      }
+      if (!updatedCollectionIdsInScreenshot.contains(collection.id)) {
+        updatedCollectionIdsInScreenshot.add(collection.id);
+      }
     }
 
+    // Update the screenshot's collection IDs immediately
     widget.screenshot.collectionIds = updatedCollectionIdsInScreenshot;
 
+    // Create updated collection
     Collection updatedCollection = collection.copyWith(
       screenshotIds: updatedScreenshotIds,
       screenshotCount: updatedScreenshotIds.length,
       lastModified: DateTime.now(),
     );
+
+    // Update the collection in the allCollections list immediately so dialog sees the change
+    final collectionIndex = widget.allCollections.indexWhere(
+      (c) => c.id == collection.id,
+    );
+    if (collectionIndex != -1) {
+      widget.allCollections[collectionIndex] = updatedCollection;
+    } else {
+      print(
+        'DEBUG: WARNING - Could not find collection in allCollections list',
+      );
+    }
+
+    // Call the update callback to persist changes
     widget.onUpdateCollection(updatedCollection);
-    setModalState(() {});
+    dialogSetState(() {});
     setState(() {});
+    widget.onScreenshotUpdated?.call();
+    _updateScreenshotDetails();
   }
 
   void _clearAndRequestAiReprocessing() {
@@ -378,7 +411,6 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                         isAutoCategorized: true,
                       );
                       widget.onUpdateCollection(updatedCollection);
-                      updatedScreenshot.collectionIds.add(collection.id);
                       autoAddedCount++;
                     }
                   }
@@ -525,6 +557,8 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
           },
         );
       } else {
+        // File not found - mark as AI processed to prevent sending to AI
+        widget.screenshot.aiProcessed = true;
         imageWidget = Container(
           color: Theme.of(context).colorScheme.surface,
           child: Column(
@@ -563,6 +597,8 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         widget.screenshot.bytes!,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
+          // Mark as AI processed to prevent sending to AI if image is corrupt or unreadable
+          widget.screenshot.aiProcessed = true;
           return Container(
             color: Theme.of(context).colorScheme.surface,
             child: Column(
@@ -586,6 +622,8 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         },
       );
     } else {
+      // No image data available - mark as AI processed to prevent sending to AI
+      widget.screenshot.aiProcessed = true;
       imageWidget = Container(
         color: Theme.of(context).colorScheme.surface,
         child: Column(

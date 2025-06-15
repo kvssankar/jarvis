@@ -41,6 +41,22 @@ class Screenshot {
     );
   }
 
+  List<String> get uniqueCollectionIds {
+    return collectionIds.toSet().toList();
+  }
+
+  void addToCollection(String collectionId) {
+    if (!collectionIds.contains(collectionId)) {
+      collectionIds.add(collectionId);
+    }
+  }
+
+  void deduplicateCollections() {
+    final uniqueIds = collectionIds.toSet().toList();
+    collectionIds.clear();
+    collectionIds.addAll(uniqueIds);
+  }
+
   // Method to convert a Screenshot instance to a Map (JSON)
   Map<String, dynamic> toJson() {
     return {
@@ -71,7 +87,10 @@ class Screenshot {
       title: json['title'] as String?,
       description: json['description'] as String?,
       tags: List<String>.from(json['tags'] as List<dynamic>),
-      collectionIds: List<String>.from(json['collectionIds'] as List<dynamic>),
+      collectionIds:
+          List<String>.from(
+            json['collectionIds'] as List<dynamic>,
+          ).toSet().toList(), // Deduplicate on load
       aiProcessed: json['aiProcessed'] as bool,
       addedOn: DateTime.parse(json['addedOn'] as String),
       aiMetadata:

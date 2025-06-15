@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:io';
@@ -27,20 +27,16 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:shots_studio/widgets/ai_processing_container.dart';
 import 'package:shots_studio/services/background_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:shots_studio/services/analytics_service.dart';
-import 'firebase_options.dart';
 import 'package:shots_studio/services/file_watcher_service.dart';
 import 'package:shots_studio/services/update_checker_service.dart';
 import 'package:shots_studio/widgets/update_dialog.dart';
+import 'package:sentry_flutter/sentry_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Firebase
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  // Initialize Analytics
+  // Initialize Analytics (PostHog)
   await AnalyticsService().initialize();
 
   // Optimize image cache for better memory management
@@ -54,11 +50,15 @@ void main() async {
     // Set up notification channel for background service
     await _setupBackgroundServiceNotificationChannel();
     // Don't initialize service at app startup - we'll do it when needed
-    // This prevents unnecessary background service running when not needed
-    print("Main: Background service will be initialized when needed");
   }
 
-  runApp(const MyApp());
+  await SentryFlutter.init((options) {
+    options.dsn =
+        'https://6f96d22977b283fc325e038ac45e6e5e@o4509484018958336.ingest.us.sentry.io/4509484020072448';
+
+    options.tracesSampleRate =
+        kDebugMode ? 0.3 : 0.1; // 30% in debug, 10% in production
+  }, appRunner: () => runApp(SentryWidget(child: const MyApp())));
 }
 
 // Set up notification channel for background service
@@ -210,7 +210,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isScreenshotLimitEnabled = false;
   bool _devMode = false;
   bool _autoProcessEnabled = true;
-  bool _analyticsEnabled = true;
+  bool _analyticsEnabled =
+      !kDebugMode; // Default to false in debug mode, true in production
 
   // update screenshots
   List<Screenshot> get _activeScreenshots {
@@ -515,7 +516,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _isScreenshotLimitEnabled = prefs.getBool('limit_enabled') ?? false;
       _devMode = prefs.getBool('dev_mode') ?? false;
       _autoProcessEnabled = prefs.getBool('auto_process_enabled') ?? true;
-      _analyticsEnabled = prefs.getBool('analytics_consent_enabled') ?? true;
+      _analyticsEnabled =
+          prefs.getBool('analytics_consent_enabled') ?? !kDebugMode;
     });
   }
 
@@ -1110,7 +1112,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _addCollection(Collection collection) {
     setState(() {
       _collections.add(collection);
+
+      // Update screenshots' collectionIds to maintain bidirectional relationship
+      for (String screenshotId in collection.screenshotIds) {
+        final screenshotIndex = _screenshots.indexWhere(
+          (s) => s.id == screenshotId,
+        );
+        if (screenshotIndex != -1) {
+          final screenshot = _screenshots[screenshotIndex];
+          if (!screenshot.collectionIds.contains(collection.id)) {
+            screenshot.collectionIds.add(collection.id);
+          }
+        }
+      }
     });
+
+    // Force immediate save to ensure consistency
     _saveDataToPrefs();
 
     // Log analytics
@@ -1144,8 +1161,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Check if autoAddEnabled was just turned on
     bool wasAutoAddJustEnabled = false;
     final index = _collections.indexWhere((c) => c.id == updatedCollection.id);
+
+    Collection? oldCollection;
     if (index != -1) {
-      final oldCollection = _collections[index];
+      oldCollection = _collections[index];
       wasAutoAddJustEnabled =
           !oldCollection.isAutoAddEnabled && updatedCollection.isAutoAddEnabled;
     }
@@ -1153,8 +1172,49 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(() {
       if (index != -1) {
         _collections[index] = updatedCollection;
+
+        // Maintain bidirectional relationship between screenshots and collections
+        if (oldCollection != null) {
+          // Find screenshots that were added to the collection
+          final addedScreenshots =
+              updatedCollection.screenshotIds
+                  .where((id) => !oldCollection!.screenshotIds.contains(id))
+                  .toList();
+
+          // Find screenshots that were removed from the collection
+          final removedScreenshots =
+              oldCollection.screenshotIds
+                  .where((id) => !updatedCollection.screenshotIds.contains(id))
+                  .toList();
+
+          // Update added screenshots' collectionIds
+          for (String screenshotId in addedScreenshots) {
+            final screenshotIndex = _screenshots.indexWhere(
+              (s) => s.id == screenshotId,
+            );
+            if (screenshotIndex != -1) {
+              final screenshot = _screenshots[screenshotIndex];
+              if (!screenshot.collectionIds.contains(updatedCollection.id)) {
+                screenshot.collectionIds.add(updatedCollection.id);
+              }
+            }
+          }
+
+          // Update removed screenshots' collectionIds
+          for (String screenshotId in removedScreenshots) {
+            final screenshotIndex = _screenshots.indexWhere(
+              (s) => s.id == screenshotId,
+            );
+            if (screenshotIndex != -1) {
+              final screenshot = _screenshots[screenshotIndex];
+              screenshot.collectionIds.remove(updatedCollection.id);
+            }
+          }
+        }
       }
     });
+
+    // Force immediate save to prevent data loss and ensure consistency
     _saveDataToPrefs();
 
     // Log collection stats after update
@@ -1178,6 +1238,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _autoProcessWithGemini();
       }
     }
+  }
+
+  void _updateCollections(List<Collection> updatedCollections) {
+    setState(() {
+      _collections.clear();
+      _collections.addAll(updatedCollections);
+    });
+    _saveDataToPrefs();
+
+    AnalyticsService().logFeatureUsed('collections_bulk_updated');
   }
 
   void _deleteCollection(String collectionId) {
@@ -1332,7 +1402,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               isAutoCategorized: true,
             );
             _updateCollection(updatedCollection);
-            screenshot.collectionIds.add(collection.id);
             autoAddedCount++;
           }
         }
@@ -1618,6 +1687,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             screenshots: _activeScreenshots,
                             onCollectionAdded: _addCollection,
                             onUpdateCollection: _updateCollection,
+                            onUpdateCollections: _updateCollections,
                             onDeleteCollection: _deleteCollection,
                             onDeleteScreenshot: _deleteScreenshot,
                           ),
@@ -1673,11 +1743,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   onDeleteScreenshot: _deleteScreenshot,
                   onScreenshotUpdated: () {
                     setState(() {});
+                    // Force save when screenshot is updated
+                    _saveDataToPrefs();
                   },
                 ),
           ),
         )
         .then((_) {
+          // Force save and refresh when returning from screenshot detail
+          setState(() {});
           _saveDataToPrefs();
           // Don't clear cache to preserve collection thumbnails
         });
