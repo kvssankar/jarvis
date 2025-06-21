@@ -42,7 +42,7 @@ class _SettingsSectionState extends State<SettingsSection> {
   final FocusNode _apiKeyFocusNode = FocusNode();
   bool _autoProcessEnabled = true;
   bool _amoledModeEnabled = false;
-  String _selectedTheme = 'System Default';
+  String _selectedTheme = 'Dynamic Theme';
 
   static const String _apiKeyPrefKey = 'apiKey';
   static const String _modelNamePrefKey = 'modelName';
@@ -136,7 +136,7 @@ class _SettingsSectionState extends State<SettingsSection> {
       _amoledModeEnabled = widget.currentAmoledModeEnabled!;
     }
     if (widget.currentSelectedTheme != oldWidget.currentSelectedTheme) {
-      _selectedTheme = widget.currentSelectedTheme ?? 'System Default';
+      _selectedTheme = widget.currentSelectedTheme ?? 'Dynamic Theme';
     }
   }
 
@@ -213,52 +213,76 @@ class _SettingsSectionState extends State<SettingsSection> {
             }
           },
         ),
-        ListTile(
-          leading: Icon(
-            Icons.auto_awesome_outlined,
-            color: theme.colorScheme.primary,
-          ),
-          title: Text(
-            'AI Model',
-            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
-          ),
-          trailing: DropdownButton<String>(
-            value: _selectedModelName,
-            dropdownColor: theme.colorScheme.secondaryContainer,
-            icon: Icon(
-              Icons.arrow_drop_down,
-              color: theme.colorScheme.onSecondaryContainer,
-            ),
-            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
-            underline: SizedBox.shrink(),
-            onChanged: (String? newValue) {
-              if (newValue != null) {
-                setState(() {
-                  _selectedModelName = newValue;
-                });
-                widget.onModelChanged(newValue);
-                _saveModelName(newValue);
-
-                // Track model change in analytics
-                AnalyticsService().logFeatureUsed('setting_changed_ai_model');
-                AnalyticsService().logFeatureAdopted('model_$newValue');
-              }
-            },
-            items:
-                <String>[
-                  'gemini-2.0-flash',
-                  'gemini-2.5-flash-pro',
-                ].map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(
-                      value,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Row(
+            children: [
+              Icon(
+                Icons.auto_awesome_outlined,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'AI Model',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSecondaryContainer,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    DropdownButton<String>(
+                      value: _selectedModelName,
+                      dropdownColor: theme.colorScheme.secondaryContainer,
+                      icon: Icon(
+                        Icons.arrow_drop_down,
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
                       style: TextStyle(
                         color: theme.colorScheme.onSecondaryContainer,
                       ),
+                      underline: SizedBox.shrink(),
+                      isExpanded: true,
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            _selectedModelName = newValue;
+                          });
+                          widget.onModelChanged(newValue);
+                          _saveModelName(newValue);
+
+                          // Track model change in analytics
+                          AnalyticsService().logFeatureUsed(
+                            'setting_changed_ai_model',
+                          );
+                          AnalyticsService().logFeatureAdopted(
+                            'model_$newValue',
+                          );
+                        }
+                      },
+                      items:
+                          <String>[
+                            'gemini-2.0-flash',
+                            'gemini-2.5-flash-pro',
+                          ].map<DropdownMenuItem<String>>((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(
+                                value,
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSecondaryContainer,
+                                ),
+                              ),
+                            );
+                          }).toList(),
                     ),
-                  );
-                }).toList(),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
         ListTile(
@@ -445,64 +469,91 @@ class _SettingsSectionState extends State<SettingsSection> {
           },
         ),
 
-        ListTile(
-          leading: Icon(Icons.palette, color: theme.colorScheme.primary),
-          title: Text(
-            'Theme Color',
-            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
-          ),
-          trailing: DropdownButton<String>(
-            value: _selectedTheme,
-            dropdownColor: theme.colorScheme.secondaryContainer,
-            icon: Icon(
-              Icons.arrow_drop_down,
-              color: theme.colorScheme.onSecondaryContainer,
-            ),
-            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
-            underline: SizedBox.shrink(),
-            onChanged: (String? newValue) {
-              if (newValue != null) {
-                setState(() {
-                  _selectedTheme = newValue;
-                });
-                widget.onThemeChanged?.call(newValue);
-                _saveSelectedTheme(newValue);
-
-                // Track theme change in analytics
-                AnalyticsService().logFeatureUsed('setting_changed_theme');
-                AnalyticsService().logFeatureAdopted(
-                  'theme_${newValue.replaceAll(' ', '_').toLowerCase()}',
-                );
-              }
-            },
-            items:
-                ThemeManager.getAvailableThemes().map<DropdownMenuItem<String>>(
-                  (String value) {
-                    return DropdownMenuItem<String>(
-                      value: value,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 16,
-                            height: 16,
-                            decoration: BoxDecoration(
-                              color: ThemeManager.getThemeColor(value),
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            value,
-                            style: TextStyle(
-                              color: theme.colorScheme.onSecondaryContainer,
-                            ),
-                          ),
-                        ],
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Row(
+            children: [
+              Icon(Icons.palette, color: theme.colorScheme.primary),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Theme Color',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSecondaryContainer,
+                        fontSize: 16,
                       ),
-                    );
-                  },
-                ).toList(),
+                    ),
+                    const SizedBox(height: 4),
+                    DropdownButton<String>(
+                      value: _selectedTheme,
+                      dropdownColor: theme.colorScheme.secondaryContainer,
+                      icon: Icon(
+                        Icons.arrow_drop_down,
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                      style: TextStyle(
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                      underline: SizedBox.shrink(),
+                      isExpanded: true,
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            _selectedTheme = newValue;
+                          });
+                          widget.onThemeChanged?.call(newValue);
+                          _saveSelectedTheme(newValue);
+
+                          // Track theme change in analytics
+                          AnalyticsService().logFeatureUsed(
+                            'setting_changed_theme',
+                          );
+                          AnalyticsService().logFeatureAdopted(
+                            'theme_${newValue.replaceAll(' ', '_').toLowerCase()}',
+                          );
+                        }
+                      },
+                      items:
+                          ThemeManager.getAvailableThemes()
+                              .map<DropdownMenuItem<String>>((String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 16,
+                                        height: 16,
+                                        decoration: BoxDecoration(
+                                          color: ThemeManager.getThemeColor(
+                                            value,
+                                          ),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        value,
+                                        style: TextStyle(
+                                          color:
+                                              theme
+                                                  .colorScheme
+                                                  .onSecondaryContainer,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              })
+                              .toList(),
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ],
