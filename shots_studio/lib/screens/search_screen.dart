@@ -4,6 +4,7 @@ import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/screens/screenshot_swipe_detail_screen.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
 import 'package:shots_studio/services/analytics_service.dart';
+import 'package:shots_studio/utils/responsive_utils.dart';
 
 class SearchScreen extends StatefulWidget {
   final List<Screenshot> allScreenshots;
@@ -154,11 +155,8 @@ class _SearchScreenState extends State<SearchScreen> {
               )
               : GridView.builder(
                 padding: const EdgeInsets.all(16.0),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  childAspectRatio: 1,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
+                gridDelegate: ResponsiveUtils.getResponsiveGridDelegate(
+                  context,
                 ),
                 itemCount: _filteredScreenshots.length,
                 cacheExtent: 500,

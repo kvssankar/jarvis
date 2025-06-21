@@ -9,6 +9,7 @@ import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
 import 'package:shots_studio/screens/manage_collection_screenshots_screen.dart';
 import 'package:shots_studio/screens/screenshot_swipe_detail_screen.dart';
 import 'package:shots_studio/screens/create_collection_screen.dart';
+import 'package:shots_studio/utils/responsive_utils.dart';
 
 class CollectionDetailScreen extends StatefulWidget {
   final Collection collection;
@@ -560,13 +561,9 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                         ),
                       )
                       : GridView.builder(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              childAspectRatio: 1,
-                              crossAxisSpacing: 8,
-                              mainAxisSpacing: 8,
-                            ),
+                        gridDelegate: ResponsiveUtils.getResponsiveGridDelegate(
+                          context,
+                        ),
                         itemCount: screenshotsInCollection.length,
                         cacheExtent: 800,
                         itemBuilder: (context, index) {
