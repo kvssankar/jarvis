@@ -21,6 +21,10 @@ class AppDrawer extends StatefulWidget {
   final Function(bool)? onAutoProcessEnabledChanged;
   final bool? currentAnalyticsEnabled;
   final Function(bool)? onAnalyticsEnabledChanged;
+  final bool? currentAmoledModeEnabled;
+  final Function(bool)? onAmoledModeChanged;
+  final String? currentSelectedTheme;
+  final Function(String)? onThemeChanged;
   final Key? apiKeyFieldKey;
   final VoidCallback? onResetAiProcessing;
 
@@ -42,6 +46,10 @@ class AppDrawer extends StatefulWidget {
     this.onAutoProcessEnabledChanged,
     this.currentAnalyticsEnabled,
     this.onAnalyticsEnabledChanged,
+    this.currentAmoledModeEnabled,
+    this.onAmoledModeChanged,
+    this.currentSelectedTheme,
+    this.onThemeChanged,
     this.apiKeyFieldKey,
     this.onResetAiProcessing,
   });
@@ -133,6 +141,10 @@ class _AppDrawerState extends State<AppDrawer> {
               apiKeyFieldKey: widget.apiKeyFieldKey,
               currentAutoProcessEnabled: widget.currentAutoProcessEnabled,
               onAutoProcessEnabledChanged: widget.onAutoProcessEnabledChanged,
+              currentAmoledModeEnabled: widget.currentAmoledModeEnabled,
+              onAmoledModeChanged: widget.onAmoledModeChanged,
+              currentSelectedTheme: widget.currentSelectedTheme,
+              onThemeChanged: widget.onThemeChanged,
             ),
             if (widget.currentDevMode == true) ...[
               AdvancedSettingsSection(

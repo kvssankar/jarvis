@@ -31,6 +31,8 @@ import 'package:shots_studio/services/analytics_service.dart';
 import 'package:shots_studio/services/file_watcher_service.dart';
 import 'package:shots_studio/services/update_checker_service.dart';
 import 'package:shots_studio/widgets/update_dialog.dart';
+import 'package:shots_studio/utils/theme_utils.dart';
+import 'package:shots_studio/utils/theme_manager.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
 
 void main() async {
@@ -80,95 +82,63 @@ Future<void> _setupBackgroundServiceNotificationChannel() async {
       ?.createNotificationChannel(channel);
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool _amoledModeEnabled = false;
+  String _selectedTheme = 'Dynamic Theme';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemeSettings();
+  }
+
+  Future<void> _loadThemeSettings() async {
+    final amoledMode = await ThemeManager.getAmoledMode();
+    final selectedTheme = await ThemeManager.getSelectedTheme();
+    setState(() {
+      _amoledModeEnabled = amoledMode;
+      _selectedTheme = selectedTheme;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-        ColorScheme lightScheme;
-        ColorScheme darkScheme;
-
-        if (lightDynamic != null && darkDynamic != null) {
-          // Use dynamic colors if available (Material You)
-          lightScheme = lightDynamic.harmonized();
-          darkScheme = darkDynamic.harmonized();
-        } else {
-          // Fallback to custom color schemes if dynamic colors are not available
-          lightScheme = ColorScheme.fromSeed(
-            seedColor: Colors.amber,
-            brightness: Brightness.light,
-          );
-          darkScheme = ColorScheme.fromSeed(
-            seedColor: Colors.amber,
-            brightness: Brightness.dark,
-          );
-        }
+        final (lightScheme, darkScheme) = ThemeManager.createColorSchemes(
+          lightDynamic: lightDynamic,
+          darkDynamic: darkDynamic,
+          selectedTheme: _selectedTheme,
+          amoledModeEnabled: _amoledModeEnabled,
+        );
 
         return MaterialApp(
           title: 'Shots Studio',
-          theme: ThemeData(
-            useMaterial3: true,
-            colorScheme: lightScheme,
-            cardTheme: CardThemeData(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            filledButtonTheme: FilledButtonThemeData(
-              style: FilledButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            elevatedButtonTheme: ElevatedButtonThemeData(
-              style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            floatingActionButtonTheme: FloatingActionButtonThemeData(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
-          darkTheme: ThemeData(
-            useMaterial3: true,
-            colorScheme: darkScheme,
-            cardTheme: CardThemeData(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            filledButtonTheme: FilledButtonThemeData(
-              style: FilledButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            elevatedButtonTheme: ElevatedButtonThemeData(
-              style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            floatingActionButtonTheme: FloatingActionButtonThemeData(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
+          theme: ThemeUtils.createLightTheme(lightScheme),
+          darkTheme: ThemeUtils.createDarkTheme(darkScheme),
           themeMode:
               ThemeMode.system, // Automatically switch between light and dark
-          home: const HomeScreen(),
+          home: HomeScreen(
+            onAmoledModeChanged: (enabled) async {
+              await ThemeManager.setAmoledMode(enabled);
+              setState(() {
+                _amoledModeEnabled = enabled;
+              });
+            },
+            onThemeChanged: (themeName) async {
+              await ThemeManager.setSelectedTheme(themeName);
+              setState(() {
+                _selectedTheme = themeName;
+              });
+            },
+          ),
         );
       },
     );
@@ -176,7 +146,10 @@ class MyApp extends StatelessWidget {
 }
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final Function(bool)? onAmoledModeChanged;
+  final Function(String)? onThemeChanged;
+
+  const HomeScreen({super.key, this.onAmoledModeChanged, this.onThemeChanged});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -212,6 +185,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _autoProcessEnabled = true;
   bool _analyticsEnabled =
       !kDebugMode; // Default to false in debug mode, true in production
+  bool _amoledModeEnabled = false;
+  String _selectedTheme = 'Dynamic Theme';
 
   // update screenshots
   List<Screenshot> get _activeScreenshots {
@@ -518,6 +493,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _autoProcessEnabled = prefs.getBool('auto_process_enabled') ?? true;
       _analyticsEnabled =
           prefs.getBool('analytics_consent_enabled') ?? !kDebugMode;
+      _amoledModeEnabled = prefs.getBool('amoled_mode_enabled') ?? false;
+      _selectedTheme = prefs.getString('selected_theme') ?? 'Dynamic Theme';
     });
   }
 
@@ -581,6 +558,32 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
     // Analytics consent is handled by the AnalyticsService directly
     // The service saves the preference and manages the consent state
+  }
+
+  void _updateAmoledModeEnabled(bool enabled) {
+    setState(() {
+      _amoledModeEnabled = enabled;
+    });
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setBool('amoled_mode_enabled', enabled);
+    });
+    // Notify the parent MyApp to rebuild with new theme
+    if (widget.onAmoledModeChanged != null) {
+      widget.onAmoledModeChanged!(enabled);
+    }
+  }
+
+  void _updateThemeSelection(String themeName) {
+    setState(() {
+      _selectedTheme = themeName;
+    });
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setString('selected_theme', themeName);
+    });
+    // Notify the parent MyApp to rebuild with new theme
+    if (widget.onThemeChanged != null) {
+      widget.onThemeChanged!(themeName);
+    }
   }
 
   Future<void> _saveDevMode(bool value) async {
@@ -1591,6 +1594,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onAutoProcessEnabledChanged: _updateAutoProcessEnabled,
         currentAnalyticsEnabled: _analyticsEnabled,
         onAnalyticsEnabledChanged: _updateAnalyticsEnabled,
+        currentAmoledModeEnabled: _amoledModeEnabled,
+        onAmoledModeChanged: _updateAmoledModeEnabled,
+        currentSelectedTheme: _selectedTheme,
+        onThemeChanged: _updateThemeSelection,
         apiKeyFieldKey: _apiKeyFieldKey,
         onResetAiProcessing: _resetAiMetaData,
       ),
