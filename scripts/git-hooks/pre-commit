@@ -2,9 +2,25 @@
 
 # Relative path to pubspec.yaml from the root of the Git repository
 PUBSPEC_FILE="shots_studio/pubspec.yaml"
+FLUTTER_APP_DIR="shots_studio/"
 
 # Ensure the script exits immediately if a command exits with a non-zero status
 set -e
+
+# Check if there are any changes in the shots_studio/ directory
+# This includes staged changes (--cached) for files in shots_studio/
+FLUTTER_CHANGES=$(git diff --cached --name-only | grep "^$FLUTTER_APP_DIR" || true)
+
+# If no changes in shots_studio/ directory, skip version increment
+if [ -z "$FLUTTER_CHANGES" ]; then
+    echo "No changes detected in $FLUTTER_APP_DIR - skipping version increment"
+    echo "Note: Version increment only occurs when Flutter app code changes"
+    exit 0
+fi
+
+echo "Flutter app changes detected:"
+echo "$FLUTTER_CHANGES" | sed 's/^/  - /'
+echo ""
 
 # Read the current version line from pubspec.yaml
 VERSION_LINE=$(grep '^version: ' "$PUBSPEC_FILE")

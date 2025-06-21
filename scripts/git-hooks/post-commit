@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# Relative path to flutter.version file from the root of the Git repository
+FLUTTER_VERSION_FILE="shots_studio/flutter.version"
+
+set -e
+
+CURRENT_FLUTTER_VERSION=$(flutter --version --machine | grep -o '"frameworkVersion":"[^"]*"' | cut -d'"' -f4)
+
+# If we couldn't get the version using --machine flag, try the regular way
+if [ -z "$CURRENT_FLUTTER_VERSION" ]; then
+    CURRENT_FLUTTER_VERSION=$(flutter --version | head -n 1 | grep -o 'Flutter [0-9]\+\.[0-9]\+\.[0-9]\+' | cut -d' ' -f2)
+fi
+
+# Check if we still don't have a version
+if [ -z "$CURRENT_FLUTTER_VERSION" ]; then
+    echo "Warning: Could not determine Flutter version. Skipping flutter.version update."
+    exit 0
+fi
+
+# Read the current version from the file if it exists
+if [ -f "$FLUTTER_VERSION_FILE" ]; then
+    STORED_VERSION=$(cat "$FLUTTER_VERSION_FILE" | tr -d '\n\r')
+else
+    STORED_VERSION=""
+fi
+
+# Only update if the version has changed
+if [ "$CURRENT_FLUTTER_VERSION" != "$STORED_VERSION" ]; then
+    echo "Updating Flutter version: $STORED_VERSION -> $CURRENT_FLUTTER_VERSION"
+    
+    # Update the flutter.version file
+    echo "$CURRENT_FLUTTER_VERSION" > "$FLUTTER_VERSION_FILE"
+    
+    # Add the file to git if it's been modified
+    git add "$FLUTTER_VERSION_FILE"
+    
+    # Create an additional commit for the version update (only if there are changes)
+    if ! git diff --cached --quiet; then
+        git commit -m "chore: update Flutter version to $CURRENT_FLUTTER_VERSION"
+        echo "Created additional commit for Flutter version update"
+    fi
+else
+    echo "Flutter version unchanged: $CURRENT_FLUTTER_VERSION"
+fi
+
+exit 0
