@@ -31,6 +31,7 @@ import 'package:shots_studio/services/analytics_service.dart';
 import 'package:shots_studio/services/file_watcher_service.dart';
 import 'package:shots_studio/services/update_checker_service.dart';
 import 'package:shots_studio/widgets/update_dialog.dart';
+import 'package:shots_studio/widgets/server_message_dialog.dart';
 import 'package:shots_studio/utils/theme_utils.dart';
 import 'package:shots_studio/utils/theme_manager.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
@@ -65,12 +66,22 @@ void main() async {
 
 // Set up notification channel for background service
 Future<void> _setupBackgroundServiceNotificationChannel() async {
-  const AndroidNotificationChannel channel = AndroidNotificationChannel(
+  const AndroidNotificationChannel
+  aiProcessingChannel = AndroidNotificationChannel(
     'ai_processing_channel', // id - matches BackgroundProcessingService.notificationChannelId
     'AI Processing Service', // title
     description: 'Channel for AI screenshot processing notifications',
     importance: Importance.low, // importance must be at low or higher level
   );
+
+  const AndroidNotificationChannel serverMessagesChannel =
+      AndroidNotificationChannel(
+        'server_messages_channel', // id - matches ServerMessageService channel
+        'Server Messages', // title
+        description: 'Channel for server messages and announcements',
+        importance:
+            Importance.high, // importance must be at low or higher level
+      );
 
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -79,7 +90,13 @@ Future<void> _setupBackgroundServiceNotificationChannel() async {
       .resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin
       >()
-      ?.createNotificationChannel(channel);
+      ?.createNotificationChannel(aiProcessingChannel);
+
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >()
+      ?.createNotificationChannel(serverMessagesChannel);
 }
 
 class MyApp extends StatefulWidget {
@@ -226,6 +243,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
         // Check for app updates after initial setup
         _checkForUpdates();
+
+        // Check for server messages after initial setup
+        _checkForServerMessages();
 
         // Automatically process any unprocessed screenshots
         _autoProcessWithGemini();
@@ -433,6 +453,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       Future.delayed(const Duration(milliseconds: 500), () {
         _autoProcessWithGemini();
       });
+
+      Future.delayed(const Duration(seconds: 2), () {
+        _checkForServerMessages();
+      });
     }
   }
 
@@ -615,6 +639,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
       // Log analytics for update check failures
       AnalyticsService().logFeatureUsed('update_check_failed');
+    }
+  }
+
+  /// Check for server messages and notifications
+  Future<void> _checkForServerMessages() async {
+    try {
+      print("MainApp: Checking for server messages...");
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (mounted) {
+        await ServerMessageDialog.showServerMessageDialogIfAvailable(context);
+      }
+    } catch (e) {
+      print('MainApp: Server message check failed: $e');
+
+      // Log analytics for server message check failures
+      AnalyticsService().logFeatureUsed('server_message_check_failed');
     }
   }
 

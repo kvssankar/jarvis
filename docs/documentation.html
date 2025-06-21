@@ -269,6 +269,9 @@
                     <a href="#api-reference" class="docs-nav-link">API Reference</a>
                 </li>
                 <li class="docs-nav-item">
+                    <a href="#server-messages" class="docs-nav-link">Server Messages</a>
+                </li>
+                <li class="docs-nav-item">
                     <a href="#contributing" class="docs-nav-link">Contributing</a>
                 </li>
             </ul>
@@ -605,6 +608,51 @@ lib/
                     <li>Include device and Android version info</li>
                     <li>Attach relevant screenshots or logs</li>
                 </ol>
+            </section>
+
+            <section id="server-messages">
+                <h2>Server Messages</h2>
+                <p>Shots Studio includes a robust server message system that allows for announcements, updates, and notifications to be delivered to users directly within the app.</p>
+
+                <h3>What are Server Messages?</h3>
+                <p>Server messages are notifications or dialogs that can be displayed in the app without requiring an app update. This system is used for:</p>
+                <ul>
+                    <li>Important announcements to all users</li>
+                    <li>Version-specific feature updates</li>
+                    <li>Critical service warnings</li>
+                    <li>Maintenance notifications</li>
+                </ul>
+
+                <h3>Key Features</h3>
+                <ul>
+                    <li><strong>Version targeting</strong>: Messages can target specific app versions</li>
+                    <li><strong>Show-once functionality</strong>: Messages can be configured to show only one time</li>
+                    <li><strong>Expiration dates</strong>: Messages automatically expire after a specified date</li>
+                    <li><strong>Multiple message types</strong>: Info, Warning, Update messages with appropriate styling</li>
+                    <li><strong>Display modes</strong>: Messages can appear as dialogs or notifications</li>
+                </ul>
+
+                <h3>Technical Implementation</h3>
+                <p>Messages are hosted in a static JSON file on GitHub Pages with a specified schema. For full technical details, see the <a href="https://github.com/yourusername/shots-studio/blob/main/shots_studio/docs/SERVER_MESSAGES.md" target="_blank">SERVER_MESSAGES.md</a> documentation.</p>
+                
+                <div class="code-block">
+                <pre><code>{
+  "version": "1.0",
+  "last_updated": "2023-01-21T12:00:00Z",
+  "messages": [
+    {
+      "show": true,
+      "id": "welcome_message",
+      "title": "Welcome to Shots Studio!",
+      "message": "Thanks for downloading Shots Studio! Organize your screenshots like never before.",
+      "type": "info",
+      "priority": "medium",
+      "show_once": true,
+      "version": "ALL"
+    }
+  ]
+}</code></pre>
+                </div>
             </section>
 
             <div style="margin-top: 60px; padding-top: 40px; border-top: 1px solid var(--border-color);">

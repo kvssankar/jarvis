@@ -1,0 +1,19 @@
+{
+  "version": "1.0",
+  "last_updated": "2025-06-22T12:00:00Z",
+  "messages": [
+    {
+      "show": true,
+      "id": "welcome_new_v1_8_80",
+      "title": "What's New in v1.8.80!",
+      "message": "Hey everyone — thank you for your awesome feedback and continued support! We're excited to announce the release of **Shots Studio v1.8.80**, packed with powerful features to enhance your screenshot management.\n\n• 🔥 **Custom Themes & AMOLED Mode** — Personalize your experience.\n• 📱 **Large Screen Support** — Optimized for tablets and foldable phones.\n\n💡 Tip: Tap the 'About' section **7 times** to unlock Developer Mode!",
+      "type": "update",
+      "priority": "high",
+      "show_once": true,
+      "valid_until": "2026-06-01T00:00:00Z",
+      "is_notification": false,
+      "version": "1.8.*",
+      "update_route": "https://github.com/AnsahMohammad/shots-studio/releases"
+    }
+  ]
+}
