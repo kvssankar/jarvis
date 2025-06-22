@@ -355,315 +355,329 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
           ),
         ],
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              _nameController.text.isEmpty
-                  ? 'Collection Name'
-                  : _nameController.text,
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.onSecondaryContainer,
-              ),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _descriptionController,
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSecondaryContainer,
-              ),
-              decoration: InputDecoration(
-                hintText: 'Collection description',
-                hintStyle: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-                border: InputBorder.none,
-                filled: true,
-                fillColor: Theme.of(context).colorScheme.secondaryContainer,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
-                    color: Theme.of(context).colorScheme.primary,
-                    width: 1,
-                  ),
-                ),
-              ),
-              maxLines: 3,
-              readOnly: true,
-              enableInteractiveSelection: true,
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Tooltip(
-                    message:
-                        'When enabled, AI will automatically add relevant screenshots to this collection',
-                    child: Row(
-                      children: [
-                        const Flexible(
-                          child: Text(
-                            'Smart Categorization',
-                            style: TextStyle(fontSize: 16),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                      ],
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    _nameController.text.isEmpty
+                        ? 'Collection Name'
+                        : _nameController.text,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
                     ),
                   ),
-                ),
-                Switch(
-                  value: _isAutoAddEnabled,
-                  activeColor: Theme.of(context).colorScheme.primary,
-                  onChanged: (bool value) async {
-                    setState(() {
-                      _isAutoAddEnabled = value;
-                    });
-
-                    AnalyticsService().logFeatureUsed(
-                      value
-                          ? 'auto_categorization_enabled'
-                          : 'auto_categorization_disabled',
-                    );
-
-                    await _saveChanges();
-                  },
-                ),
-              ],
-            ),
-            if (_isAutoAddEnabled)
-              Container(
-                margin: const EdgeInsets.only(top: 8),
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.tertiaryContainer.withValues(alpha: 0.3),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.tertiary.withValues(alpha: 0.3),
-                    width: 0.5,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.auto_awesome,
-                      size: 16,
-                      color: Theme.of(context).colorScheme.tertiary,
+                  const SizedBox(height: 16),
+                  TextFormField(
+                    controller: _descriptionController,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
                     ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Gemini AI will automatically categorize new screenshots into this collection based on content analysis',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color:
-                              Theme.of(context).colorScheme.onTertiaryContainer,
+                    decoration: InputDecoration(
+                      hintText: 'Collection description',
+                      hintStyle: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      border: InputBorder.none,
+                      filled: true,
+                      fillColor:
+                          Theme.of(context).colorScheme.secondaryContainer,
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide.none,
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: Theme.of(context).colorScheme.primary,
+                          width: 1,
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-            if (_isAutoAddEnabled && _aiCategorizer.isRunning)
-              Container(
-                margin: const EdgeInsets.only(top: 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Auto-categorizing screenshots...',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        Text(
-                          '${_aiCategorizer.processedCount}/${_aiCategorizer.totalCount}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    LinearProgressIndicator(
-                      value:
-                          _aiCategorizer.totalCount > 0
-                              ? _aiCategorizer.processedCount /
-                                  _aiCategorizer.totalCount
-                              : null,
-                      backgroundColor:
-                          Theme.of(context).colorScheme.surfaceContainerHighest,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        Theme.of(context).colorScheme.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            const SizedBox(height: 24),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Screenshots in Collection',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                    maxLines: 3,
+                    readOnly: true,
+                    enableInteractiveSelection: true,
                   ),
-                ),
-                IconButton(
-                  icon: Icon(
-                    Icons.add_photo_alternate_outlined,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                  onPressed: _addOrManageScreenshots,
-                  tooltip: 'Add/Manage Screenshots',
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child:
-                  screenshotsInCollection.isEmpty
-                      ? Center(
-                        child: Text(
-                          'No screenshots in this collection. Tap + to add.',
-                          style: TextStyle(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      )
-                      : GridView.builder(
-                        gridDelegate: ResponsiveUtils.getResponsiveGridDelegate(
-                          context,
-                        ),
-                        itemCount: screenshotsInCollection.length,
-                        cacheExtent: 800,
-                        itemBuilder: (context, index) {
-                          final screenshot = screenshotsInCollection[index];
-                          return Stack(
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Tooltip(
+                          message:
+                              'When enabled, AI will automatically add relevant screenshots to this collection',
+                          child: Row(
                             children: [
-                              GestureDetector(
-                                onTap: () async {
-                                  final int initialIndex =
-                                      screenshotsInCollection.indexWhere(
-                                        (s) => s.id == screenshot.id,
-                                      );
-
-                                  await Navigator.of(context).push(
-                                    MaterialPageRoute(
-                                      builder:
-                                          (
-                                            context,
-                                          ) => ScreenshotSwipeDetailScreen(
-                                            screenshots: List.from(
-                                              screenshotsInCollection,
-                                            ),
-                                            initialIndex:
-                                                initialIndex >= 0
-                                                    ? initialIndex
-                                                    : 0,
-                                            allCollections:
-                                                widget.allCollections,
-                                            allScreenshots:
-                                                widget.allScreenshots,
-                                            onUpdateCollection:
-                                                widget.onUpdateCollection,
-                                            onDeleteScreenshot:
-                                                widget.onDeleteScreenshot,
-                                            onScreenshotUpdated: () {
-                                              // This callback is called from the detail screen
-                                              // We don't need to do anything here as we'll handle
-                                              // cleanup when we return
-                                            },
-                                          ),
-                                    ),
-                                  );
-
-                                  // When we return from the detail screen, clean up deleted screenshots
-                                  if (mounted) {
-                                    final originalCount =
-                                        _currentScreenshotIds.length;
-                                    _currentScreenshotIds.removeWhere((id) {
-                                      final screenshot = widget.allScreenshots
-                                          .firstWhere(
-                                            (s) => s.id == id,
-                                            orElse:
-                                                () => Screenshot(
-                                                  id: '',
-                                                  path: null,
-                                                  addedOn: DateTime.now(),
-                                                  collectionIds: [],
-                                                  tags: [],
-                                                  aiProcessed: false,
-                                                  isDeleted: true,
-                                                ),
-                                          );
-                                      return screenshot.isDeleted;
-                                    });
-
-                                    // Only update if something was actually removed
-                                    if (_currentScreenshotIds.length !=
-                                        originalCount) {
-                                      setState(() {});
-                                      await _saveChanges();
-                                    }
-                                  }
-                                },
-                                child: ScreenshotCard(screenshot: screenshot),
-                              ),
-                              Positioned(
-                                top: 0,
-                                right: 0,
-                                child: IconButton(
-                                  icon: Icon(
-                                    Icons.remove_circle,
-                                    color: theme.colorScheme.error,
-                                  ),
-                                  onPressed:
-                                      () => _removeScreenshotFromCollection(
-                                        screenshot.id,
-                                      ),
-                                  tooltip: 'Remove from collection',
-                                  iconSize: 20,
-                                  padding: EdgeInsets.zero,
-                                  constraints: const BoxConstraints(),
+                              const Flexible(
+                                child: Text(
+                                  'Smart Categorization',
+                                  style: TextStyle(fontSize: 16),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
+                          ),
+                        ),
+                      ),
+                      Switch(
+                        value: _isAutoAddEnabled,
+                        activeColor: Theme.of(context).colorScheme.primary,
+                        onChanged: (bool value) async {
+                          setState(() {
+                            _isAutoAddEnabled = value;
+                          });
+
+                          AnalyticsService().logFeatureUsed(
+                            value
+                                ? 'auto_categorization_enabled'
+                                : 'auto_categorization_disabled',
                           );
+
+                          await _saveChanges();
                         },
                       ),
+                    ],
+                  ),
+                  if (_isAutoAddEnabled)
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.tertiaryContainer.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.tertiary.withValues(alpha: 0.3),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.auto_awesome,
+                            size: 16,
+                            color: Theme.of(context).colorScheme.tertiary,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Gemini AI will automatically categorize new screenshots into this collection based on content analysis',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.onTertiaryContainer,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (_isAutoAddEnabled && _aiCategorizer.isRunning)
+                    Container(
+                      margin: const EdgeInsets.only(top: 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Auto-categorizing screenshots...',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              Text(
+                                '${_aiCategorizer.processedCount}/${_aiCategorizer.totalCount}',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          LinearProgressIndicator(
+                            value:
+                                _aiCategorizer.totalCount > 0
+                                    ? _aiCategorizer.processedCount /
+                                        _aiCategorizer.totalCount
+                                    : null,
+                            backgroundColor:
+                                Theme.of(
+                                  context,
+                                ).colorScheme.surfaceContainerHighest,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Theme.of(context).colorScheme.primary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  const SizedBox(height: 24),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Screenshots in Collection',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color:
+                              Theme.of(
+                                context,
+                              ).colorScheme.onSecondaryContainer,
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.add_photo_alternate_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        onPressed: _addOrManageScreenshots,
+                        tooltip: 'Add/Manage Screenshots',
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
             ),
-          ],
-        ),
+          ),
+          screenshotsInCollection.isEmpty
+              ? SliverToBoxAdapter(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Text(
+                      'No screenshots in this collection. Tap + to add.',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              )
+              : SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                sliver: SliverGrid(
+                  gridDelegate: ResponsiveUtils.getResponsiveGridDelegate(
+                    context,
+                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final screenshot = screenshotsInCollection[index];
+                    return Stack(
+                      children: [
+                        GestureDetector(
+                          onTap: () async {
+                            final int initialIndex = screenshotsInCollection
+                                .indexWhere((s) => s.id == screenshot.id);
+
+                            await Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => ScreenshotSwipeDetailScreen(
+                                      screenshots: List.from(
+                                        screenshotsInCollection,
+                                      ),
+                                      initialIndex:
+                                          initialIndex >= 0 ? initialIndex : 0,
+                                      allCollections: widget.allCollections,
+                                      allScreenshots: widget.allScreenshots,
+                                      onUpdateCollection:
+                                          widget.onUpdateCollection,
+                                      onDeleteScreenshot:
+                                          widget.onDeleteScreenshot,
+                                      onScreenshotUpdated: () {
+                                        // This callback is called from the detail screen
+                                        // We don't need to do anything here as we'll handle
+                                        // cleanup when we return
+                                      },
+                                    ),
+                              ),
+                            );
+
+                            // When we return from the detail screen, clean up deleted screenshots
+                            if (mounted) {
+                              final originalCount =
+                                  _currentScreenshotIds.length;
+                              _currentScreenshotIds.removeWhere((id) {
+                                final screenshot = widget.allScreenshots
+                                    .firstWhere(
+                                      (s) => s.id == id,
+                                      orElse:
+                                          () => Screenshot(
+                                            id: '',
+                                            path: null,
+                                            addedOn: DateTime.now(),
+                                            collectionIds: [],
+                                            tags: [],
+                                            aiProcessed: false,
+                                            isDeleted: true,
+                                          ),
+                                    );
+                                return screenshot.isDeleted;
+                              });
+
+                              // Only update if something was actually removed
+                              if (_currentScreenshotIds.length !=
+                                  originalCount) {
+                                setState(() {});
+                                await _saveChanges();
+                              }
+                            }
+                          },
+                          child: ScreenshotCard(screenshot: screenshot),
+                        ),
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.remove_circle,
+                              color: theme.colorScheme.error,
+                            ),
+                            onPressed:
+                                () => _removeScreenshotFromCollection(
+                                  screenshot.id,
+                                ),
+                            tooltip: 'Remove from collection',
+                            iconSize: 20,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ),
+                      ],
+                    );
+                  }, childCount: screenshotsInCollection.length),
+                ),
+              ),
+          // Add bottom padding for better scrolling experience
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
+        ],
       ),
     );
   }
