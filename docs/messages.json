@@ -4,16 +4,16 @@
   "messages": [
     {
       "show": true,
-      "id": "welcome_new_v1_8_80",
-      "title": "What's New in v1.8.80!",
-      "message": "Hey everyone — thank you for your awesome feedback and continued support! We're excited to announce the release of **Shots Studio v1.8.80**, packed with powerful features to enhance your screenshot management.\n\n• 🔥 **Custom Themes & AMOLED Mode** — Personalize your experience.\n• 📱 **Large Screen Support** — Optimized for tablets and foldable phones.\n\n💡 Tip: Tap the 'About' section **7 times** to unlock Developer Mode!",
+      "id": "welcome_new_v1_8_80_1",
+      "title": "🚀 What's NEW !",
+      "message": "Thanks for all your amazing feedback — we've been listening! v1.8.80 brings powerful updates to supercharge your screenshot workflow:\n\n• 🎨 Custom Themes & AMOLED Mode - Tailor the look to match your vibe.\n• 📱 Large Screen Optimization - Seamless support for tablets and foldables.\n• 📂 Custom Path Support - Load screenshots from any folder of your choice.\n\n⭐ Like the project? Star the repo!\n💬 Have feedback or suggestions? Open an issue or start a discussion — we'll get to it ASAP.",
       "type": "update",
       "priority": "high",
       "show_once": true,
       "valid_until": "2026-06-01T00:00:00Z",
       "is_notification": false,
-      "version": "1.8.*",
-      "update_route": "https://github.com/AnsahMohammad/shots-studio/releases"
+      "version": "1.8.80",
+      "update_route": "https://github.com/AnsahMohammad/shots-studio"
     }
   ]
 }
