@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'dart:convert';
+import 'dart:io';
 import 'package:shots_studio/services/ai_service.dart';
 
 class Screenshot {
@@ -104,6 +105,89 @@ class Screenshot {
               ? DateTime.parse(json['reminderTime'] as String)
               : null,
       reminderText: json['reminderText'] as String?,
+    );
+  }
+
+  /// Factory method to create a Screenshot from a file path
+  /// This centralizes screenshot creation logic to ensure consistency
+  static Future<Screenshot> fromFilePath({
+    required String id,
+    required String filePath,
+    String? customTitle,
+    List<String>? initialTags,
+    bool aiProcessed = false,
+    DateTime? customAddedOn,
+    int? knownFileSize,
+  }) async {
+    final file = File(filePath);
+
+    // Get file metadata
+    final fileSize = knownFileSize ?? await file.length();
+    final lastModified = customAddedOn ?? await file.lastModified();
+    final fileName = filePath.split('/').last;
+
+    return Screenshot(
+      id: id,
+      path: filePath,
+      title: customTitle ?? fileName,
+      tags: initialTags ?? [],
+      aiProcessed: aiProcessed,
+      addedOn: lastModified,
+      fileSize: fileSize,
+    );
+  }
+
+  /// Factory method to create a Screenshot from image bytes (for web or picked images)
+  /// This centralizes screenshot creation logic to ensure consistency
+  static Screenshot fromBytes({
+    required String id,
+    required Uint8List bytes,
+    required String fileName,
+    String? filePath,
+    List<String>? initialTags,
+    bool aiProcessed = false,
+    DateTime? customAddedOn,
+  }) {
+    return Screenshot(
+      id: id,
+      path: filePath,
+      bytes: bytes,
+      title: fileName,
+      tags: initialTags ?? [],
+      aiProcessed: aiProcessed,
+      addedOn: customAddedOn ?? DateTime.now(),
+      fileSize: bytes.length,
+    );
+  }
+
+  /// Factory method to create an updated copy of an existing screenshot
+  /// This centralizes screenshot update logic to ensure consistency
+  Screenshot copyWith({
+    String? title,
+    String? description,
+    List<String>? tags,
+    bool? aiProcessed,
+    AiMetaData? aiMetadata,
+    List<String>? collectionIds,
+    bool? isDeleted,
+    DateTime? reminderTime,
+    String? reminderText,
+  }) {
+    return Screenshot(
+      id: id,
+      path: path,
+      bytes: bytes,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      tags: tags ?? this.tags,
+      collectionIds: collectionIds ?? this.collectionIds,
+      aiProcessed: aiProcessed ?? this.aiProcessed,
+      addedOn: addedOn,
+      aiMetadata: aiMetadata ?? this.aiMetadata,
+      fileSize: fileSize,
+      isDeleted: isDeleted ?? this.isDeleted,
+      reminderTime: reminderTime ?? this.reminderTime,
+      reminderText: reminderText ?? this.reminderText,
     );
   }
 

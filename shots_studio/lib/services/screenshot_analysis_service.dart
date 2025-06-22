@@ -360,21 +360,12 @@ class ScreenshotAnalysisService extends AIService {
       item['collections'] ?? [],
     );
 
-    final updatedScreenshot = Screenshot(
-      id: screenshot.id,
-      path: screenshot.path,
-      bytes: screenshot.bytes,
+    final updatedScreenshot = screenshot.copyWith(
       title: item['title'] ?? screenshot.title,
       description: item['desc'] ?? screenshot.description,
       tags: List<String>.from(item['tags'] ?? []),
       aiProcessed: true,
-      addedOn: screenshot.addedOn,
-      collectionIds: screenshot.collectionIds,
       aiMetadata: aiMetaData,
-      fileSize: screenshot.fileSize,
-      isDeleted: screenshot.isDeleted,
-      reminderTime: screenshot.reminderTime,
-      reminderText: screenshot.reminderText,
     );
 
     if (collectionNames.isNotEmpty) {
@@ -423,21 +414,12 @@ class ScreenshotAnalysisService extends AIService {
           matchedAiItem['collections'] ?? [],
         );
 
-        final updatedScreenshot = Screenshot(
-          id: screenshot.id,
-          path: screenshot.path,
-          bytes: screenshot.bytes,
+        final updatedScreenshot = screenshot.copyWith(
           title: matchedAiItem['title'] ?? screenshot.title,
           description: matchedAiItem['desc'] ?? screenshot.description,
           tags: List<String>.from(matchedAiItem['tags'] ?? []),
           aiProcessed: true,
-          addedOn: screenshot.addedOn,
-          collectionIds: screenshot.collectionIds,
           aiMetadata: aiMetaData,
-          fileSize: screenshot.fileSize,
-          isDeleted: screenshot.isDeleted,
-          reminderTime: screenshot.reminderTime,
-          reminderText: screenshot.reminderText,
         );
 
         if (collectionNames.isNotEmpty) {

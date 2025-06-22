@@ -68,18 +68,17 @@ Future<void> _setupBackgroundServiceNotificationChannel() async {
   const AndroidNotificationChannel
   aiProcessingChannel = AndroidNotificationChannel(
     'ai_processing_channel', // id - matches BackgroundProcessingService.notificationChannelId
-    'AI Processing Service', // title
+    'AI Processing Service',
     description: 'Channel for AI screenshot processing notifications',
-    importance: Importance.low, // importance must be at low or higher level
+    importance: Importance.low,
   );
 
   const AndroidNotificationChannel serverMessagesChannel =
       AndroidNotificationChannel(
-        'server_messages_channel', // id - matches ServerMessageService channel
-        'Server Messages', // title
+        'server_messages_channel',
+        'Server Messages',
         description: 'Channel for server messages and announcements',
-        importance:
-            Importance.high, // importance must be at low or higher level
+        importance: Importance.high,
       );
 
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -224,11 +223,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _loadDataFromPrefs();
     _loadSettings();
     if (!kIsWeb) {
-      // Only load Android screenshots if we don't have any loaded from preferences
-      // This prevents unnecessary reloading when app restarts
-      _loadAndroidScreenshotsIfNeeded();
+      _loadAndroidScreenshotsIfNeeded().then((_) {
+        // Setup FileWatcher only AFTER initial loading is complete
+        // This ensures no duplicates from initial scan
+        _setupFileWatcher();
+      });
       _setupBackgroundServiceListeners();
-      _setupFileWatcher();
     }
     // Show privacy dialog after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -241,13 +241,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         // API key guide will only show after privacy is accepted
         await showApiKeyGuideIfNeeded(context, _apiKey, _updateApiKey);
 
-        // Check for app updates after initial setup
         _checkForUpdates();
-
-        // Check for server messages after initial setup
         _checkForServerMessages();
-
-        // Automatically process any unprocessed screenshots
         _autoProcessWithGemini();
       }
     });
@@ -1333,6 +1328,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// Setup file watcher for seamless autoscanning
   void _setupFileWatcher() {
     print("📡 Setting up file watcher for seamless autoscanning...");
+    print(
+      "📊 Current screenshots count at watcher setup: ${_screenshots.length}",
+    );
 
     // Cancel existing subscription if any
     _fileWatcherSubscription?.cancel();
@@ -1340,51 +1338,45 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Sync file watcher with existing screenshots to avoid conflicts
     final existingPaths =
         _screenshots.map((s) => s.path).whereType<String>().toList();
+    print(
+      "🔄 Syncing FileWatcher with ${existingPaths.length} existing screenshots",
+    );
     _fileWatcher.syncWithExistingScreenshots(existingPaths);
 
     // Listen to new screenshots from file watcher
-    print("🎧 Setting up stream listener...");
     _fileWatcherSubscription = _fileWatcher.newScreenshotsStream.listen(
       (newScreenshots) {
         print(
-          "📥 FileWatcher: STREAM EVENT RECEIVED! Detected ${newScreenshots.length} new screenshots",
-        );
-        print(
-          "📋 FileWatcher: New screenshot paths: ${newScreenshots.map((s) => s.path).toList()}",
+          "FileWatcher: STREAM EVENT RECEIVED! Detected ${newScreenshots.length} new screenshots",
         );
 
         if (newScreenshots.isNotEmpty && mounted) {
-          print("🔍 FileWatcher: Filtering out existing screenshots...");
           print(
-            "📊 FileWatcher: Current screenshots count: ${_screenshots.length}",
+            "FileWatcher: Current screenshots count: ${_screenshots.length}",
           );
 
           // Filter out screenshots we already have
           final uniqueScreenshots = <Screenshot>[];
           for (final screenshot in newScreenshots) {
             final exists = _screenshots.any((s) => s.path == screenshot.path);
-            print(
-              "🔎 FileWatcher: Checking ${screenshot.path} - exists: $exists",
-            );
+            print("FileWatcher: Checking ${screenshot.path} - exists: $exists");
             if (!exists) {
               uniqueScreenshots.add(screenshot);
-              print(
-                "✅ FileWatcher: Added unique screenshot: ${screenshot.path}",
-              );
+              print("FileWatcher: Added unique screenshot: ${screenshot.path}");
             } else {
               print(
-                "⏭️ FileWatcher: Skipped duplicate screenshot: ${screenshot.path}",
+                "FileWatcher: Skipped duplicate screenshot: ${screenshot.path}",
               );
             }
           }
 
           print(
-            "📝 FileWatcher: Found ${uniqueScreenshots.length} unique screenshots",
+            "FileWatcher: Found ${uniqueScreenshots.length} unique screenshots",
           );
 
           if (uniqueScreenshots.isNotEmpty) {
             print(
-              "💾 FileWatcher: Adding ${uniqueScreenshots.length} screenshots to state...",
+              "FileWatcher: Adding ${uniqueScreenshots.length} screenshots to state...",
             );
             setState(() {
               _screenshots.addAll(uniqueScreenshots);
@@ -1394,51 +1386,51 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             _saveDataToPrefs();
 
             print(
-              "✅ FileWatcher: Successfully added ${uniqueScreenshots.length} new screenshots",
+              "FileWatcher: Successfully added ${uniqueScreenshots.length} new screenshots",
             );
 
             // Auto-process newly detected screenshots if enabled
             if (_autoProcessEnabled) {
               print(
-                "🤖 FileWatcher: Auto-processing enabled, starting AI processing...",
+                "FileWatcher: Auto-processing enabled, starting AI processing...",
               );
               _autoProcessWithGemini();
             } else {
-              print("⏭️ FileWatcher: Auto-processing disabled");
+              print("FileWatcher: Auto-processing disabled");
             }
 
             // Show a subtle notification
             if (mounted && context.mounted) {
-              print("📢 FileWatcher: Showing notification to user...");
+              print("FileWatcher: Showing notification to user...");
               SnackbarService().showInfo(
                 context,
                 'Found ${uniqueScreenshots.length} new screenshot${uniqueScreenshots.length == 1 ? '' : 's'}',
               );
             }
           } else {
-            print("ℹ️ FileWatcher: No unique screenshots to add");
+            print("FileWatcher: No unique screenshots to add");
           }
         } else {
           if (newScreenshots.isEmpty) {
-            print("⚠️ FileWatcher: No new screenshots in the event");
+            print("FileWatcher: No new screenshots in the event");
           }
           if (!mounted) {
-            print("⚠️ FileWatcher: Widget not mounted, ignoring event");
+            print("FileWatcher: Widget not mounted, ignoring event");
           }
         }
       },
       onError: (error) {
-        print("❌ FileWatcher: Stream error: $error");
+        print("FileWatcher: Stream error: $error");
       },
       onDone: () {
-        print("🔚 FileWatcher: Stream closed");
+        print("FileWatcher: Stream closed");
       },
     );
 
     // Start watching for files
-    print("🚀 FileWatcher: Starting file watching...");
+    print("FileWatcher: Starting file watching...");
     _fileWatcher.startWatching();
-    print("✅ File watcher setup complete");
+    print("FileWatcher: Setup complete");
   }
 
   /// Reset AI processing status for all screenshots
@@ -1608,7 +1600,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           title: const Text('Load device screenshots'),
                           onTap: () {
                             Navigator.pop(context);
-                            _loadAndroidScreenshots(forceReload: true);
+                            _loadAndroidScreenshots(forceReload: true).then((
+                              _,
+                            ) {
+                              // Re-sync FileWatcher with newly loaded screenshots
+                              final existingPaths =
+                                  _screenshots
+                                      .map((s) => s.path)
+                                      .whereType<String>()
+                                      .toList();
+                              _fileWatcher.syncWithExistingScreenshots(
+                                existingPaths,
+                              );
+                            });
                           },
                         ),
                       if (!kIsWeb) // Custom paths management

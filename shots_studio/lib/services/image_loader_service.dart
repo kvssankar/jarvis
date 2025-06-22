@@ -8,6 +8,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:uuid/uuid.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/services/analytics_service.dart';
+import 'package:shots_studio/services/file_watcher_service.dart';
 
 /// Result class for image loading operations
 class ImageLoadResult {
@@ -92,18 +93,24 @@ class ImageLoaderService {
           continue;
         }
 
-        newScreenshots.add(
-          Screenshot(
-            id: imageId,
-            path: kIsWeb ? null : image.path,
-            bytes: kIsWeb || !File(image.path).existsSync() ? bytes : null,
-            title: imageName,
-            tags: [],
-            aiProcessed: false,
-            addedOn: DateTime.now(),
-            fileSize: bytes.length,
-          ),
+        // Create screenshot using centralized factory method
+        final screenshot = Screenshot.fromBytes(
+          id: imageId,
+          bytes: bytes,
+          fileName: imageName,
+          filePath:
+              kIsWeb
+                  ? null
+                  : (File(image.path).existsSync() ? image.path : null),
         );
+
+        // For non-web platforms, prefer file path over bytes if file exists
+        if (!kIsWeb && image.path.isNotEmpty && File(image.path).existsSync()) {
+          // Clear bytes to save memory since we have the file path
+          screenshot.bytes = null;
+        }
+
+        newScreenshots.add(screenshot);
       }
 
       // Log image loading analytics
@@ -210,8 +217,8 @@ class ImageLoaderService {
             continue;
           }
 
-          // Check if the file path contains ".trashed" and skip if it does
-          if (file.path.contains('.trashed')) {
+          // Check if the file is in trash and skip if it is
+          if (FileWatcherService.isFileInTrash(file.path)) {
             print('Skipping trashed file: ${file.path}');
             progress++;
             onProgress?.call(progress, limitedFiles.length);
@@ -229,17 +236,13 @@ class ImageLoaderService {
             continue;
           }
 
-          loadedScreenshots.add(
-            Screenshot(
-              id: _uuid.v4(),
-              path: file.path,
-              title: file.path.split('/').last,
-              tags: [],
-              aiProcessed: false,
-              addedOn: await file.lastModified(),
-              fileSize: fileSize,
-            ),
+          final screenshot = await Screenshot.fromFilePath(
+            id: _uuid.v4(),
+            filePath: file.path,
+            knownFileSize: fileSize,
           );
+
+          loadedScreenshots.add(screenshot);
 
           progress++;
           onProgress?.call(progress, limitedFiles.length);
@@ -287,15 +290,11 @@ class ImageLoaderService {
     required String fileName,
     String? path,
   }) {
-    return Screenshot(
+    return Screenshot.fromBytes(
       id: _uuid.v4(),
-      path: path,
       bytes: bytes,
-      title: fileName,
-      tags: [],
-      aiProcessed: false,
-      addedOn: DateTime.now(),
-      fileSize: bytes.length,
+      fileName: fileName,
+      filePath: path,
     );
   }
 

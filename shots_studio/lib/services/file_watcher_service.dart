@@ -69,7 +69,10 @@ class FileWatcherService {
                     FileSystemEvent.modify |
                     FileSystemEvent.move,
               )
-              .where((event) => _isImageFile(event.path))
+              .where(
+                (event) =>
+                    _isImageFile(event.path) && !_isTrashedFile(event.path),
+              )
               .listen(
                 _handleFileSystemEvent,
                 onError: (error) {
@@ -125,6 +128,15 @@ class FileWatcherService {
         return;
       }
 
+      // Skip trashed files (same logic as ImageLoaderService)
+      if (_isTrashedFile(filePath)) {
+        print('FileWatcher: Skipping trashed file: $filePath');
+        _processedFiles.add(
+          filePath,
+        ); // Mark as processed to avoid future checks
+        return;
+      }
+
       // Add small delay to ensure file is fully written
       await Future.delayed(const Duration(milliseconds: 200));
 
@@ -138,14 +150,11 @@ class FileWatcherService {
         'FileWatcher: Found new unprocessed image: ${file.path} (${fileSize} bytes)',
       );
 
-      final screenshot = Screenshot(
+      // Use centralized factory method for screenshot creation
+      final screenshot = await Screenshot.fromFilePath(
         id: _uuid.v4(),
-        path: filePath,
-        title: filePath.split('/').last,
-        tags: [],
-        aiProcessed: false,
-        addedOn: await file.lastModified(),
-        fileSize: fileSize,
+        filePath: filePath,
+        knownFileSize: fileSize,
       );
 
       _processedFiles.add(filePath);
@@ -176,6 +185,17 @@ class FileWatcherService {
       final newScreenshots = <Screenshot>[];
 
       for (final file in imageFiles) {
+        // Skip trashed files (same logic as ImageLoaderService)
+        if (_isTrashedFile(file.path)) {
+          print(
+            'FileWatcher: Skipping trashed file during initial scan: ${file.path}',
+          );
+          _processedFiles.add(
+            file.path,
+          ); // Mark as processed to avoid future checks
+          continue;
+        }
+
         // Only process files that exist, have content, and aren't already processed
         if (await file.exists() && !_processedFiles.contains(file.path)) {
           final fileSize = await file.length();
@@ -184,15 +204,11 @@ class FileWatcherService {
               'FileWatcher: Initial scan found new unprocessed image: ${file.path}',
             );
 
-            // Create Screenshot object for new files
-            final screenshot = Screenshot(
+            // Use centralized factory method for screenshot creation
+            final screenshot = await Screenshot.fromFilePath(
               id: _uuid.v4(),
-              path: file.path,
-              title: file.path.split('/').last,
-              tags: [],
-              aiProcessed: false,
-              addedOn: await file.lastModified(),
-              fileSize: fileSize,
+              filePath: file.path,
+              knownFileSize: fileSize,
             );
 
             newScreenshots.add(screenshot);
@@ -229,6 +245,22 @@ class FileWatcherService {
     return extension.endsWith('.png') ||
         extension.endsWith('.jpg') ||
         extension.endsWith('.jpeg');
+  }
+
+  /// Check if file is in trash/deleted
+  bool _isTrashedFile(String path) {
+    return isFileInTrash(path);
+  }
+
+  /// Static utility method to check if a file is in trash/deleted
+  /// Can be used by other services for consistency
+  static bool isFileInTrash(String path) {
+    final lowercasePath = path.toLowerCase();
+    return lowercasePath.contains('.trashed') ||
+        lowercasePath.contains('/trash/') ||
+        lowercasePath.contains('/recycle/') ||
+        lowercasePath.contains('/.trash/') ||
+        lowercasePath.contains('/deleted/');
   }
 
   /// Get screenshot directory paths
@@ -287,6 +319,17 @@ class FileWatcherService {
           final imageFiles = files.where((file) => _isImageFile(file.path));
 
           for (final file in imageFiles) {
+            // Skip trashed files (same logic as ImageLoaderService)
+            if (_isTrashedFile(file.path)) {
+              print(
+                'FileWatcher: Skipping trashed file during manual scan: ${file.path}',
+              );
+              _processedFiles.add(
+                file.path,
+              ); // Mark as processed to avoid future checks
+              continue;
+            }
+
             // Only process files we haven't seen before
             if (!_processedFiles.contains(file.path)) {
               final fileSize = await file.length();
@@ -295,14 +338,11 @@ class FileWatcherService {
                   'FileWatcher: Manual scan found new unprocessed image: ${file.path}',
                 );
 
-                final screenshot = Screenshot(
+                // Use centralized factory method for screenshot creation
+                final screenshot = await Screenshot.fromFilePath(
                   id: _uuid.v4(),
-                  path: file.path,
-                  title: file.path.split('/').last,
-                  tags: [],
-                  aiProcessed: false,
-                  addedOn: await file.lastModified(),
-                  fileSize: fileSize,
+                  filePath: file.path,
+                  knownFileSize: fileSize,
                 );
 
                 newScreenshots.add(screenshot);
@@ -378,8 +418,9 @@ class FileWatcherService {
           for (final img in recentImages) {
             final lastModified = await img.lastModified();
             final isProcessed = _processedFiles.contains(img.path);
+            final isTrashed = _isTrashedFile(img.path);
             print(
-              '     - ${img.path.split('/').last} (modified: $lastModified, processed: $isProcessed)',
+              '     - ${img.path.split('/').last} (modified: $lastModified, processed: $isProcessed, trashed: $isTrashed)',
             );
           }
         } catch (e) {
@@ -407,6 +448,11 @@ class FileWatcherService {
           final imageFiles = files.where((file) => _isImageFile(file.path));
 
           for (final file in imageFiles) {
+            // Skip trashed files
+            if (_isTrashedFile(file.path)) {
+              continue;
+            }
+
             final lastModified = await file.lastModified();
             if (mostRecentTime == null ||
                 lastModified.isAfter(mostRecentTime)) {
