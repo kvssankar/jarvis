@@ -121,6 +121,38 @@ class NotificationService {
     );
   }
 
+  Future<void> showServerMessage({
+    required int id,
+    required String title,
+    required String body,
+    String channelId = 'server_messages_channel',
+    String channelName = 'Server Messages',
+    String channelDescription = 'Channel for server messages and announcements',
+    Importance importance = Importance.high,
+    Priority priority = Priority.high,
+  }) async {
+    await flutterLocalNotificationsPlugin.show(
+      id,
+      title,
+      body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          channelId,
+          channelName,
+          channelDescription: channelDescription,
+          importance: importance,
+          priority: priority,
+          showWhen: true,
+          enableVibration: true,
+          playSound: true,
+          autoCancel: true,
+          ongoing: false,
+          icon: '@mipmap/ic_launcher_monochrome',
+        ),
+      ),
+    );
+  }
+
   Future<void> cancelNotification(int id) async {
     await flutterLocalNotificationsPlugin.cancel(id);
   }

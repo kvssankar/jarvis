@@ -14,6 +14,8 @@ class AdvancedSettingsSection extends StatefulWidget {
   final Function(bool)? onDevModeChanged;
   final bool? currentAnalyticsEnabled;
   final Function(bool)? onAnalyticsEnabledChanged;
+  final bool? currentServerMessagesEnabled;
+  final Function(bool)? onServerMessagesEnabledChanged;
   final VoidCallback? onResetAiProcessing;
 
   const AdvancedSettingsSection({
@@ -28,6 +30,8 @@ class AdvancedSettingsSection extends StatefulWidget {
     this.onDevModeChanged,
     this.currentAnalyticsEnabled,
     this.onAnalyticsEnabledChanged,
+    this.currentServerMessagesEnabled,
+    this.onServerMessagesEnabledChanged,
     this.onResetAiProcessing,
   });
 
@@ -43,11 +47,13 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
   bool _devMode = false;
   bool _analyticsEnabled =
       !kDebugMode; // Default to false in debug mode, true in production
+  bool _serverMessagesEnabled = true;
 
   static const String _limitPrefKey = 'limit';
   static const String _maxParallelPrefKey = 'maxParallel';
   static const String _limitEnabledPrefKey = 'limit_enabled';
   static const String _devModePrefKey = 'dev_mode';
+  static const String _serverMessagesPrefKey = 'server_messages_enabled';
 
   @override
   void initState() {
@@ -78,6 +84,13 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
     } else {
       _loadAnalyticsEnabledPref();
     }
+
+    // Initialize server messages state
+    if (widget.currentServerMessagesEnabled != null) {
+      _serverMessagesEnabled = widget.currentServerMessagesEnabled!;
+    } else {
+      _loadServerMessagesEnabledPref();
+    }
   }
 
   Future<void> _loadLimitEnabledPref() async {
@@ -98,6 +111,13 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
     final analyticsService = AnalyticsService();
     setState(() {
       _analyticsEnabled = analyticsService.analyticsEnabled;
+    });
+  }
+
+  Future<void> _loadServerMessagesEnabledPref() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _serverMessagesEnabled = prefs.getBool(_serverMessagesPrefKey) ?? true;
     });
   }
 
@@ -123,6 +143,11 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
     if (widget.currentAnalyticsEnabled != oldWidget.currentAnalyticsEnabled &&
         widget.currentAnalyticsEnabled != null) {
       _analyticsEnabled = widget.currentAnalyticsEnabled!;
+    }
+    if (widget.currentServerMessagesEnabled !=
+            oldWidget.currentServerMessagesEnabled &&
+        widget.currentServerMessagesEnabled != null) {
+      _serverMessagesEnabled = widget.currentServerMessagesEnabled!;
     }
   }
 
@@ -153,6 +178,11 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
     } else {
       await analyticsService.disableAnalytics();
     }
+  }
+
+  Future<void> _saveServerMessagesEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_serverMessagesPrefKey, value);
   }
 
   @override
@@ -310,6 +340,33 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
             _saveAnalyticsEnabled(value);
             if (widget.onAnalyticsEnabledChanged != null) {
               widget.onAnalyticsEnabledChanged!(value);
+            }
+          },
+        ),
+        SwitchListTile(
+          secondary: Icon(
+            Icons.notifications_outlined,
+            color: theme.colorScheme.primary,
+          ),
+          title: Text(
+            'Server Messages',
+            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+          ),
+          subtitle: Text(
+            _serverMessagesEnabled
+                ? 'Receive important updates and notifications'
+                : 'Server messages and notifications disabled',
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          value: _serverMessagesEnabled,
+          activeColor: theme.colorScheme.primary,
+          onChanged: (bool value) {
+            setState(() {
+              _serverMessagesEnabled = value;
+            });
+            _saveServerMessagesEnabled(value);
+            if (widget.onServerMessagesEnabledChanged != null) {
+              widget.onServerMessagesEnabledChanged!(value);
             }
           },
         ),

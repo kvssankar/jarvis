@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
 import 'package:shots_studio/services/analytics_service.dart';
+import 'package:shots_studio/utils/responsive_utils.dart';
 
 class ScreenshotsSection extends StatefulWidget {
   final List<Screenshot> screenshots;
@@ -295,12 +296,7 @@ class _ScreenshotsSectionState extends State<ScreenshotsSection> {
           child: GridView.builder(
             controller: _scrollController,
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              childAspectRatio: 1,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 4,
-            ),
+            gridDelegate: ResponsiveUtils.getResponsiveGridDelegate(context),
             itemCount: _visibleScreenshots.length + (_isLoadingMore ? 3 : 0),
             itemBuilder: (context, index) {
               if (index >= _visibleScreenshots.length) {

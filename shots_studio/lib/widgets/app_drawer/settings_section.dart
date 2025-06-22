@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shots_studio/services/analytics_service.dart';
+import 'package:shots_studio/utils/theme_manager.dart';
 
 class SettingsSection extends StatefulWidget {
   final String? currentApiKey;
@@ -11,6 +12,10 @@ class SettingsSection extends StatefulWidget {
   final Key? apiKeyFieldKey;
   final bool? currentAutoProcessEnabled;
   final Function(bool)? onAutoProcessEnabledChanged;
+  final bool? currentAmoledModeEnabled;
+  final Function(bool)? onAmoledModeChanged;
+  final String? currentSelectedTheme;
+  final Function(String)? onThemeChanged;
 
   const SettingsSection({
     super.key,
@@ -21,6 +26,10 @@ class SettingsSection extends StatefulWidget {
     this.apiKeyFieldKey,
     this.currentAutoProcessEnabled,
     this.onAutoProcessEnabledChanged,
+    this.currentAmoledModeEnabled,
+    this.onAmoledModeChanged,
+    this.currentSelectedTheme,
+    this.onThemeChanged,
   });
 
   @override
@@ -32,10 +41,13 @@ class _SettingsSectionState extends State<SettingsSection> {
   late String _selectedModelName;
   final FocusNode _apiKeyFocusNode = FocusNode();
   bool _autoProcessEnabled = true;
+  bool _amoledModeEnabled = false;
+  String _selectedTheme = 'Dynamic Theme';
 
   static const String _apiKeyPrefKey = 'apiKey';
   static const String _modelNamePrefKey = 'modelName';
   static const String _autoProcessEnabledPrefKey = 'auto_process_enabled';
+  static const String _amoledModeEnabledPrefKey = 'amoled_mode_enabled';
 
   @override
   void initState() {
@@ -54,6 +66,20 @@ class _SettingsSectionState extends State<SettingsSection> {
       _loadAutoProcessEnabledPref();
     }
 
+    // Initialize AMOLED mode state
+    if (widget.currentAmoledModeEnabled != null) {
+      _amoledModeEnabled = widget.currentAmoledModeEnabled!;
+    } else {
+      _loadAmoledModeEnabledPref();
+    }
+
+    // Initialize theme selection
+    if (widget.currentSelectedTheme != null) {
+      _selectedTheme = widget.currentSelectedTheme!;
+    } else {
+      _loadThemePref();
+    }
+
     // Request focus on the API key field when it's empty
     if (widget.currentApiKey?.isEmpty ?? true) {
       // Request focus on the next frame
@@ -67,6 +93,20 @@ class _SettingsSectionState extends State<SettingsSection> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _autoProcessEnabled = prefs.getBool(_autoProcessEnabledPrefKey) ?? true;
+    });
+  }
+
+  void _loadAmoledModeEnabledPref() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _amoledModeEnabled = prefs.getBool(_amoledModeEnabledPrefKey) ?? false;
+    });
+  }
+
+  void _loadThemePref() async {
+    final selectedTheme = await ThemeManager.getSelectedTheme();
+    setState(() {
+      _selectedTheme = selectedTheme;
     });
   }
 
@@ -91,6 +131,13 @@ class _SettingsSectionState extends State<SettingsSection> {
         widget.currentAutoProcessEnabled != null) {
       _autoProcessEnabled = widget.currentAutoProcessEnabled!;
     }
+    if (widget.currentAmoledModeEnabled != oldWidget.currentAmoledModeEnabled &&
+        widget.currentAmoledModeEnabled != null) {
+      _amoledModeEnabled = widget.currentAmoledModeEnabled!;
+    }
+    if (widget.currentSelectedTheme != oldWidget.currentSelectedTheme) {
+      _selectedTheme = widget.currentSelectedTheme ?? 'Dynamic Theme';
+    }
   }
 
   Future<void> _saveApiKey(String value) async {
@@ -106,6 +153,15 @@ class _SettingsSectionState extends State<SettingsSection> {
   Future<void> _saveAutoProcessEnabled(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_autoProcessEnabledPrefKey, value);
+  }
+
+  Future<void> _saveAmoledModeEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_amoledModeEnabledPrefKey, value);
+  }
+
+  Future<void> _saveSelectedTheme(String value) async {
+    await ThemeManager.setSelectedTheme(value);
   }
 
   @override
@@ -157,52 +213,76 @@ class _SettingsSectionState extends State<SettingsSection> {
             }
           },
         ),
-        ListTile(
-          leading: Icon(
-            Icons.auto_awesome_outlined,
-            color: theme.colorScheme.primary,
-          ),
-          title: Text(
-            'AI Model',
-            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
-          ),
-          trailing: DropdownButton<String>(
-            value: _selectedModelName,
-            dropdownColor: theme.colorScheme.secondaryContainer,
-            icon: Icon(
-              Icons.arrow_drop_down,
-              color: theme.colorScheme.onSecondaryContainer,
-            ),
-            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
-            underline: SizedBox.shrink(),
-            onChanged: (String? newValue) {
-              if (newValue != null) {
-                setState(() {
-                  _selectedModelName = newValue;
-                });
-                widget.onModelChanged(newValue);
-                _saveModelName(newValue);
-
-                // Track model change in analytics
-                AnalyticsService().logFeatureUsed('setting_changed_ai_model');
-                AnalyticsService().logFeatureAdopted('model_$newValue');
-              }
-            },
-            items:
-                <String>[
-                  'gemini-2.0-flash',
-                  'gemini-2.5-flash-pro',
-                ].map<DropdownMenuItem<String>>((String value) {
-                  return DropdownMenuItem<String>(
-                    value: value,
-                    child: Text(
-                      value,
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Row(
+            children: [
+              Icon(
+                Icons.auto_awesome_outlined,
+                color: theme.colorScheme.primary,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'AI Model',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSecondaryContainer,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    DropdownButton<String>(
+                      value: _selectedModelName,
+                      dropdownColor: theme.colorScheme.secondaryContainer,
+                      icon: Icon(
+                        Icons.arrow_drop_down,
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
                       style: TextStyle(
                         color: theme.colorScheme.onSecondaryContainer,
                       ),
+                      underline: SizedBox.shrink(),
+                      isExpanded: true,
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            _selectedModelName = newValue;
+                          });
+                          widget.onModelChanged(newValue);
+                          _saveModelName(newValue);
+
+                          // Track model change in analytics
+                          AnalyticsService().logFeatureUsed(
+                            'setting_changed_ai_model',
+                          );
+                          AnalyticsService().logFeatureAdopted(
+                            'model_$newValue',
+                          );
+                        }
+                      },
+                      items:
+                          <String>[
+                            'gemini-2.0-flash',
+                            'gemini-2.5-flash-pro',
+                          ].map<DropdownMenuItem<String>>((String value) {
+                            return DropdownMenuItem<String>(
+                              value: value,
+                              child: Text(
+                                value,
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSecondaryContainer,
+                                ),
+                              ),
+                            );
+                          }).toList(),
                     ),
-                  );
-                }).toList(),
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
         ListTile(
@@ -354,6 +434,128 @@ class _SettingsSectionState extends State<SettingsSection> {
               ),
             ),
           ),
+        SwitchListTile(
+          secondary: Icon(
+            Icons.nightlight_round,
+            color: theme.colorScheme.primary,
+          ),
+          title: Text(
+            'AMOLED Mode',
+            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+          ),
+          subtitle: Text(
+            _amoledModeEnabled
+                ? 'Dark theme optimized for AMOLED screens'
+                : 'Default dark theme',
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          value: _amoledModeEnabled,
+          activeColor: theme.colorScheme.primary,
+          onChanged: (bool value) {
+            setState(() {
+              _amoledModeEnabled = value;
+            });
+            _saveAmoledModeEnabled(value);
+
+            // Track settings change in analytics
+            AnalyticsService().logFeatureUsed('setting_changed_amoled_mode');
+            AnalyticsService().logFeatureAdopted(
+              value ? 'amoled_mode_enabled' : 'amoled_mode_disabled',
+            );
+
+            if (widget.onAmoledModeChanged != null) {
+              widget.onAmoledModeChanged!(value);
+            }
+          },
+        ),
+
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Row(
+            children: [
+              Icon(Icons.palette, color: theme.colorScheme.primary),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Theme Color',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSecondaryContainer,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    DropdownButton<String>(
+                      value: _selectedTheme,
+                      dropdownColor: theme.colorScheme.secondaryContainer,
+                      icon: Icon(
+                        Icons.arrow_drop_down,
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                      style: TextStyle(
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                      underline: SizedBox.shrink(),
+                      isExpanded: true,
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            _selectedTheme = newValue;
+                          });
+                          widget.onThemeChanged?.call(newValue);
+                          _saveSelectedTheme(newValue);
+
+                          // Track theme change in analytics
+                          AnalyticsService().logFeatureUsed(
+                            'setting_changed_theme',
+                          );
+                          AnalyticsService().logFeatureAdopted(
+                            'theme_${newValue.replaceAll(' ', '_').toLowerCase()}',
+                          );
+                        }
+                      },
+                      items:
+                          ThemeManager.getAvailableThemes()
+                              .map<DropdownMenuItem<String>>((String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 16,
+                                        height: 16,
+                                        decoration: BoxDecoration(
+                                          color: ThemeManager.getThemeColor(
+                                            value,
+                                          ),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      SizedBox(width: 8),
+                                      Text(
+                                        value,
+                                        style: TextStyle(
+                                          color:
+                                              theme
+                                                  .colorScheme
+                                                  .onSecondaryContainer,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              })
+                              .toList(),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }

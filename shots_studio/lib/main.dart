@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:io';
 import 'package:shots_studio/screens/screenshot_details_screen.dart';
 import 'package:shots_studio/screens/screenshot_swipe_detail_screen.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,9 +10,6 @@ import 'package:shots_studio/widgets/screenshots/screenshots_section.dart';
 import 'package:shots_studio/screens/app_drawer_screen.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
-import 'package:uuid/uuid.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:shots_studio/screens/search_screen.dart';
 import 'package:shots_studio/widgets/privacy_dialog.dart';
 import 'package:shots_studio/widgets/onboarding/api_key_guide_dialog.dart';
@@ -31,7 +27,13 @@ import 'package:shots_studio/services/analytics_service.dart';
 import 'package:shots_studio/services/file_watcher_service.dart';
 import 'package:shots_studio/services/update_checker_service.dart';
 import 'package:shots_studio/widgets/update_dialog.dart';
+import 'package:shots_studio/widgets/server_message_dialog.dart';
+import 'package:shots_studio/utils/theme_utils.dart';
+import 'package:shots_studio/utils/theme_manager.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:shots_studio/services/image_loader_service.dart';
+import 'package:shots_studio/services/custom_path_service.dart';
+import 'package:shots_studio/widgets/custom_paths_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,18 +59,27 @@ void main() async {
         'https://6f96d22977b283fc325e038ac45e6e5e@o4509484018958336.ingest.us.sentry.io/4509484020072448';
 
     options.tracesSampleRate =
-        kDebugMode ? 0.3 : 0.1; // 30% in debug, 10% in production
+        kDebugMode ? 0 : 0.1; // 30% in debug, 10% in production
   }, appRunner: () => runApp(SentryWidget(child: const MyApp())));
 }
 
 // Set up notification channel for background service
 Future<void> _setupBackgroundServiceNotificationChannel() async {
-  const AndroidNotificationChannel channel = AndroidNotificationChannel(
+  const AndroidNotificationChannel
+  aiProcessingChannel = AndroidNotificationChannel(
     'ai_processing_channel', // id - matches BackgroundProcessingService.notificationChannelId
-    'AI Processing Service', // title
+    'AI Processing Service',
     description: 'Channel for AI screenshot processing notifications',
-    importance: Importance.low, // importance must be at low or higher level
+    importance: Importance.low,
   );
+
+  const AndroidNotificationChannel serverMessagesChannel =
+      AndroidNotificationChannel(
+        'server_messages_channel',
+        'Server Messages',
+        description: 'Channel for server messages and announcements',
+        importance: Importance.high,
+      );
 
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -77,98 +88,72 @@ Future<void> _setupBackgroundServiceNotificationChannel() async {
       .resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin
       >()
-      ?.createNotificationChannel(channel);
+      ?.createNotificationChannel(aiProcessingChannel);
+
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >()
+      ?.createNotificationChannel(serverMessagesChannel);
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  bool _amoledModeEnabled = false;
+  String _selectedTheme = 'Dynamic Theme';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThemeSettings();
+  }
+
+  Future<void> _loadThemeSettings() async {
+    final amoledMode = await ThemeManager.getAmoledMode();
+    final selectedTheme = await ThemeManager.getSelectedTheme();
+    setState(() {
+      _amoledModeEnabled = amoledMode;
+      _selectedTheme = selectedTheme;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return DynamicColorBuilder(
       builder: (ColorScheme? lightDynamic, ColorScheme? darkDynamic) {
-        ColorScheme lightScheme;
-        ColorScheme darkScheme;
-
-        if (lightDynamic != null && darkDynamic != null) {
-          // Use dynamic colors if available (Material You)
-          lightScheme = lightDynamic.harmonized();
-          darkScheme = darkDynamic.harmonized();
-        } else {
-          // Fallback to custom color schemes if dynamic colors are not available
-          lightScheme = ColorScheme.fromSeed(
-            seedColor: Colors.amber,
-            brightness: Brightness.light,
-          );
-          darkScheme = ColorScheme.fromSeed(
-            seedColor: Colors.amber,
-            brightness: Brightness.dark,
-          );
-        }
+        final (lightScheme, darkScheme) = ThemeManager.createColorSchemes(
+          lightDynamic: lightDynamic,
+          darkDynamic: darkDynamic,
+          selectedTheme: _selectedTheme,
+          amoledModeEnabled: _amoledModeEnabled,
+        );
 
         return MaterialApp(
           title: 'Shots Studio',
-          theme: ThemeData(
-            useMaterial3: true,
-            colorScheme: lightScheme,
-            cardTheme: CardThemeData(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            filledButtonTheme: FilledButtonThemeData(
-              style: FilledButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            elevatedButtonTheme: ElevatedButtonThemeData(
-              style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            floatingActionButtonTheme: FloatingActionButtonThemeData(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
-          darkTheme: ThemeData(
-            useMaterial3: true,
-            colorScheme: darkScheme,
-            cardTheme: CardThemeData(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-            filledButtonTheme: FilledButtonThemeData(
-              style: FilledButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            elevatedButtonTheme: ElevatedButtonThemeData(
-              style: ElevatedButton.styleFrom(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-            floatingActionButtonTheme: FloatingActionButtonThemeData(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-            ),
-          ),
+          theme: ThemeUtils.createLightTheme(lightScheme),
+          darkTheme: ThemeUtils.createDarkTheme(darkScheme),
           themeMode:
               ThemeMode.system, // Automatically switch between light and dark
-          home: const HomeScreen(),
+          home: HomeScreen(
+            onAmoledModeChanged: (enabled) async {
+              await ThemeManager.setAmoledMode(enabled);
+              setState(() {
+                _amoledModeEnabled = enabled;
+              });
+            },
+            onThemeChanged: (themeName) async {
+              await ThemeManager.setSelectedTheme(themeName);
+              setState(() {
+                _selectedTheme = themeName;
+              });
+            },
+          ),
         );
       },
     );
@@ -176,7 +161,10 @@ class MyApp extends StatelessWidget {
 }
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final Function(bool)? onAmoledModeChanged;
+  final Function(String)? onThemeChanged;
+
+  const HomeScreen({super.key, this.onAmoledModeChanged, this.onThemeChanged});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -185,8 +173,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final List<Screenshot> _screenshots = [];
   final List<Collection> _collections = [];
-  final ImagePicker _picker = ImagePicker();
-  final Uuid _uuid = const Uuid();
+  final ImageLoaderService _imageLoaderService = ImageLoaderService();
   bool _isLoading = false;
   bool _isProcessingAI = false;
   int _aiProcessedCount = 0;
@@ -212,6 +199,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _autoProcessEnabled = true;
   bool _analyticsEnabled =
       !kDebugMode; // Default to false in debug mode, true in production
+  bool _amoledModeEnabled = false;
+  String _selectedTheme = 'Dynamic Theme';
 
   // update screenshots
   List<Screenshot> get _activeScreenshots {
@@ -234,9 +223,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _loadDataFromPrefs();
     _loadSettings();
     if (!kIsWeb) {
-      _loadAndroidScreenshots();
+      _loadAndroidScreenshotsIfNeeded().then((_) {
+        // Setup FileWatcher only AFTER initial loading is complete
+        // This ensures no duplicates from initial scan
+        _setupFileWatcher();
+      });
       _setupBackgroundServiceListeners();
-      _setupFileWatcher();
     }
     // Show privacy dialog after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) async {
@@ -249,10 +241,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         // API key guide will only show after privacy is accepted
         await showApiKeyGuideIfNeeded(context, _apiKey, _updateApiKey);
 
-        // Check for app updates after initial setup
         _checkForUpdates();
-
-        // Automatically process any unprocessed screenshots
+        _checkForServerMessages();
         _autoProcessWithGemini();
       }
     });
@@ -264,8 +254,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     // Clean up file watcher
     _fileWatcherSubscription?.cancel();
-    _fileWatcher.dispose();
-
     super.dispose();
   }
 
@@ -458,6 +446,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       Future.delayed(const Duration(milliseconds: 500), () {
         _autoProcessWithGemini();
       });
+
+      Future.delayed(const Duration(seconds: 2), () {
+        _checkForServerMessages();
+      });
     }
   }
 
@@ -518,6 +510,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _autoProcessEnabled = prefs.getBool('auto_process_enabled') ?? true;
       _analyticsEnabled =
           prefs.getBool('analytics_consent_enabled') ?? !kDebugMode;
+      _amoledModeEnabled = prefs.getBool('amoled_mode_enabled') ?? false;
+      _selectedTheme = prefs.getString('selected_theme') ?? 'Dynamic Theme';
     });
   }
 
@@ -583,6 +577,32 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // The service saves the preference and manages the consent state
   }
 
+  void _updateAmoledModeEnabled(bool enabled) {
+    setState(() {
+      _amoledModeEnabled = enabled;
+    });
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setBool('amoled_mode_enabled', enabled);
+    });
+    // Notify the parent MyApp to rebuild with new theme
+    if (widget.onAmoledModeChanged != null) {
+      widget.onAmoledModeChanged!(enabled);
+    }
+  }
+
+  void _updateThemeSelection(String themeName) {
+    setState(() {
+      _selectedTheme = themeName;
+    });
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setString('selected_theme', themeName);
+    });
+    // Notify the parent MyApp to rebuild with new theme
+    if (widget.onThemeChanged != null) {
+      widget.onThemeChanged!(themeName);
+    }
+  }
+
   Future<void> _saveDevMode(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('dev_mode', value);
@@ -612,6 +632,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
       // Log analytics for update check failures
       AnalyticsService().logFeatureUsed('update_check_failed');
+    }
+  }
+
+  /// Check for server messages and notifications
+  Future<void> _checkForServerMessages() async {
+    try {
+      print("MainApp: Checking for server messages...");
+      await Future.delayed(const Duration(milliseconds: 500));
+
+      if (mounted) {
+        await ServerMessageDialog.showServerMessageDialogIfAvailable(context);
+      }
+    } catch (e) {
+      print('MainApp: Server message check failed: $e');
+
+      // Log analytics for server message check failures
+      AnalyticsService().logFeatureUsed('server_message_check_failed');
     }
   }
 
@@ -823,86 +860,43 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _takeScreenshot(ImageSource source) async {
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      final startTime = DateTime.now();
+      final result = await _imageLoaderService.loadFromImagePicker(
+        source: source,
+        existingScreenshots: _screenshots,
+      );
 
-      // Log feature usage
-      String sourceStr = source == ImageSource.camera ? 'camera' : 'gallery';
-      AnalyticsService().logFeatureUsed('image_picker_$sourceStr');
-
-      List<XFile>? images;
-
-      if (source == ImageSource.camera) {
-        // Take a photo with the camera
-        final XFile? image = await _picker.pickImage(source: source);
-        if (image != null) {
-          images = [image];
-        }
-      } else if (kIsWeb) {
-        images = await _picker.pickMultiImage();
-      } else {
-        images = await _picker.pickMultiImage();
-      }
-
-      if (images != null && images.isNotEmpty) {
+      if (result.success) {
         setState(() {
-          _isLoading = true;
-        });
-
-        List<Screenshot> newScreenshots = [];
-        for (var image in images) {
-          final bytes = await image.readAsBytes();
-          final String imageId = _uuid.v4();
-          final String imageName = image.name;
-
-          // Check if a screenshot with the same path (if available) or bytes already exists
-          // For web, path might be null, so rely on bytes if path is not distinctive
-          bool exists = false;
-          if (!kIsWeb && image.path.isNotEmpty) {
-            exists = _screenshots.any((s) => s.path == image.path);
-          } else {
-            // for web, check is removed since path is not available
-          }
-
-          if (exists) {
-            print(
-              'Skipping already loaded image: ${image.path.isNotEmpty ? image.path : imageName}',
-            );
-            continue;
-          }
-
-          newScreenshots.add(
-            Screenshot(
-              id: imageId,
-              path: kIsWeb ? null : image.path,
-              bytes: kIsWeb || !File(image.path).existsSync() ? bytes : null,
-              title: imageName,
-              tags: [],
-              aiProcessed: false,
-              addedOn: DateTime.now(),
-              fileSize: bytes.length,
-            ),
-          );
-        }
-
-        setState(() {
-          _screenshots.addAll(newScreenshots);
+          _screenshots.addAll(result.screenshots);
           _isLoading = false;
           _loadingProgress = 0;
           _totalToLoad = 0;
         });
+
         await _saveDataToPrefs();
 
-        // Log image loading analytics
-        final loadTime = DateTime.now().difference(startTime).inMilliseconds;
-        String sourceStr = source == ImageSource.camera ? 'camera' : 'gallery';
-        AnalyticsService().logImageLoadTime(loadTime, sourceStr);
+        // Log total screenshots analytics
         AnalyticsService().logTotalScreenshotsProcessed(_screenshots.length);
 
         // Auto-process the newly added screenshots
-        if (newScreenshots.isNotEmpty) {
+        if (result.screenshots.isNotEmpty) {
           _autoProcessWithGemini();
         }
+      } else {
+        setState(() {
+          _isLoading = false;
+          _loadingProgress = 0;
+          _totalToLoad = 0;
+        });
+
+        if (result.errorMessage != null) {
+          print('Error taking screenshot: ${result.errorMessage}');
+        }
       }
     } catch (e) {
       setState(() {
@@ -910,172 +904,67 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _loadingProgress = 0;
         _totalToLoad = 0;
       });
-
-      // Log error analytics
-      AnalyticsService().logNetworkError(e.toString(), 'image_picker');
-
-      print('Error picking images: $e');
+      print('Unexpected error taking screenshot: $e');
     }
   }
 
-  Future<void> _loadAndroidScreenshots() async {
+  Future<void> _loadAndroidScreenshots({bool forceReload = false}) async {
     if (kIsWeb) return;
 
-    // Check if screenshots are already loaded to avoid redundant loading on hot reload/restart
-    // This simple check might need refinement based on how often new screenshots are expected
-    // if (_screenshots.isNotEmpty && !_isLoading) { // Basic check
-    //   print("Android screenshots seem already loaded or loading is in progress.");
-    //   return;
-    // }
+    // Skip loading if we already have screenshots and it's not a forced reload
+    // This prevents unnecessary reloading when the app restarts
+    if (!forceReload && _screenshots.isNotEmpty) {
+      print("Screenshots already loaded, skipping Android screenshot loading");
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _loadingProgress = 0;
+      _totalToLoad = 0;
+    });
 
     try {
-      // Android API level specific permission handling
-      var status = await Permission.photos.request();
+      // Get custom paths from preferences
+      final customPaths = await CustomPathService.getCustomPaths();
 
-      // For Android 11 specifically, also check storage permission as a fallback
-      if (!status.isGranted && Platform.isAndroid) {
-        // Try legacy storage permission for Android 10/11 compatibility
-        var storageStatus = await Permission.storage.request();
-        if (storageStatus.isGranted) {
-          status = storageStatus;
-        }
-      }
-
-      if (!status.isGranted) {
-        String errorMessage =
-            'Photos permission denied. Cannot load screenshots.';
-        if (Platform.isAndroid) {
-          errorMessage +=
-              '\n\nFor Android 11 users: Please ensure both Photos and Files permissions are granted in your device settings.';
-        }
-        SnackbarService().showError(context, errorMessage);
-        return;
-      }
-
-      setState(() {
-        _isLoading = true;
-        _loadingProgress = 0;
-        _totalToLoad = 0;
-      });
-
-      // Get common Android screenshot directories
-      List<String> possibleScreenshotPaths = await _getScreenshotPaths();
-      List<FileSystemEntity> allFiles = [];
-      for (String dirPath in possibleScreenshotPaths) {
-        final directory = Directory(dirPath);
-        if (await directory.exists()) {
-          allFiles.addAll(
-            directory.listSync().whereType<File>().where(
-              (file) =>
-                  file.path.toLowerCase().endsWith('.png') ||
-                  file.path.toLowerCase().endsWith('.jpg') ||
-                  file.path.toLowerCase().endsWith('.jpeg'),
-            ),
-          );
-        }
-      }
-
-      allFiles.sort((a, b) {
-        return File(
-          b.path,
-        ).lastModifiedSync().compareTo(File(a.path).lastModifiedSync());
-      });
-
-      // Apply limit if enabled
-      final limitedFiles =
-          _isScreenshotLimitEnabled
-              ? allFiles.take(_screenshotLimit).toList()
-              : allFiles.toList();
-
-      setState(() {
-        _totalToLoad = limitedFiles.length;
-      });
-
-      List<Screenshot> loadedScreenshots = [];
-
-      // Process files in batches to avoid memory spikes
-      const int batchSize = 20;
-      for (int i = 0; i < limitedFiles.length; i += batchSize) {
-        final batch = limitedFiles.skip(i).take(batchSize);
-
-        for (var fileEntity in batch) {
-          final file = File(fileEntity.path);
-
-          // Skip if already exists by path
-          if (_screenshots.any((s) => s.path == file.path)) {
-            print('Skipping already loaded file via path check: ${file.path}');
-            setState(() {
-              _loadingProgress++;
-            });
-            continue;
-          }
-
-          // Check if the file path contains ".trashed" and skip if it does
-          if (file.path.contains('.trashed')) {
-            print('Skipping trashed file: ${file.path}');
-            setState(() {
-              _loadingProgress++;
-            });
-            continue;
-          }
-
-          final fileSize = await file.length();
-
-          // Skip very large files to prevent memory issues
-          if (fileSize > 50 * 1024 * 1024) {
-            // Skip files larger than 50MB
-            print('Skipping large file: ${file.path} ($fileSize bytes)');
-            setState(() {
-              _loadingProgress++;
-            });
-            continue;
-          }
-
-          loadedScreenshots.add(
-            Screenshot(
-              id: _uuid.v4(), // Generate new UUID for each
-              path: file.path,
-              title: file.path.split('/').last,
-              tags: [],
-              aiProcessed: false,
-              addedOn: await file.lastModified(),
-              fileSize: fileSize,
-            ),
-          );
-
+      final result = await _imageLoaderService.loadAndroidScreenshots(
+        existingScreenshots: _screenshots,
+        isLimitEnabled: _isScreenshotLimitEnabled,
+        screenshotLimit: _screenshotLimit,
+        customPaths: customPaths,
+        onProgress: (current, total) {
           setState(() {
-            _loadingProgress++;
+            _loadingProgress = current;
+            _totalToLoad = total;
           });
-        }
+        },
+      );
 
-        // Update UI periodically to show progress
-        if (i % batchSize == 0 && loadedScreenshots.isNotEmpty) {
-          setState(() {
-            _screenshots.insertAll(0, loadedScreenshots);
-          });
-          loadedScreenshots.clear();
-          // Small delay to prevent UI blocking
-          await Future.delayed(const Duration(milliseconds: 10));
-        }
-      }
-
-      // Add any remaining screenshots
-      if (loadedScreenshots.isNotEmpty) {
+      if (result.success) {
         setState(() {
-          _screenshots.insertAll(0, loadedScreenshots);
+          _screenshots.insertAll(0, result.screenshots);
+          _isLoading = false;
+          _loadingProgress = 0;
+          _totalToLoad = 0;
         });
-      }
 
-      setState(() {
-        _isLoading = false;
-        _loadingProgress = 0;
-        _totalToLoad = 0;
-      });
-      await _saveDataToPrefs();
+        await _saveDataToPrefs();
 
-      // Auto-process newly loaded screenshots
-      if (_screenshots.isNotEmpty) {
-        _autoProcessWithGemini();
+        // Auto-process newly loaded screenshots
+        if (result.screenshots.isNotEmpty) {
+          _autoProcessWithGemini();
+        }
+      } else {
+        setState(() {
+          _isLoading = false;
+          _loadingProgress = 0;
+          _totalToLoad = 0;
+        });
+
+        if (result.errorMessage != null) {
+          SnackbarService().showError(context, result.errorMessage!);
+        }
       }
     } catch (e) {
       setState(() {
@@ -1083,30 +972,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _loadingProgress = 0;
         _totalToLoad = 0;
       });
-      print('Error loading Android screenshots: $e');
+      print('Unexpected error loading Android screenshots: $e');
     }
   }
 
-  Future<List<String>> _getScreenshotPaths() async {
-    List<String> paths = [];
+  /// Load Android screenshots only if we don't already have screenshots loaded from preferences
+  Future<void> _loadAndroidScreenshotsIfNeeded() async {
+    // Wait a bit for _loadDataFromPrefs to complete
+    await Future.delayed(const Duration(milliseconds: 100));
 
-    try {
-      // Get external storage directory
-      final externalDir = await getExternalStorageDirectory();
-      if (externalDir != null) {
-        String baseDir = externalDir.path.split('/Android')[0];
-
-        // Common screenshot paths on different Android devices
-        paths.addAll([
-          '$baseDir/DCIM/Screenshots',
-          '$baseDir/Pictures/Screenshots',
-        ]);
-      }
-    } catch (e) {
-      print('Error getting screenshot paths: $e');
+    // Only load if we don't have screenshots already
+    if (_screenshots.isEmpty) {
+      print(
+        "No screenshots found in preferences, loading from Android device...",
+      );
+      await _loadAndroidScreenshots();
+    } else {
+      print(
+        "Screenshots already loaded from preferences (${_screenshots.length} screenshots)",
+      );
     }
-
-    return paths;
   }
 
   void _addCollection(Collection collection) {
@@ -1442,55 +1327,110 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   /// Setup file watcher for seamless autoscanning
   void _setupFileWatcher() {
-    print("Setting up file watcher for seamless autoscanning...");
+    print("📡 Setting up file watcher for seamless autoscanning...");
+    print(
+      "📊 Current screenshots count at watcher setup: ${_screenshots.length}",
+    );
+
+    // Cancel existing subscription if any
+    _fileWatcherSubscription?.cancel();
+
+    // Sync file watcher with existing screenshots to avoid conflicts
+    final existingPaths =
+        _screenshots.map((s) => s.path).whereType<String>().toList();
+    print(
+      "🔄 Syncing FileWatcher with ${existingPaths.length} existing screenshots",
+    );
+    _fileWatcher.syncWithExistingScreenshots(existingPaths);
 
     // Listen to new screenshots from file watcher
-    _fileWatcherSubscription = _fileWatcher.newScreenshotsStream.listen((
-      newScreenshots,
-    ) {
-      print("FileWatcher: Detected ${newScreenshots.length} new screenshots");
+    _fileWatcherSubscription = _fileWatcher.newScreenshotsStream.listen(
+      (newScreenshots) {
+        print(
+          "FileWatcher: STREAM EVENT RECEIVED! Detected ${newScreenshots.length} new screenshots",
+        );
 
-      if (newScreenshots.isNotEmpty && mounted) {
-        // Filter out screenshots we already have
-        final uniqueScreenshots = <Screenshot>[];
-        for (final screenshot in newScreenshots) {
-          final exists = _screenshots.any((s) => s.path == screenshot.path);
-          if (!exists) {
-            uniqueScreenshots.add(screenshot);
-          }
-        }
-
-        if (uniqueScreenshots.isNotEmpty) {
-          setState(() {
-            _screenshots.addAll(uniqueScreenshots);
-          });
-
-          // Save data and auto-process the new screenshots
-          _saveDataToPrefs();
-
+        if (newScreenshots.isNotEmpty && mounted) {
           print(
-            "FileWatcher: Added ${uniqueScreenshots.length} new screenshots",
+            "FileWatcher: Current screenshots count: ${_screenshots.length}",
           );
 
-          // Auto-process newly detected screenshots if enabled
-          if (_autoProcessEnabled) {
-            _autoProcessWithGemini();
+          // Filter out screenshots we already have
+          final uniqueScreenshots = <Screenshot>[];
+          for (final screenshot in newScreenshots) {
+            final exists = _screenshots.any((s) => s.path == screenshot.path);
+            print("FileWatcher: Checking ${screenshot.path} - exists: $exists");
+            if (!exists) {
+              uniqueScreenshots.add(screenshot);
+              print("FileWatcher: Added unique screenshot: ${screenshot.path}");
+            } else {
+              print(
+                "FileWatcher: Skipped duplicate screenshot: ${screenshot.path}",
+              );
+            }
           }
 
-          // Show a subtle notification
-          if (mounted && context.mounted) {
-            SnackbarService().showInfo(
-              context,
-              'Found ${uniqueScreenshots.length} new screenshot${uniqueScreenshots.length == 1 ? '' : 's'}',
+          print(
+            "FileWatcher: Found ${uniqueScreenshots.length} unique screenshots",
+          );
+
+          if (uniqueScreenshots.isNotEmpty) {
+            print(
+              "FileWatcher: Adding ${uniqueScreenshots.length} screenshots to state...",
             );
+            setState(() {
+              _screenshots.addAll(uniqueScreenshots);
+            });
+
+            // Save data and auto-process the new screenshots
+            _saveDataToPrefs();
+
+            print(
+              "FileWatcher: Successfully added ${uniqueScreenshots.length} new screenshots",
+            );
+
+            // Auto-process newly detected screenshots if enabled
+            if (_autoProcessEnabled) {
+              print(
+                "FileWatcher: Auto-processing enabled, starting AI processing...",
+              );
+              _autoProcessWithGemini();
+            } else {
+              print("FileWatcher: Auto-processing disabled");
+            }
+
+            // Show a subtle notification
+            if (mounted && context.mounted) {
+              print("FileWatcher: Showing notification to user...");
+              SnackbarService().showInfo(
+                context,
+                'Found ${uniqueScreenshots.length} new screenshot${uniqueScreenshots.length == 1 ? '' : 's'}',
+              );
+            }
+          } else {
+            print("FileWatcher: No unique screenshots to add");
+          }
+        } else {
+          if (newScreenshots.isEmpty) {
+            print("FileWatcher: No new screenshots in the event");
+          }
+          if (!mounted) {
+            print("FileWatcher: Widget not mounted, ignoring event");
           }
         }
-      }
-    });
+      },
+      onError: (error) {
+        print("FileWatcher: Stream error: $error");
+      },
+      onDone: () {
+        print("FileWatcher: Stream closed");
+      },
+    );
 
     // Start watching for files
+    print("FileWatcher: Starting file watching...");
     _fileWatcher.startWatching();
-    print("File watcher setup complete");
+    print("FileWatcher: Setup complete");
   }
 
   /// Reset AI processing status for all screenshots
@@ -1561,6 +1501,30 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
+  /// Show dialog for managing custom screenshot paths
+  void _showCustomPathsDialog() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => CustomPathsDialog(
+            onPathAdded: () async {
+              print(
+                '📂 Custom path added, reloading images and restarting file watcher...',
+              );
+
+              // Restart file watcher with updated paths
+              await _fileWatcher.restart();
+
+              // Perform manual scan to pick up any existing files in the new path
+              await _fileWatcher.manualScan();
+
+              // Also reload images from all paths (including new custom path)
+              await _loadAndroidScreenshots();
+            },
+          ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1591,6 +1555,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onAutoProcessEnabledChanged: _updateAutoProcessEnabled,
         currentAnalyticsEnabled: _analyticsEnabled,
         onAnalyticsEnabledChanged: _updateAnalyticsEnabled,
+        currentAmoledModeEnabled: _amoledModeEnabled,
+        onAmoledModeChanged: _updateAmoledModeEnabled,
+        currentSelectedTheme: _selectedTheme,
+        onThemeChanged: _updateThemeSelection,
         apiKeyFieldKey: _apiKeyFieldKey,
         onResetAiProcessing: _resetAiMetaData,
       ),
@@ -1632,7 +1600,28 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           title: const Text('Load device screenshots'),
                           onTap: () {
                             Navigator.pop(context);
-                            _loadAndroidScreenshots();
+                            _loadAndroidScreenshots(forceReload: true).then((
+                              _,
+                            ) {
+                              // Re-sync FileWatcher with newly loaded screenshots
+                              final existingPaths =
+                                  _screenshots
+                                      .map((s) => s.path)
+                                      .whereType<String>()
+                                      .toList();
+                              _fileWatcher.syncWithExistingScreenshots(
+                                existingPaths,
+                              );
+                            });
+                          },
+                        ),
+                      if (!kIsWeb) // Custom paths management
+                        ListTile(
+                          leading: const Icon(Icons.create_new_folder),
+                          title: const Text('Manage custom paths'),
+                          onTap: () {
+                            Navigator.pop(context);
+                            _showCustomPathsDialog();
                           },
                         ),
                     ],

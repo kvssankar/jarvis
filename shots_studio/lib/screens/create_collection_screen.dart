@@ -5,6 +5,7 @@ import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
 import 'package:uuid/uuid.dart';
+import 'package:shots_studio/utils/responsive_utils.dart';
 
 class CreateCollectionScreen extends StatefulWidget {
   final List<Screenshot> availableScreenshots;
@@ -309,9 +310,8 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                             )
                             : GridView.builder(
                               gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                    crossAxisCount: 3,
-                                    childAspectRatio: 1,
+                                  ResponsiveUtils.getResponsiveGridDelegate(
+                                    context,
                                     crossAxisSpacing: 12,
                                     mainAxisSpacing: 12,
                                   ),

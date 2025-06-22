@@ -522,10 +522,9 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     return '${(bytes / pow(1024, i)).toStringAsFixed(2)} ${suffixes[i]}';
   }
 
-  @override
-  Widget build(BuildContext context) {
+  /// Build the image widget for the screenshot
+  Widget _buildImageWidget(String imageName) {
     Widget imageWidget;
-    String imageName = widget.screenshot.title ?? 'Screenshot';
 
     if (widget.screenshot.path != null) {
       final file = File(widget.screenshot.path!);
@@ -590,7 +589,6 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
             ],
           ),
         );
-        imageName = 'File Not Found';
       }
     } else if (widget.screenshot.bytes != null) {
       imageWidget = Image.memory(
@@ -644,6 +642,229 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
           ],
         ),
       );
+    }
+
+    return imageWidget;
+  }
+
+  /// Build the details content section
+  Widget _buildDetailsContent(String imageName) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          imageName,
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSecondaryContainer,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          // Format DateTime using intl package
+          DateFormat('MMM d, yyyy, hh:mm a').format(widget.screenshot.addedOn),
+          style: TextStyle(
+            fontSize: 14,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+        ),
+        if (widget.screenshot.fileSize != null &&
+            widget.screenshot.fileSize! > 0) ...[
+          const SizedBox(height: 4),
+          Text(
+            'Size: ${_formatFileSize(widget.screenshot.fileSize!)}',
+            style: TextStyle(
+              fontSize: 14,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+
+        const SizedBox(height: 16),
+        TextField(
+          controller: _descriptionController,
+          decoration: InputDecoration(
+            hintText: 'Add a description...',
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.secondaryContainer,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide.none,
+            ),
+          ),
+          style: TextStyle(
+            color: Theme.of(context).colorScheme.onSecondaryContainer,
+          ),
+          maxLines: 3,
+          onChanged: (value) {
+            widget.screenshot.description = value;
+          },
+          onEditingComplete: () {
+            widget.screenshot.description = _descriptionController.text;
+            _updateScreenshotDetails();
+            FocusScope.of(context).unfocus();
+          },
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'Tags',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSecondaryContainer,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ..._tags.map((tag) => _buildTag(tag)),
+            _buildTag('+ Add Tag'),
+          ],
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'AI Details',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSecondaryContainer,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'AI Analysis Status:',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color:
+                            Theme.of(context).colorScheme.onSecondaryContainer,
+                      ),
+                    ),
+                    if (widget.screenshot.aiProcessed &&
+                        widget.screenshot.aiMetadata != null) ...[
+                      Text(
+                        'Model: ${widget.screenshot.aiMetadata!.modelName}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color:
+                              Theme.of(
+                                context,
+                              ).colorScheme.onSecondaryContainer,
+                        ),
+                      ),
+                      Text(
+                        'Analyzed on: ${DateFormat('MMM d, yyyy HH:mm a').format(widget.screenshot.aiMetadata!.processingTime)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color:
+                              Theme.of(
+                                context,
+                              ).colorScheme.onSecondaryContainer,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Icon(
+                widget.screenshot.aiProcessed
+                    ? Icons.check_circle
+                    : Icons.hourglass_empty,
+                color: Theme.of(context).colorScheme.primary,
+              ),
+              if (widget.screenshot.aiProcessed)
+                IconButton(
+                  icon: Icon(
+                    Icons.refresh,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  tooltip: 'Clear AI analysis to re-process',
+                  onPressed: _clearAndRequestAiReprocessing,
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 24),
+        Text(
+          'Collections',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSecondaryContainer,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 4,
+          children: [
+            if (widget.screenshot.collectionIds.isEmpty)
+              Text(
+                "This isn't in any collection yet. Hit the + button to give it a cozy home 😺",
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  fontStyle: FontStyle.italic,
+                ),
+              )
+            else
+              ...widget.screenshot.collectionIds.map((collectionId) {
+                final collection = widget.allCollections.firstWhere(
+                  (c) => c.id == collectionId,
+                  orElse:
+                      () => Collection(
+                        id: collectionId,
+                        name: 'Unknown Collection',
+                        description: '',
+                        screenshotIds: [],
+                        lastModified: DateTime.now(),
+                        screenshotCount: 0,
+                        isAutoAddEnabled: false,
+                      ),
+                );
+
+                return Chip(
+                  label: Text(collection.name ?? 'Unnamed'),
+                  backgroundColor:
+                      Theme.of(context).colorScheme.secondaryContainer,
+                  labelStyle: TextStyle(
+                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                  ),
+                );
+              }),
+          ],
+        ),
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    String imageName = widget.screenshot.title ?? 'Screenshot';
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isLargeScreen = screenWidth >= 768; // Tablet and above
+
+    // Update imageName if file is not found
+    if (widget.screenshot.path != null) {
+      final file = File(widget.screenshot.path!);
+      if (!file.existsSync()) {
+        imageName = 'File Not Found';
+      }
+    } else if (widget.screenshot.bytes == null) {
       imageName = 'Invalid Image';
     }
 
@@ -686,253 +907,10 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
             ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            InkWell(
-              onTap: () {
-                AnalyticsService().logFeatureUsed('full_screen_image_viewer');
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder:
-                        (context) => FullScreenImageViewer(
-                          screenshot: widget.screenshot,
-                        ),
-                  ),
-                );
-              },
-              child: Container(
-                height: MediaQuery.of(context).size.height * 0.5,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                margin: const EdgeInsets.all(16),
-                clipBehavior: Clip.antiAlias,
-                child: imageWidget,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    imageName,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    // Format DateTime using intl package
-                    DateFormat(
-                      'MMM d, yyyy, hh:mm a',
-                    ).format(widget.screenshot.addedOn),
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  if (widget.screenshot.fileSize != null &&
-                      widget.screenshot.fileSize! > 0) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      'Size: ${_formatFileSize(widget.screenshot.fileSize!)}',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: _descriptionController,
-                    decoration: InputDecoration(
-                      hintText: 'Add a description...',
-                      filled: true,
-                      fillColor:
-                          Theme.of(context).colorScheme.secondaryContainer,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide.none,
-                      ),
-                    ),
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                    ),
-                    maxLines: 3,
-                    onChanged: (value) {
-                      widget.screenshot.description = value;
-                    },
-                    onEditingComplete: () {
-                      widget.screenshot.description =
-                          _descriptionController.text;
-                      _updateScreenshotDetails();
-                      FocusScope.of(context).unfocus();
-                    },
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Tags',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      ..._tags.map((tag) => _buildTag(tag)),
-                      _buildTag('+ Add Tag'),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'AI Details',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.outlineVariant,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'AI Analysis Status:',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color:
-                                      Theme.of(
-                                        context,
-                                      ).colorScheme.onSecondaryContainer,
-                                ),
-                              ),
-                              if (widget.screenshot.aiProcessed &&
-                                  widget.screenshot.aiMetadata != null) ...[
-                                Text(
-                                  'Model: ${widget.screenshot.aiMetadata!.modelName}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color:
-                                        Theme.of(
-                                          context,
-                                        ).colorScheme.onSecondaryContainer,
-                                  ),
-                                ),
-                                Text(
-                                  'Analyzed on: ${DateFormat('MMM d, yyyy HH:mm a').format(widget.screenshot.aiMetadata!.processingTime)}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color:
-                                        Theme.of(
-                                          context,
-                                        ).colorScheme.onSecondaryContainer,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        Icon(
-                          widget.screenshot.aiProcessed
-                              ? Icons.check_circle
-                              : Icons.hourglass_empty,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        if (widget.screenshot.aiProcessed)
-                          IconButton(
-                            icon: Icon(
-                              Icons.refresh,
-                              color: Theme.of(context).colorScheme.primary,
-                            ),
-                            tooltip: 'Clear AI analysis to re-process',
-                            onPressed: _clearAndRequestAiReprocessing,
-                          ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Collections',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 4,
-                    children: [
-                      if (widget.screenshot.collectionIds.isEmpty)
-                        Text(
-                          "This isn’t in any collection yet. Hit the + button to give it a cozy home 😺",
-                          style: TextStyle(
-                            color:
-                                Theme.of(context).colorScheme.onSurfaceVariant,
-                            fontStyle: FontStyle.italic,
-                          ),
-                        )
-                      else
-                        ...widget.screenshot.collectionIds.map((collectionId) {
-                          final collection = widget.allCollections.firstWhere(
-                            (c) => c.id == collectionId,
-                            orElse:
-                                () => Collection(
-                                  id: collectionId,
-                                  name: 'Unknown Collection',
-                                  description: '',
-                                  screenshotIds: [],
-                                  lastModified: DateTime.now(),
-                                  screenshotCount: 0,
-                                  isAutoAddEnabled: false,
-                                ),
-                          );
-
-                          return Chip(
-                            label: Text(collection.name ?? 'Unnamed'),
-                            backgroundColor:
-                                Theme.of(
-                                  context,
-                                ).colorScheme.secondaryContainer,
-                            labelStyle: TextStyle(
-                              color:
-                                  Theme.of(
-                                    context,
-                                  ).colorScheme.onSecondaryContainer,
-                            ),
-                          );
-                        }),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+      body:
+          isLargeScreen
+              ? _buildLargeScreenLayout(imageName)
+              : _buildMobileLayout(imageName),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddToCollectionDialog,
         backgroundColor: Theme.of(context).colorScheme.primary,
@@ -1040,6 +1018,90 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
             const SizedBox(width: 16),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Build layout for large screens (tablet/desktop) with side-by-side image and details
+  Widget _buildLargeScreenLayout(String imageName) {
+    return Row(
+      children: [
+        // Left side - Image (40% of screen width)
+        Expanded(
+          flex: 4,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            child: InkWell(
+              onTap: () {
+                AnalyticsService().logFeatureUsed('full_screen_image_viewer');
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder:
+                        (context) => FullScreenImageViewer(
+                          screenshot: widget.screenshot,
+                        ),
+                  ),
+                );
+              },
+              child: Container(
+                width: double.infinity,
+                height: double.infinity,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: _buildImageWidget(imageName),
+              ),
+            ),
+          ),
+        ),
+        // Right side - Details (60% of screen width)
+        Expanded(
+          flex: 6,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: _buildDetailsContent(imageName),
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// Build layout for mobile devices with stacked image and details
+  Widget _buildMobileLayout(String imageName) {
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () {
+              AnalyticsService().logFeatureUsed('full_screen_image_viewer');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) =>
+                          FullScreenImageViewer(screenshot: widget.screenshot),
+                ),
+              );
+            },
+            child: Container(
+              height: MediaQuery.of(context).size.height * 0.5,
+              width: double.infinity,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              margin: const EdgeInsets.all(16),
+              clipBehavior: Clip.antiAlias,
+              child: _buildImageWidget(imageName),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: _buildDetailsContent(imageName),
+          ),
+        ],
       ),
     );
   }

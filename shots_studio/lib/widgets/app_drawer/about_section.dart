@@ -116,8 +116,7 @@ class AboutSection extends StatelessWidget {
             AnalyticsService().logFeatureUsed('support_clicked');
 
             Navigator.pop(context);
-            // temporarily disabled sponsorship dialog until stripe is fixed
-            // _showSponsorshipDialog(context);
+            _showSponsorshipDialog(context);
             _launchURL(
               'https://Ansahmohammad.github.io/shots-studio/donation.html',
             );

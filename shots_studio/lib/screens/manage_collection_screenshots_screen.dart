@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
+import 'package:shots_studio/utils/responsive_utils.dart';
 
 class ManageCollectionScreenshotsScreen extends StatefulWidget {
   final List<Screenshot> availableScreenshots;
@@ -86,13 +87,11 @@ class _ManageCollectionScreenshotsScreenState
                         ),
                       )
                       : GridView.builder(
-                        gridDelegate:
-                            const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 3,
-                              childAspectRatio: 1,
-                              crossAxisSpacing: 12,
-                              mainAxisSpacing: 12,
-                            ),
+                        gridDelegate: ResponsiveUtils.getResponsiveGridDelegate(
+                          context,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
                         itemCount: widget.availableScreenshots.length,
                         cacheExtent: 1200,
                         itemBuilder: (context, index) {
