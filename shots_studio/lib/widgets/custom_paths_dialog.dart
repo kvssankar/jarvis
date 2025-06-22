@@ -5,7 +5,9 @@ import 'package:shots_studio/services/custom_path_service.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
 
 class CustomPathsDialog extends StatefulWidget {
-  const CustomPathsDialog({super.key});
+  final VoidCallback? onPathAdded;
+
+  const CustomPathsDialog({super.key, this.onPathAdded});
 
   @override
   State<CustomPathsDialog> createState() => _CustomPathsDialogState();
@@ -93,6 +95,9 @@ class _CustomPathsDialogState extends State<CustomPathsDialog> {
           context,
           'Custom path added successfully',
         );
+
+        // Notify parent that a path was added
+        widget.onPathAdded?.call();
       } else {
         SnackbarService().showWarning(
           context,
@@ -134,6 +139,9 @@ class _CustomPathsDialogState extends State<CustomPathsDialog> {
           context,
           'Custom path added successfully',
         );
+
+        // Notify parent that a path was added
+        widget.onPathAdded?.call();
       } else {
         SnackbarService().showWarning(
           context,
