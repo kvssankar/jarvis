@@ -1,7 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:io';
 import 'package:shots_studio/screens/screenshot_details_screen.dart';
 import 'package:shots_studio/screens/screenshot_swipe_detail_screen.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,9 +10,6 @@ import 'package:shots_studio/widgets/screenshots/screenshots_section.dart';
 import 'package:shots_studio/screens/app_drawer_screen.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
-import 'package:uuid/uuid.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:shots_studio/screens/search_screen.dart';
 import 'package:shots_studio/widgets/privacy_dialog.dart';
 import 'package:shots_studio/widgets/onboarding/api_key_guide_dialog.dart';
@@ -35,6 +31,9 @@ import 'package:shots_studio/widgets/server_message_dialog.dart';
 import 'package:shots_studio/utils/theme_utils.dart';
 import 'package:shots_studio/utils/theme_manager.dart';
 import 'package:sentry_flutter/sentry_flutter.dart';
+import 'package:shots_studio/services/image_loader_service.dart';
+import 'package:shots_studio/services/custom_path_service.dart';
+import 'package:shots_studio/widgets/custom_paths_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -175,8 +174,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final List<Screenshot> _screenshots = [];
   final List<Collection> _collections = [];
-  final ImagePicker _picker = ImagePicker();
-  final Uuid _uuid = const Uuid();
+  final ImageLoaderService _imageLoaderService = ImageLoaderService();
   bool _isLoading = false;
   bool _isProcessingAI = false;
   int _aiProcessedCount = 0;
@@ -226,7 +224,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _loadDataFromPrefs();
     _loadSettings();
     if (!kIsWeb) {
-      _loadAndroidScreenshots();
+      // Only load Android screenshots if we don't have any loaded from preferences
+      // This prevents unnecessary reloading when app restarts
+      _loadAndroidScreenshotsIfNeeded();
       _setupBackgroundServiceListeners();
       _setupFileWatcher();
     }
@@ -867,86 +867,43 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _takeScreenshot(ImageSource source) async {
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      final startTime = DateTime.now();
+      final result = await _imageLoaderService.loadFromImagePicker(
+        source: source,
+        existingScreenshots: _screenshots,
+      );
 
-      // Log feature usage
-      String sourceStr = source == ImageSource.camera ? 'camera' : 'gallery';
-      AnalyticsService().logFeatureUsed('image_picker_$sourceStr');
-
-      List<XFile>? images;
-
-      if (source == ImageSource.camera) {
-        // Take a photo with the camera
-        final XFile? image = await _picker.pickImage(source: source);
-        if (image != null) {
-          images = [image];
-        }
-      } else if (kIsWeb) {
-        images = await _picker.pickMultiImage();
-      } else {
-        images = await _picker.pickMultiImage();
-      }
-
-      if (images != null && images.isNotEmpty) {
+      if (result.success) {
         setState(() {
-          _isLoading = true;
-        });
-
-        List<Screenshot> newScreenshots = [];
-        for (var image in images) {
-          final bytes = await image.readAsBytes();
-          final String imageId = _uuid.v4();
-          final String imageName = image.name;
-
-          // Check if a screenshot with the same path (if available) or bytes already exists
-          // For web, path might be null, so rely on bytes if path is not distinctive
-          bool exists = false;
-          if (!kIsWeb && image.path.isNotEmpty) {
-            exists = _screenshots.any((s) => s.path == image.path);
-          } else {
-            // for web, check is removed since path is not available
-          }
-
-          if (exists) {
-            print(
-              'Skipping already loaded image: ${image.path.isNotEmpty ? image.path : imageName}',
-            );
-            continue;
-          }
-
-          newScreenshots.add(
-            Screenshot(
-              id: imageId,
-              path: kIsWeb ? null : image.path,
-              bytes: kIsWeb || !File(image.path).existsSync() ? bytes : null,
-              title: imageName,
-              tags: [],
-              aiProcessed: false,
-              addedOn: DateTime.now(),
-              fileSize: bytes.length,
-            ),
-          );
-        }
-
-        setState(() {
-          _screenshots.addAll(newScreenshots);
+          _screenshots.addAll(result.screenshots);
           _isLoading = false;
           _loadingProgress = 0;
           _totalToLoad = 0;
         });
+
         await _saveDataToPrefs();
 
-        // Log image loading analytics
-        final loadTime = DateTime.now().difference(startTime).inMilliseconds;
-        String sourceStr = source == ImageSource.camera ? 'camera' : 'gallery';
-        AnalyticsService().logImageLoadTime(loadTime, sourceStr);
+        // Log total screenshots analytics
         AnalyticsService().logTotalScreenshotsProcessed(_screenshots.length);
 
         // Auto-process the newly added screenshots
-        if (newScreenshots.isNotEmpty) {
+        if (result.screenshots.isNotEmpty) {
           _autoProcessWithGemini();
         }
+      } else {
+        setState(() {
+          _isLoading = false;
+          _loadingProgress = 0;
+          _totalToLoad = 0;
+        });
+
+        if (result.errorMessage != null) {
+          print('Error taking screenshot: ${result.errorMessage}');
+        }
       }
     } catch (e) {
       setState(() {
@@ -954,172 +911,67 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _loadingProgress = 0;
         _totalToLoad = 0;
       });
-
-      // Log error analytics
-      AnalyticsService().logNetworkError(e.toString(), 'image_picker');
-
-      print('Error picking images: $e');
+      print('Unexpected error taking screenshot: $e');
     }
   }
 
-  Future<void> _loadAndroidScreenshots() async {
+  Future<void> _loadAndroidScreenshots({bool forceReload = false}) async {
     if (kIsWeb) return;
 
-    // Check if screenshots are already loaded to avoid redundant loading on hot reload/restart
-    // This simple check might need refinement based on how often new screenshots are expected
-    // if (_screenshots.isNotEmpty && !_isLoading) { // Basic check
-    //   print("Android screenshots seem already loaded or loading is in progress.");
-    //   return;
-    // }
+    // Skip loading if we already have screenshots and it's not a forced reload
+    // This prevents unnecessary reloading when the app restarts
+    if (!forceReload && _screenshots.isNotEmpty) {
+      print("Screenshots already loaded, skipping Android screenshot loading");
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+      _loadingProgress = 0;
+      _totalToLoad = 0;
+    });
 
     try {
-      // Android API level specific permission handling
-      var status = await Permission.photos.request();
+      // Get custom paths from preferences
+      final customPaths = await CustomPathService.getCustomPaths();
 
-      // For Android 11 specifically, also check storage permission as a fallback
-      if (!status.isGranted && Platform.isAndroid) {
-        // Try legacy storage permission for Android 10/11 compatibility
-        var storageStatus = await Permission.storage.request();
-        if (storageStatus.isGranted) {
-          status = storageStatus;
-        }
-      }
-
-      if (!status.isGranted) {
-        String errorMessage =
-            'Photos permission denied. Cannot load screenshots.';
-        if (Platform.isAndroid) {
-          errorMessage +=
-              '\n\nFor Android 11 users: Please ensure both Photos and Files permissions are granted in your device settings.';
-        }
-        SnackbarService().showError(context, errorMessage);
-        return;
-      }
-
-      setState(() {
-        _isLoading = true;
-        _loadingProgress = 0;
-        _totalToLoad = 0;
-      });
-
-      // Get common Android screenshot directories
-      List<String> possibleScreenshotPaths = await _getScreenshotPaths();
-      List<FileSystemEntity> allFiles = [];
-      for (String dirPath in possibleScreenshotPaths) {
-        final directory = Directory(dirPath);
-        if (await directory.exists()) {
-          allFiles.addAll(
-            directory.listSync().whereType<File>().where(
-              (file) =>
-                  file.path.toLowerCase().endsWith('.png') ||
-                  file.path.toLowerCase().endsWith('.jpg') ||
-                  file.path.toLowerCase().endsWith('.jpeg'),
-            ),
-          );
-        }
-      }
-
-      allFiles.sort((a, b) {
-        return File(
-          b.path,
-        ).lastModifiedSync().compareTo(File(a.path).lastModifiedSync());
-      });
-
-      // Apply limit if enabled
-      final limitedFiles =
-          _isScreenshotLimitEnabled
-              ? allFiles.take(_screenshotLimit).toList()
-              : allFiles.toList();
-
-      setState(() {
-        _totalToLoad = limitedFiles.length;
-      });
-
-      List<Screenshot> loadedScreenshots = [];
-
-      // Process files in batches to avoid memory spikes
-      const int batchSize = 20;
-      for (int i = 0; i < limitedFiles.length; i += batchSize) {
-        final batch = limitedFiles.skip(i).take(batchSize);
-
-        for (var fileEntity in batch) {
-          final file = File(fileEntity.path);
-
-          // Skip if already exists by path
-          if (_screenshots.any((s) => s.path == file.path)) {
-            print('Skipping already loaded file via path check: ${file.path}');
-            setState(() {
-              _loadingProgress++;
-            });
-            continue;
-          }
-
-          // Check if the file path contains ".trashed" and skip if it does
-          if (file.path.contains('.trashed')) {
-            print('Skipping trashed file: ${file.path}');
-            setState(() {
-              _loadingProgress++;
-            });
-            continue;
-          }
-
-          final fileSize = await file.length();
-
-          // Skip very large files to prevent memory issues
-          if (fileSize > 50 * 1024 * 1024) {
-            // Skip files larger than 50MB
-            print('Skipping large file: ${file.path} ($fileSize bytes)');
-            setState(() {
-              _loadingProgress++;
-            });
-            continue;
-          }
-
-          loadedScreenshots.add(
-            Screenshot(
-              id: _uuid.v4(), // Generate new UUID for each
-              path: file.path,
-              title: file.path.split('/').last,
-              tags: [],
-              aiProcessed: false,
-              addedOn: await file.lastModified(),
-              fileSize: fileSize,
-            ),
-          );
-
+      final result = await _imageLoaderService.loadAndroidScreenshots(
+        existingScreenshots: _screenshots,
+        isLimitEnabled: _isScreenshotLimitEnabled,
+        screenshotLimit: _screenshotLimit,
+        customPaths: customPaths,
+        onProgress: (current, total) {
           setState(() {
-            _loadingProgress++;
+            _loadingProgress = current;
+            _totalToLoad = total;
           });
-        }
+        },
+      );
 
-        // Update UI periodically to show progress
-        if (i % batchSize == 0 && loadedScreenshots.isNotEmpty) {
-          setState(() {
-            _screenshots.insertAll(0, loadedScreenshots);
-          });
-          loadedScreenshots.clear();
-          // Small delay to prevent UI blocking
-          await Future.delayed(const Duration(milliseconds: 10));
-        }
-      }
-
-      // Add any remaining screenshots
-      if (loadedScreenshots.isNotEmpty) {
+      if (result.success) {
         setState(() {
-          _screenshots.insertAll(0, loadedScreenshots);
+          _screenshots.insertAll(0, result.screenshots);
+          _isLoading = false;
+          _loadingProgress = 0;
+          _totalToLoad = 0;
         });
-      }
 
-      setState(() {
-        _isLoading = false;
-        _loadingProgress = 0;
-        _totalToLoad = 0;
-      });
-      await _saveDataToPrefs();
+        await _saveDataToPrefs();
 
-      // Auto-process newly loaded screenshots
-      if (_screenshots.isNotEmpty) {
-        _autoProcessWithGemini();
+        // Auto-process newly loaded screenshots
+        if (result.screenshots.isNotEmpty) {
+          _autoProcessWithGemini();
+        }
+      } else {
+        setState(() {
+          _isLoading = false;
+          _loadingProgress = 0;
+          _totalToLoad = 0;
+        });
+
+        if (result.errorMessage != null) {
+          SnackbarService().showError(context, result.errorMessage!);
+        }
       }
     } catch (e) {
       setState(() {
@@ -1127,30 +979,26 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _loadingProgress = 0;
         _totalToLoad = 0;
       });
-      print('Error loading Android screenshots: $e');
+      print('Unexpected error loading Android screenshots: $e');
     }
   }
 
-  Future<List<String>> _getScreenshotPaths() async {
-    List<String> paths = [];
+  /// Load Android screenshots only if we don't already have screenshots loaded from preferences
+  Future<void> _loadAndroidScreenshotsIfNeeded() async {
+    // Wait a bit for _loadDataFromPrefs to complete
+    await Future.delayed(const Duration(milliseconds: 100));
 
-    try {
-      // Get external storage directory
-      final externalDir = await getExternalStorageDirectory();
-      if (externalDir != null) {
-        String baseDir = externalDir.path.split('/Android')[0];
-
-        // Common screenshot paths on different Android devices
-        paths.addAll([
-          '$baseDir/DCIM/Screenshots',
-          '$baseDir/Pictures/Screenshots',
-        ]);
-      }
-    } catch (e) {
-      print('Error getting screenshot paths: $e');
+    // Only load if we don't have screenshots already
+    if (_screenshots.isEmpty) {
+      print(
+        "No screenshots found in preferences, loading from Android device...",
+      );
+      await _loadAndroidScreenshots();
+    } else {
+      print(
+        "Screenshots already loaded from preferences (${_screenshots.length} screenshots)",
+      );
     }
-
-    return paths;
   }
 
   void _addCollection(Collection collection) {
@@ -1605,6 +1453,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
+  /// Show dialog for managing custom screenshot paths
+  void _showCustomPathsDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => const CustomPathsDialog(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1680,7 +1536,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           title: const Text('Load device screenshots'),
                           onTap: () {
                             Navigator.pop(context);
-                            _loadAndroidScreenshots();
+                            _loadAndroidScreenshots(forceReload: true);
+                          },
+                        ),
+                      if (!kIsWeb) // Custom paths management
+                        ListTile(
+                          leading: const Icon(Icons.create_new_folder),
+                          title: const Text('Manage custom paths'),
+                          onTap: () {
+                            Navigator.pop(context);
+                            _showCustomPathsDialog();
                           },
                         ),
                     ],

@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
+import 'package:shots_studio/services/custom_path_service.dart';
 import 'package:uuid/uuid.dart';
 
 class FileWatcherService {
@@ -160,6 +161,10 @@ class FileWatcherService {
         final documentsDir = await getApplicationDocumentsDirectory();
         paths.add('${documentsDir.path}/Screenshots');
       }
+
+      // Add custom paths
+      final customPaths = await CustomPathService.getCustomPaths();
+      paths.addAll(customPaths);
     } catch (e) {
       print('FileWatcher: Error getting screenshot paths: $e');
     }
