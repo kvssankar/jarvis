@@ -340,7 +340,7 @@
                     <div class="step">
                         <div class="step-number">2</div>
                         <h3>Download App</h3>
-                        <p>Download the latest APK from our releases page</p>
+                        <p>Download the latest APK from our releases page or get it from F-Droid</p>
                     </div>
                     <div class="step">
                         <div class="step-number">3</div>
@@ -349,10 +349,10 @@
                     </div>
                 </div>
                 <div class="download-buttons">
-                    <a href="https://github.com/AnsahMohammad/shots-studio/releases" class="btn btn-primary btn-large">
+                    <button id="downloadBtn" class="btn btn-primary btn-large">
                         <i class="fab fa-android"></i>
                         Download for Android
-                    </a>
+                    </button>
                     <a href="https://github.com/AnsahMohammad/shots-studio" class="btn btn-secondary btn-large">
                         <i class="fab fa-github"></i>
                         View on GitHub
@@ -361,6 +361,60 @@
             </div>
         </div>
     </section>
+
+    <!-- Download Modal -->
+    <div id="downloadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Choose Download Source</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="download-option-card">
+                    <div class="option-icon primary">
+                        <i class="fab fa-github"></i>
+                    </div>
+                    <div class="option-content">
+                        <h4>GitHub Releases</h4>
+                        <p class="option-subtitle">Official • Latest • Direct</p>
+                        <p>Get the newest version immediately from our official repository. Perfect for early access to features and fastest updates.</p>
+                        <ul class="option-features">
+                            <li>✓ Latest version available</li>
+                            <li>✓ Direct from developers</li>
+                            <li>✓ Instant updates</li>
+                        </ul>
+                    </div>
+                    <a href="https://github.com/AnsahMohammad/shots-studio/releases" class="btn btn-primary">
+                        <i class="fab fa-github"></i>
+                        Download from GitHub
+                    </a>
+                </div>
+                
+                <div class="option-divider">
+                    <span>OR</span>
+                </div>
+                
+                <div class="download-option-card">
+                    <div class="option-icon secondary">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div class="option-content">
+                        <h4>F-Droid</h4>
+                        <p class="option-subtitle">Open Source • Privacy Focused</p>
+                        <p>Download from F-Droid, the trusted open source app repository. All apps are verified and built from source code.</p>
+                        <ul class="option-features">
+                            <li>✓ Verified open source</li>
+                            <li>✓ Privacy focused</li>
+                            <li>✓ Built from source</li>
+                        </ul>
+                    </div>
+                    <a href="https://f-droid.org/en/packages/com.ansah.shots_studio/" class="btn btn-fdroid">
+                        <img src="https://f-droid.org/badge/get-it-on.png" alt="Get it on F-Droid" class="fdroid-badge">
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Contact Section -->
     <section id="contact" class="contact">
@@ -389,14 +443,10 @@
                     </div>
                 </div>
                 <div class="contact-form">
-                    <form class="form">
+                    <form class="form" id="contactForm">
                         <div class="form-group">
                             <input type="text" id="name" name="name" required>
                             <label for="name">Your Name</label>
-                        </div>
-                        <div class="form-group">
-                            <input type="email" id="email" name="email" required>
-                            <label for="email">Email Address</label>
                         </div>
                         <div class="form-group">
                             <input type="text" id="subject" name="subject" required>

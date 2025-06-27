@@ -1,6 +1,16 @@
-# Shots Studio
+[![Platform](https://shields.io/badge/platform-android-green.svg)](https://github.com/AnsahMohammad/shots-studio)
+[![License](https://img.shields.io/badge/license-GPL3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0.en.html)
+[![Latest Release](https://img.shields.io/github/v/release/AnsahMohammad/shots-studio?label=release)](https://github.com/AnsahMohammad/shots-studio/releases/latest)
+[![Chat](https://img.shields.io/badge/Discussions-Join-blue?logo=github)](https://github.com/AnsahMohammad/shots-studio/discussions)
+[![Downloads](https://img.shields.io/github/downloads/AnsahMohammad/shots-studio/total)](https://github.com/AnsahMohammad/shots-studio/releases)
 
-**AI-powered screenshot management. Searchable. Organized. Decluttered.**
+<div align="center">
+  <img src="https://raw.githubusercontent.com/AnsahMohammad/shots-studio/master/shots_studio/assets/icon/icon.png" width="20%" height="20%" />
+
+# Shots Studio
+A Screenshot manager to declutter your gallery
+</div>
+
 
 Shots Studio turns your chaotic screenshot gallery into an intelligent, organized archive. Backed by powerful AI, it makes your screenshots searchable, taggable, and easy to browse — all while giving you control.
 
@@ -16,6 +26,22 @@ With Shots Studio, you can:
 * **Search** your screenshots by content — not just filename.
 * Add or generate **tags** automatically using AI.
 * Group related screenshots into custom **collections**.
+
+---
+
+## Download
+
+<div align="center">
+
+[<img src="https://f-droid.org/badge/get-it-on.png"
+    alt="Get it on F-Droid" height="80">](https://f-droid.org/en/packages/com.ansah.shots_studio/)
+
+
+**Or**
+
+[![GitHub Release](https://img.shields.io/badge/GitHub-Releases-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/AnsahMohammad/shots-studio/releases/latest)
+
+</div>
 
 ---
 

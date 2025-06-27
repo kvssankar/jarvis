@@ -5,6 +5,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const navLinks = document.querySelectorAll('.nav-link');
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
     
+    // Download Modal Elements
+    const downloadBtn = document.getElementById('downloadBtn');
+    const downloadModal = document.getElementById('downloadModal');
+    const closeModal = document.querySelector('.close');
+    
     // PostHog Analytics Helper Functions
     function trackEvent(eventName, properties = {}) {
         if (typeof posthog !== 'undefined') {
@@ -22,6 +27,67 @@ document.addEventListener('DOMContentLoaded', function() {
                 page: currentPage,
                 page_title: document.title,
                 url: window.location.href
+            });
+        }
+    }
+
+    // Download Modal Functions
+    function openDownloadModal() {
+        downloadModal.classList.add('show');
+        document.body.style.overflow = 'hidden';
+        trackEvent('download_modal_opened');
+    }
+
+    function closeDownloadModal() {
+        downloadModal.classList.remove('show');
+        document.body.style.overflow = 'auto';
+        trackEvent('download_modal_closed');
+    }
+
+    // Download Modal Event Listeners
+    if (downloadBtn && downloadModal) {
+        downloadBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            openDownloadModal();
+        });
+
+        closeModal.addEventListener('click', closeDownloadModal);
+
+        // Close modal when clicking outside
+        downloadModal.addEventListener('click', function(e) {
+            if (e.target === downloadModal) {
+                closeDownloadModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && downloadModal.classList.contains('show')) {
+                closeDownloadModal();
+            }
+        });
+
+        // Track download source clicks
+        const githubDownloadBtn = downloadModal.querySelector('a[href*="github.com"]');
+        const fdroidDownloadBtn = downloadModal.querySelector('a[href*="f-droid.org"]');
+
+        if (githubDownloadBtn) {
+            githubDownloadBtn.addEventListener('click', function() {
+                trackEvent('download_click', {
+                    source: 'github',
+                    link: this.href
+                });
+                closeDownloadModal();
+            });
+        }
+
+        if (fdroidDownloadBtn) {
+            fdroidDownloadBtn.addEventListener('click', function() {
+                trackEvent('download_click', {
+                    source: 'fdroid',
+                    link: this.href
+                });
+                closeDownloadModal();
             });
         }
     }
@@ -206,31 +272,44 @@ document.addEventListener('DOMContentLoaded', function() {
         sectionObserver.observe(section);
     });
 
-    // Form handling
-    const contactForm = document.querySelector('.form');
+    // Contact Form Handler
+    const contactForm = document.getElementById('contactForm');
     if (contactForm) {
         contactForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
-            // Get form data
-            const formData = new FormData(this);
-            const data = {};
-            formData.forEach((value, key) => {
-                data[key] = value;
-            });
-
+            const name = document.getElementById('name').value;
+            const subject = document.getElementById('subject').value;
+            const message = document.getElementById('message').value;
+            
+            // Create mailto link with form data
+            const mailtoLink = `mailto:mohdansah10@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
+                `Hi there,\n\nName: ${name}\n\nMessage:\n${message}\n\nBest regards,\n${name}`
+            )}`;
+            
+            // Open email client
+            window.location.href = mailtoLink;
+            
             // Track form submission
             trackEvent('contact_form_submitted', {
-                form_fields: Object.keys(data),
-                subject: data.subject || 'No subject',
-                message_length: data.message ? data.message.length : 0
+                has_name: !!name,
+                has_subject: !!subject,
+                has_message: !!message
             });
-
-            // Show success message (you can integrate with a real form handler)
-            showNotification('Thank you for your message! We\'ll get back to you soon.', 'success');
             
             // Reset form
-            this.reset();
+            contactForm.reset();
+            
+            // Show success message
+            const submitBtn = contactForm.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-check"></i> Email Client Opened!';
+            submitBtn.style.background = 'var(--accent-color)';
+            
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.style.background = '';
+            }, 3000);
         });
     }
 
