@@ -33,13 +33,11 @@ With Shots Studio, you can:
 
 <div align="center">
 
+[<img src="docs/assets/get-it-on-github.png"
+    alt="Get it on F-Droid" height="80">](https://github.com/AnsahMohammad/shots-studio/releases/latest)
+
 [<img src="https://f-droid.org/badge/get-it-on.png"
     alt="Get it on F-Droid" height="80">](https://f-droid.org/en/packages/com.ansah.shots_studio/)
-
-
-**Or**
-
-[![GitHub Release](https://img.shields.io/badge/GitHub-Releases-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/AnsahMohammad/shots-studio/releases/latest)
 
 </div>
 
