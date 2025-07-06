@@ -21,6 +21,8 @@ class AppDrawer extends StatefulWidget {
   final Function(bool)? onAutoProcessEnabledChanged;
   final bool? currentAnalyticsEnabled;
   final Function(bool)? onAnalyticsEnabledChanged;
+  final bool? currentBetaTestingEnabled;
+  final Function(bool)? onBetaTestingEnabledChanged;
   final bool? currentAmoledModeEnabled;
   final Function(bool)? onAmoledModeChanged;
   final String? currentSelectedTheme;
@@ -46,6 +48,8 @@ class AppDrawer extends StatefulWidget {
     this.onAutoProcessEnabledChanged,
     this.currentAnalyticsEnabled,
     this.onAnalyticsEnabledChanged,
+    this.currentBetaTestingEnabled,
+    this.onBetaTestingEnabledChanged,
     this.currentAmoledModeEnabled,
     this.onAmoledModeChanged,
     this.currentSelectedTheme,
@@ -158,6 +162,8 @@ class _AppDrawerState extends State<AppDrawer> {
                 onDevModeChanged: widget.onDevModeChanged,
                 currentAnalyticsEnabled: widget.currentAnalyticsEnabled,
                 onAnalyticsEnabledChanged: widget.onAnalyticsEnabledChanged,
+                currentBetaTestingEnabled: widget.currentBetaTestingEnabled,
+                onBetaTestingEnabledChanged: widget.onBetaTestingEnabledChanged,
                 onResetAiProcessing: widget.onResetAiProcessing,
               ),
               const PerformanceSection(),

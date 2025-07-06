@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UpdateCheckerService {
   static const String githubApiUrl = 'https://api.github.com/repos';
@@ -15,14 +16,37 @@ class UpdateCheckerService {
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
 
-      // Fetch latest release from GitHub
+      // Check if beta testing is enabled
+      final prefs = await SharedPreferences.getInstance();
+      final bool betaTestingEnabled =
+          prefs.getBool('beta_testing_enabled') ?? false;
+
+      // Fetch latest release from GitHub (always get the very latest)
       final latestRelease = await _getLatestRelease();
       if (latestRelease == null) {
         return null;
       }
 
+      final String tagName = latestRelease['tag_name'] ?? '';
+
+      // Determine if it's a pre-release based on tag name
+      final bool isPreRelease =
+          tagName.startsWith('a') || tagName.startsWith('b');
+      final bool isStableRelease = tagName.startsWith('v');
+
+      // Only show update if:
+      // - It's a stable release (all users see it), OR
+      // - It's a pre-release AND user has beta testing enabled
+      if (!isStableRelease && !isPreRelease) {
+        return null; // Invalid tag format
+      }
+
+      if (isPreRelease && !betaTestingEnabled) {
+        return null; // Pre-release but user doesn't want beta updates
+      }
+
       // Compare versions
-      final latestVersion = _extractVersionFromTag(latestRelease['tag_name']);
+      final latestVersion = _extractVersionFromTag(tagName);
       if (latestVersion == null) {
         return null;
       }
@@ -33,10 +57,11 @@ class UpdateCheckerService {
           latestVersion: latestVersion,
           releaseUrl: latestRelease['html_url'],
           releaseNotes: latestRelease['body'] ?? '',
-          tagName: latestRelease['tag_name'],
+          tagName: tagName,
           publishedAt: latestRelease['published_at'],
+          isPreRelease: isPreRelease,
         );
-      } else {}
+      }
 
       return null;
     } catch (e) {
@@ -58,7 +83,14 @@ class UpdateCheckerService {
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
-        return json.decode(response.body);
+        final List<dynamic> releases =
+            json.decode(response.body) as List<dynamic>;
+
+        if (releases.isNotEmpty) {
+          return releases.first as Map<String, dynamic>;
+        }
+
+        return null;
       } else {
         print('GitHub API error: ${response.statusCode}');
         return null;
@@ -69,12 +101,25 @@ class UpdateCheckerService {
     }
   }
 
-  /// Extracts version number from GitHub tag (e.g., "v1.8.52" -> "1.8.52")
+  /// Extracts version number from GitHub tag (e.g., "v1.8.52" -> "1.8.52", "a1.8.52" -> "1.8.52")
   static String? _extractVersionFromTag(String tagName) {
-    if (tagName.startsWith('v')) {
+    if (tagName.startsWith('v') ||
+        tagName.startsWith('a') ||
+        tagName.startsWith('b')) {
       return tagName.substring(1);
     }
     return tagName;
+  }
+
+  /// Compares two version strings to determine if the new version is newer
+  /// Supports semantic versioning format (major.minor.patch)
+  static bool isNewerVersion(String current, String latest) {
+    return _isNewerVersion(current, latest);
+  }
+
+  /// Extracts version number from GitHub tag (e.g., "v1.8.52" -> "1.8.52", "a1.8.52" -> "1.8.52")
+  static String? extractVersionFromTag(String tagName) {
+    return _extractVersionFromTag(tagName);
   }
 
   /// Compares two version strings to determine if the new version is newer
@@ -117,6 +162,7 @@ class UpdateInfo {
   final String releaseNotes;
   final String tagName;
   final String publishedAt;
+  final bool isPreRelease;
 
   UpdateInfo({
     required this.currentVersion,
@@ -125,10 +171,11 @@ class UpdateInfo {
     required this.releaseNotes,
     required this.tagName,
     required this.publishedAt,
+    required this.isPreRelease,
   });
 
   @override
   String toString() {
-    return 'UpdateInfo(current: $currentVersion, latest: $latestVersion)';
+    return 'UpdateInfo(current: $currentVersion, latest: $latestVersion, preRelease: $isPreRelease)';
   }
 }

@@ -16,6 +16,8 @@ class AdvancedSettingsSection extends StatefulWidget {
   final Function(bool)? onAnalyticsEnabledChanged;
   final bool? currentServerMessagesEnabled;
   final Function(bool)? onServerMessagesEnabledChanged;
+  final bool? currentBetaTestingEnabled;
+  final Function(bool)? onBetaTestingEnabledChanged;
   final VoidCallback? onResetAiProcessing;
 
   const AdvancedSettingsSection({
@@ -32,6 +34,8 @@ class AdvancedSettingsSection extends StatefulWidget {
     this.onAnalyticsEnabledChanged,
     this.currentServerMessagesEnabled,
     this.onServerMessagesEnabledChanged,
+    this.currentBetaTestingEnabled,
+    this.onBetaTestingEnabledChanged,
     this.onResetAiProcessing,
   });
 
@@ -48,12 +52,14 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
   bool _analyticsEnabled =
       !kDebugMode; // Default to false in debug mode, true in production
   bool _serverMessagesEnabled = true;
+  bool _betaTestingEnabled = false;
 
   static const String _limitPrefKey = 'limit';
   static const String _maxParallelPrefKey = 'maxParallel';
   static const String _limitEnabledPrefKey = 'limit_enabled';
   static const String _devModePrefKey = 'dev_mode';
   static const String _serverMessagesPrefKey = 'server_messages_enabled';
+  static const String _betaTestingPrefKey = 'beta_testing_enabled';
 
   @override
   void initState() {
@@ -91,6 +97,13 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
     } else {
       _loadServerMessagesEnabledPref();
     }
+
+    // Initialize beta testing state
+    if (widget.currentBetaTestingEnabled != null) {
+      _betaTestingEnabled = widget.currentBetaTestingEnabled!;
+    } else {
+      _loadBetaTestingEnabledPref();
+    }
   }
 
   Future<void> _loadLimitEnabledPref() async {
@@ -121,6 +134,13 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
     });
   }
 
+  Future<void> _loadBetaTestingEnabledPref() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _betaTestingEnabled = prefs.getBool(_betaTestingPrefKey) ?? false;
+    });
+  }
+
   @override
   void didUpdateWidget(covariant AdvancedSettingsSection oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -148,6 +168,11 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
             oldWidget.currentServerMessagesEnabled &&
         widget.currentServerMessagesEnabled != null) {
       _serverMessagesEnabled = widget.currentServerMessagesEnabled!;
+    }
+    if (widget.currentBetaTestingEnabled !=
+            oldWidget.currentBetaTestingEnabled &&
+        widget.currentBetaTestingEnabled != null) {
+      _betaTestingEnabled = widget.currentBetaTestingEnabled!;
     }
   }
 
@@ -183,6 +208,11 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
   Future<void> _saveServerMessagesEnabled(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_serverMessagesPrefKey, value);
+  }
+
+  Future<void> _saveBetaTestingEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_betaTestingPrefKey, value);
   }
 
   @override
@@ -367,6 +397,33 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
             _saveServerMessagesEnabled(value);
             if (widget.onServerMessagesEnabledChanged != null) {
               widget.onServerMessagesEnabledChanged!(value);
+            }
+          },
+        ),
+        SwitchListTile(
+          secondary: Icon(
+            Icons.science_outlined,
+            color: theme.colorScheme.primary,
+          ),
+          title: Text(
+            'Beta Testing',
+            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+          ),
+          subtitle: Text(
+            _betaTestingEnabled
+                ? 'Receive pre-release updates'
+                : 'Only receive stable updates',
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          value: _betaTestingEnabled,
+          activeColor: theme.colorScheme.primary,
+          onChanged: (bool value) {
+            setState(() {
+              _betaTestingEnabled = value;
+            });
+            _saveBetaTestingEnabled(value);
+            if (widget.onBetaTestingEnabledChanged != null) {
+              widget.onBetaTestingEnabledChanged!(value);
             }
           },
         ),

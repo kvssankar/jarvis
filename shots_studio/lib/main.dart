@@ -200,6 +200,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _analyticsEnabled =
       !kDebugMode; // Default to false in debug mode, true in production
   bool _amoledModeEnabled = false;
+  bool _betaTestingEnabled = false;
   String _selectedTheme = 'Dynamic Theme';
 
   // update screenshots
@@ -511,6 +512,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _analyticsEnabled =
           prefs.getBool('analytics_consent_enabled') ?? !kDebugMode;
       _amoledModeEnabled = prefs.getBool('amoled_mode_enabled') ?? false;
+      _betaTestingEnabled = prefs.getBool('beta_testing_enabled') ?? false;
       _selectedTheme = prefs.getString('selected_theme') ?? 'Dynamic Theme';
     });
   }
@@ -575,6 +577,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
     // Analytics consent is handled by the AnalyticsService directly
     // The service saves the preference and manages the consent state
+  }
+
+  void _updateBetaTestingEnabled(bool enabled) {
+    setState(() {
+      _betaTestingEnabled = enabled;
+    });
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setBool('beta_testing_enabled', enabled);
+    });
   }
 
   void _updateAmoledModeEnabled(bool enabled) {
@@ -1555,6 +1566,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onAutoProcessEnabledChanged: _updateAutoProcessEnabled,
         currentAnalyticsEnabled: _analyticsEnabled,
         onAnalyticsEnabledChanged: _updateAnalyticsEnabled,
+        currentBetaTestingEnabled: _betaTestingEnabled,
+        onBetaTestingEnabledChanged: _updateBetaTestingEnabled,
         currentAmoledModeEnabled: _amoledModeEnabled,
         onAmoledModeChanged: _updateAmoledModeEnabled,
         currentSelectedTheme: _selectedTheme,

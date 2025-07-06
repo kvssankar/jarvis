@@ -99,19 +99,43 @@ class UpdateDialog extends StatelessWidget {
                 'Latest Version:',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  updateInfo.latestVersion,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    fontWeight: FontWeight.w500,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color:
+                          updateInfo.isPreRelease
+                              ? Theme.of(context).colorScheme.secondary
+                              : Theme.of(context).colorScheme.primary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      updateInfo.latestVersion,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color:
+                            updateInfo.isPreRelease
+                                ? Theme.of(context).colorScheme.onSecondary
+                                : Theme.of(context).colorScheme.onPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
-                ),
+                  if (updateInfo.isPreRelease) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Pre-release',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.secondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),
