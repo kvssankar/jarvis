@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 
 class ApiKeyGuideDialog extends StatefulWidget {
   final VoidCallback onSetupLater;
@@ -22,7 +23,17 @@ class _ApiKeyGuideDialogState extends State<ApiKeyGuideDialog> {
   bool _isValidating = false;
   bool _showApiKeyField = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // Track API key guide dialog shown
+    AnalyticsService().logFeatureUsed('api_key_guide_dialog_shown');
+  }
+
   Future<void> _launchURL(String urlString) async {
+    // Track URL clicks from API key guide
+    AnalyticsService().logFeatureUsed('api_key_guide_url_clicked');
+
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       if (mounted) {
@@ -37,6 +48,9 @@ class _ApiKeyGuideDialogState extends State<ApiKeyGuideDialog> {
       SnackbarService().showWarning(context, 'Please enter your API key');
       return;
     }
+
+    // Track API key setup attempt
+    AnalyticsService().logFeatureUsed('api_key_setup_attempted');
 
     setState(() {
       _isValidating = true;
@@ -55,6 +69,10 @@ class _ApiKeyGuideDialogState extends State<ApiKeyGuideDialog> {
     }
 
     Navigator.of(context).pop();
+
+    // Track successful API key setup
+    AnalyticsService().logFeatureUsed('api_key_setup_completed');
+
     widget.onApiKeyEntered(apiKey);
   }
 
@@ -266,6 +284,9 @@ class _ApiKeyGuideDialogState extends State<ApiKeyGuideDialog> {
             style: TextStyle(color: theme.colorScheme.secondary),
           ),
           onPressed: () {
+            // Track skip action
+            AnalyticsService().logFeatureUsed('api_key_guide_skipped');
+
             Navigator.of(context).pop();
             widget.onSetupLater();
           },
@@ -275,6 +296,11 @@ class _ApiKeyGuideDialogState extends State<ApiKeyGuideDialog> {
             icon: const Icon(Icons.add),
             label: const Text('Add API key'),
             onPressed: () {
+              // Track show API key field action
+              AnalyticsService().logFeatureUsed(
+                'api_key_guide_add_key_clicked',
+              );
+
               setState(() {
                 _showApiKeyField = true;
               });

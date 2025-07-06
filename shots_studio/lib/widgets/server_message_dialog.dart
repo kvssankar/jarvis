@@ -52,6 +52,9 @@ class ServerMessageDialog extends StatelessWidget {
             AnalyticsService().logFeatureUsed(
               'message_${messageInfo.id}_dismissed',
             );
+            AnalyticsService().logFeatureUsed(
+              'settings_server_message_dismissed',
+            );
             Navigator.of(context).pop();
           },
           child: const Text('Dismiss'),
@@ -63,6 +66,9 @@ class ServerMessageDialog extends StatelessWidget {
               AnalyticsService().logFeatureUsed('server_message_action_taken');
               AnalyticsService().logFeatureUsed(
                 'message_${messageInfo.id}_action',
+              );
+              AnalyticsService().logFeatureUsed(
+                'settings_server_message_followed',
               );
               Navigator.of(context).pop();
 

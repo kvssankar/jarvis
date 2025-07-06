@@ -8,6 +8,7 @@ class ThemeManager {
 
   static const Map<String, Color> themeColors = {
     'Dynamic Theme': Colors.amber, // Uses dynamic colors from system wallpaper
+    'Amber': Colors.amber,
     'Ocean Blue': Colors.blue,
     'Forest Green': Colors.green,
     'Sunset Orange': Colors.orange,

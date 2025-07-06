@@ -49,8 +49,10 @@ class UpdateDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () {
-            // Log analytics for update dismissal
-            AnalyticsService().logFeatureUsed('update_dismissed');
+            // Log analytics for update dismissal also include current version
+            AnalyticsService().logFeatureUsed(
+              'update_dialog_later_clicked_${updateInfo.currentVersion}',
+            );
             Navigator.of(context).pop();
           },
           child: const Text('Later'),
@@ -58,7 +60,9 @@ class UpdateDialog extends StatelessWidget {
         FilledButton(
           onPressed: () {
             // Log analytics for update button clicks
-            AnalyticsService().logFeatureUsed('update_initiated');
+            AnalyticsService().logFeatureUsed(
+              'update_dialog_update_clicked_${updateInfo.currentVersion}',
+            );
             _openUpdatePage(context);
           },
           child: const Text('Update'),
@@ -99,19 +103,43 @@ class UpdateDialog extends StatelessWidget {
                 'Latest Version:',
                 style: Theme.of(context).textTheme.bodyMedium,
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  updateInfo.latestVersion,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.onPrimary,
-                    fontWeight: FontWeight.w500,
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color:
+                          updateInfo.isPreRelease
+                              ? Theme.of(context).colorScheme.secondary
+                              : Theme.of(context).colorScheme.primary,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      updateInfo.latestVersion,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color:
+                            updateInfo.isPreRelease
+                                ? Theme.of(context).colorScheme.onSecondary
+                                : Theme.of(context).colorScheme.onPrimary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                   ),
-                ),
+                  if (updateInfo.isPreRelease) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      'Pre-release',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.secondary,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
           ),

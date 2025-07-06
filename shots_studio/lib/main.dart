@@ -11,7 +11,7 @@ import 'package:shots_studio/screens/app_drawer_screen.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/screens/search_screen.dart';
-import 'package:shots_studio/widgets/privacy_dialog.dart';
+import 'package:shots_studio/screens/privacy_screen.dart';
 import 'package:shots_studio/widgets/onboarding/api_key_guide_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -200,6 +200,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _analyticsEnabled =
       !kDebugMode; // Default to false in debug mode, true in production
   bool _amoledModeEnabled = false;
+  bool _betaTestingEnabled = false;
   String _selectedTheme = 'Dynamic Theme';
 
   // update screenshots
@@ -233,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Show privacy dialog after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // Show privacy dialog and only proceed to API key guide if accepted
-      bool privacyAccepted = await showPrivacyDialogIfNeeded(context);
+      bool privacyAccepted = await showPrivacyScreenIfNeeded(context);
       if (privacyAccepted && context.mounted) {
         // Log install info when onboarding is completed
         AnalyticsService().logInstallInfo();
@@ -511,6 +512,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _analyticsEnabled =
           prefs.getBool('analytics_consent_enabled') ?? !kDebugMode;
       _amoledModeEnabled = prefs.getBool('amoled_mode_enabled') ?? false;
+      _betaTestingEnabled = prefs.getBool('beta_testing_enabled') ?? false;
       _selectedTheme = prefs.getString('selected_theme') ?? 'Dynamic Theme';
     });
   }
@@ -575,6 +577,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
     // Analytics consent is handled by the AnalyticsService directly
     // The service saves the preference and manages the consent state
+  }
+
+  void _updateBetaTestingEnabled(bool enabled) {
+    setState(() {
+      _betaTestingEnabled = enabled;
+    });
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setBool('beta_testing_enabled', enabled);
+    });
   }
 
   void _updateAmoledModeEnabled(bool enabled) {
@@ -1555,6 +1566,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onAutoProcessEnabledChanged: _updateAutoProcessEnabled,
         currentAnalyticsEnabled: _analyticsEnabled,
         onAnalyticsEnabledChanged: _updateAnalyticsEnabled,
+        currentBetaTestingEnabled: _betaTestingEnabled,
+        onBetaTestingEnabledChanged: _updateBetaTestingEnabled,
         currentAmoledModeEnabled: _amoledModeEnabled,
         onAmoledModeChanged: _updateAmoledModeEnabled,
         currentSelectedTheme: _selectedTheme,
@@ -1564,6 +1577,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
+          // Track FAB pressed
+          AnalyticsService().logFeatureUsed('fab_pressed');
+
           // Show options for selecting screenshots
           showModalBottomSheet(
             context: context,
@@ -1581,6 +1597,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         leading: const Icon(Icons.photo_library),
                         title: const Text('Select from gallery'),
                         onTap: () {
+                          // Track gallery selection
+                          AnalyticsService().logFeatureUsed(
+                            'fab_gallery_selected',
+                          );
+
                           Navigator.pop(context);
                           _takeScreenshot(ImageSource.gallery);
                         },
@@ -1590,6 +1611,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           leading: const Icon(Icons.camera_alt),
                           title: const Text('Take a photo'),
                           onTap: () {
+                            // Track camera selection
+                            AnalyticsService().logFeatureUsed(
+                              'fab_camera_selected',
+                            );
+
                             Navigator.pop(context);
                             _takeScreenshot(ImageSource.camera);
                           },
@@ -1599,6 +1625,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           leading: const Icon(Icons.folder_open),
                           title: const Text('Load device screenshots'),
                           onTap: () {
+                            // Track load device screenshots
+                            AnalyticsService().logFeatureUsed(
+                              'fab_load_device_screenshots',
+                            );
+
                             Navigator.pop(context);
                             _loadAndroidScreenshots(forceReload: true).then((
                               _,
@@ -1620,6 +1651,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           leading: const Icon(Icons.create_new_folder),
                           title: const Text('Manage custom paths'),
                           onTap: () {
+                            // Track custom paths management
+                            AnalyticsService().logFeatureUsed(
+                              'fab_manage_custom_paths',
+                            );
+
                             Navigator.pop(context);
                             _showCustomPathsDialog();
                           },

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
 import 'package:shots_studio/utils/responsive_utils.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 
 class ManageCollectionScreenshotsScreen extends StatefulWidget {
   final List<Screenshot> availableScreenshots;
@@ -26,19 +27,34 @@ class _ManageCollectionScreenshotsScreenState
   void initState() {
     super.initState();
     _selectedScreenshotIds = Set.from(widget.initialSelectedIds);
+
+    // Track screen access
+    AnalyticsService().logScreenView('manage_collection_screenshots_screen');
   }
 
   void _toggleScreenshotSelection(String screenshotId) {
     setState(() {
       if (_selectedScreenshotIds.contains(screenshotId)) {
         _selectedScreenshotIds.remove(screenshotId);
+        // Track deselection
+        AnalyticsService().logFeatureUsed(
+          'screenshot_deselected_from_collection',
+        );
       } else {
         _selectedScreenshotIds.add(screenshotId);
+        // Track selection
+        AnalyticsService().logFeatureUsed('screenshot_selected_for_collection');
       }
     });
   }
 
   void _save() {
+    // Track save action
+    AnalyticsService().logFeatureUsed('collection_screenshots_saved');
+    AnalyticsService().logFeatureUsed(
+      'collection_screenshots_count_${_selectedScreenshotIds.length}',
+    );
+
     Navigator.of(context).pop(_selectedScreenshotIds.toList());
   }
 

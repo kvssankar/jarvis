@@ -16,6 +16,8 @@ class AdvancedSettingsSection extends StatefulWidget {
   final Function(bool)? onAnalyticsEnabledChanged;
   final bool? currentServerMessagesEnabled;
   final Function(bool)? onServerMessagesEnabledChanged;
+  final bool? currentBetaTestingEnabled;
+  final Function(bool)? onBetaTestingEnabledChanged;
   final VoidCallback? onResetAiProcessing;
 
   const AdvancedSettingsSection({
@@ -32,6 +34,8 @@ class AdvancedSettingsSection extends StatefulWidget {
     this.onAnalyticsEnabledChanged,
     this.currentServerMessagesEnabled,
     this.onServerMessagesEnabledChanged,
+    this.currentBetaTestingEnabled,
+    this.onBetaTestingEnabledChanged,
     this.onResetAiProcessing,
   });
 
@@ -44,16 +48,16 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
   late TextEditingController _limitController;
   late TextEditingController _maxParallelController;
   bool _isLimitEnabled = true;
-  bool _devMode = false;
   bool _analyticsEnabled =
       !kDebugMode; // Default to false in debug mode, true in production
   bool _serverMessagesEnabled = true;
+  bool _betaTestingEnabled = false;
 
   static const String _limitPrefKey = 'limit';
   static const String _maxParallelPrefKey = 'maxParallel';
   static const String _limitEnabledPrefKey = 'limit_enabled';
-  static const String _devModePrefKey = 'dev_mode';
   static const String _serverMessagesPrefKey = 'server_messages_enabled';
+  static const String _betaTestingPrefKey = 'beta_testing_enabled';
 
   @override
   void initState() {
@@ -72,12 +76,6 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
       _loadLimitEnabledPref();
     }
 
-    if (widget.currentDevMode != null) {
-      _devMode = widget.currentDevMode!;
-    } else {
-      _loadDevModePref();
-    }
-
     // Initialize analytics consent state
     if (widget.currentAnalyticsEnabled != null) {
       _analyticsEnabled = widget.currentAnalyticsEnabled!;
@@ -91,19 +89,19 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
     } else {
       _loadServerMessagesEnabledPref();
     }
+
+    // Initialize beta testing state
+    if (widget.currentBetaTestingEnabled != null) {
+      _betaTestingEnabled = widget.currentBetaTestingEnabled!;
+    } else {
+      _loadBetaTestingEnabledPref();
+    }
   }
 
   Future<void> _loadLimitEnabledPref() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _isLimitEnabled = prefs.getBool(_limitEnabledPrefKey) ?? true;
-    });
-  }
-
-  Future<void> _loadDevModePref() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _devMode = prefs.getBool(_devModePrefKey) ?? false;
     });
   }
 
@@ -118,6 +116,13 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _serverMessagesEnabled = prefs.getBool(_serverMessagesPrefKey) ?? true;
+    });
+  }
+
+  Future<void> _loadBetaTestingEnabledPref() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _betaTestingEnabled = prefs.getBool(_betaTestingPrefKey) ?? false;
     });
   }
 
@@ -149,6 +154,11 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
         widget.currentServerMessagesEnabled != null) {
       _serverMessagesEnabled = widget.currentServerMessagesEnabled!;
     }
+    if (widget.currentBetaTestingEnabled !=
+            oldWidget.currentBetaTestingEnabled &&
+        widget.currentBetaTestingEnabled != null) {
+      _betaTestingEnabled = widget.currentBetaTestingEnabled!;
+    }
   }
 
   Future<void> _saveLimit(int value) async {
@@ -166,11 +176,6 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
     await prefs.setBool(_limitEnabledPrefKey, value);
   }
 
-  Future<void> _saveDevMode(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_devModePrefKey, value);
-  }
-
   Future<void> _saveAnalyticsEnabled(bool value) async {
     final analyticsService = AnalyticsService();
     if (value) {
@@ -183,6 +188,11 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
   Future<void> _saveServerMessagesEnabled(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_serverMessagesPrefKey, value);
+  }
+
+  Future<void> _saveBetaTestingEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_betaTestingPrefKey, value);
   }
 
   @override
@@ -205,33 +215,6 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
           ),
         ),
         SwitchListTile(
-          secondary: Icon(
-            Icons.developer_mode,
-            color: theme.colorScheme.primary,
-          ),
-          title: Text(
-            'Developer Mode',
-            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
-          ),
-          subtitle: Text(
-            _devMode
-                ? 'Additional settings are enabled'
-                : 'Additional settings are hidden',
-            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-          ),
-          value: _devMode,
-          activeColor: theme.colorScheme.primary,
-          onChanged: (bool value) {
-            setState(() {
-              _devMode = value;
-            });
-            _saveDevMode(value);
-            if (widget.onDevModeChanged != null) {
-              widget.onDevModeChanged!(value);
-            }
-          },
-        ),
-        SwitchListTile(
           secondary: Icon(Icons.filter_list, color: theme.colorScheme.primary),
           title: Text(
             'Enable Screenshot Limit',
@@ -250,6 +233,12 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
               _isLimitEnabled = value;
             });
             _saveLimitEnabled(value);
+
+            // Track analytics for screenshot limit setting
+            AnalyticsService().logFeatureUsed(
+              'settings_screenshot_limit_${value ? 'enabled' : 'disabled'}',
+            );
+
             if (widget.onLimitEnabledChanged != null) {
               widget.onLimitEnabledChanged!(value);
             }
@@ -283,6 +272,11 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
                 if (intValue != null) {
                   widget.onLimitChanged(intValue);
                   _saveLimit(intValue);
+
+                  // Track analytics for screenshot limit value change
+                  AnalyticsService().logFeatureUsed(
+                    'settings_screenshot_limit_value_changed',
+                  );
                 }
               },
             ),
@@ -312,6 +306,11 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
               if (intValue != null) {
                 widget.onMaxParallelChanged(intValue);
                 _saveMaxParallel(intValue);
+
+                // Track analytics for max parallel processes change
+                AnalyticsService().logFeatureUsed(
+                  'settings_max_parallel_changed',
+                );
               }
             },
           ),
@@ -338,6 +337,12 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
               _analyticsEnabled = value;
             });
             _saveAnalyticsEnabled(value);
+
+            // Track analytics for analytics setting (meta-analytics!)
+            AnalyticsService().logFeatureUsed(
+              'settings_analytics_${value ? 'enabled' : 'disabled'}',
+            );
+
             if (widget.onAnalyticsEnabledChanged != null) {
               widget.onAnalyticsEnabledChanged!(value);
             }
@@ -365,8 +370,47 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
               _serverMessagesEnabled = value;
             });
             _saveServerMessagesEnabled(value);
+
+            // Track analytics for server messages setting
+            AnalyticsService().logFeatureUsed(
+              'settings_server_messages_${value ? 'enabled' : 'disabled'}',
+            );
+
             if (widget.onServerMessagesEnabledChanged != null) {
               widget.onServerMessagesEnabledChanged!(value);
+            }
+          },
+        ),
+        SwitchListTile(
+          secondary: Icon(
+            Icons.science_outlined,
+            color: theme.colorScheme.primary,
+          ),
+          title: Text(
+            'Beta Testing',
+            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+          ),
+          subtitle: Text(
+            _betaTestingEnabled
+                ? 'Receive pre-release updates'
+                : 'Only receive stable updates',
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          value: _betaTestingEnabled,
+          activeColor: theme.colorScheme.primary,
+          onChanged: (bool value) {
+            setState(() {
+              _betaTestingEnabled = value;
+            });
+            _saveBetaTestingEnabled(value);
+
+            // Track analytics for beta testing setting
+            AnalyticsService().logFeatureUsed(
+              'settings_beta_testing_${value ? 'enabled' : 'disabled'}',
+            );
+
+            if (widget.onBetaTestingEnabledChanged != null) {
+              widget.onBetaTestingEnabledChanged!(value);
             }
           },
         ),
@@ -376,7 +420,16 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: widget.onResetAiProcessing,
+              onPressed: () {
+                // Track analytics for reset AI processing
+                AnalyticsService().logFeatureUsed(
+                  'settings_reset_ai_processing',
+                );
+
+                if (widget.onResetAiProcessing != null) {
+                  widget.onResetAiProcessing!();
+                }
+              },
               icon: Icon(Icons.refresh, color: theme.colorScheme.onPrimary),
               label: Text(
                 'Reset AI Processing',

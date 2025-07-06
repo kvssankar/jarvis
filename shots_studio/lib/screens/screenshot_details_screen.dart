@@ -15,6 +15,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:shots_studio/utils/reminder_utils.dart';
 import 'package:shots_studio/services/ai_service_manager.dart';
 import 'package:shots_studio/services/ai_service.dart';
+import 'package:shots_studio/services/ocr_service.dart';
+import 'package:shots_studio/widgets/ocr_result_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ScreenshotDetailScreen extends StatefulWidget {
@@ -49,7 +51,9 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   late List<String> _tags;
   late TextEditingController _descriptionController;
   bool _isProcessingAI = false;
+  bool _isProcessingOCR = false;
   final AIServiceManager _aiServiceManager = AIServiceManager();
+  final OCRService _ocrService = OCRService();
 
   @override
   void initState() {
@@ -876,7 +880,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         ),
         elevation: 0,
         actions: [
-          if (_isProcessingAI)
+          if (_isProcessingAI || _isProcessingOCR)
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: SizedBox(
@@ -1010,6 +1014,14 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
             ),
             IconButton(
               icon: Icon(
+                Icons.text_fields,
+                color: Theme.of(context).colorScheme.secondary,
+              ),
+              tooltip: 'Extract text with OCR',
+              onPressed: _isProcessingOCR ? null : _processScreenshotWithOCR,
+            ),
+            IconButton(
+              icon: Icon(
                 Icons.delete_outline,
                 color: Theme.of(context).colorScheme.secondary,
               ),
@@ -1104,5 +1116,55 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _processScreenshotWithOCR() async {
+    // Track OCR usage
+    AnalyticsService().logFeatureUsed('ocr_processing_requested');
+
+    // Check if OCR is available on this platform
+    if (!_ocrService.isOCRAvailable()) {
+      SnackbarService().showError(
+        context,
+        'OCR is not available on this platform',
+      );
+      return;
+    }
+
+    setState(() {
+      _isProcessingOCR = true;
+    });
+
+    try {
+      // Show processing message
+      SnackbarService().showInfo(context, 'Processing image with OCR...');
+
+      // Extract text and copy to clipboard
+      final extractedText = await _ocrService.extractTextAndCopyToClipboard(
+        widget.screenshot,
+      );
+
+      if (extractedText != null && extractedText.isNotEmpty) {
+        SnackbarService().showSuccess(
+          context,
+          'Text extracted and copied to clipboard!',
+        );
+        AnalyticsService().logFeatureUsed('ocr_text_extracted');
+
+        // Show the extracted text in a dialog
+        OCRResultDialog.show(context, extractedText);
+      } else {
+        SnackbarService().showWarning(context, 'No text found in the image');
+      }
+    } catch (e) {
+      SnackbarService().showError(
+        context,
+        'Error processing image: ${e.toString()}',
+      );
+    } finally {
+      setState(() {
+        _isProcessingOCR = false;
+      });
+    }
   }
 }

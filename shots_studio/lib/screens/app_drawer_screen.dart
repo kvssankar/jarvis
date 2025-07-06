@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shots_studio/widgets/app_drawer/index.dart';
 import 'package:shots_studio/services/analytics_service.dart';
@@ -21,6 +20,8 @@ class AppDrawer extends StatefulWidget {
   final Function(bool)? onAutoProcessEnabledChanged;
   final bool? currentAnalyticsEnabled;
   final Function(bool)? onAnalyticsEnabledChanged;
+  final bool? currentBetaTestingEnabled;
+  final Function(bool)? onBetaTestingEnabledChanged;
   final bool? currentAmoledModeEnabled;
   final Function(bool)? onAmoledModeChanged;
   final String? currentSelectedTheme;
@@ -46,6 +47,8 @@ class AppDrawer extends StatefulWidget {
     this.onAutoProcessEnabledChanged,
     this.currentAnalyticsEnabled,
     this.onAnalyticsEnabledChanged,
+    this.currentBetaTestingEnabled,
+    this.onBetaTestingEnabledChanged,
     this.currentAmoledModeEnabled,
     this.onAmoledModeChanged,
     this.currentSelectedTheme,
@@ -60,8 +63,6 @@ class AppDrawer extends StatefulWidget {
 
 class _AppDrawerState extends State<AppDrawer> {
   String _appVersion = '...';
-  int _aboutTapCount = 0;
-  static const int _requiredTaps = 7;
 
   @override
   void initState() {
@@ -82,30 +83,7 @@ class _AppDrawerState extends State<AppDrawer> {
   }
 
   void _handleAboutTap() {
-    setState(() {
-      _aboutTapCount++;
-      if (_aboutTapCount >= _requiredTaps) {
-        // Enable dev mode when 7 taps reached
-        if (widget.onDevModeChanged != null) {
-          widget.onDevModeChanged!(true);
-        }
-        _aboutTapCount = 0; // Reset counter after unlocking
-
-        // Log analytics for dev mode unlock
-        AnalyticsService().logFeatureUsed('dev_mode_unlock');
-        AnalyticsService().logFeatureAdopted('dev_mode');
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Developer mode enabled!'),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      } else if (_aboutTapCount >= _requiredTaps - 2) {
-        // Give subtle feedback when getting close
-        HapticFeedback.lightImpact();
-      }
-    });
+    // No longer needed - developer mode is now always accessible
   }
 
   void _handleAboutLongPress() {
@@ -145,6 +123,8 @@ class _AppDrawerState extends State<AppDrawer> {
               onAmoledModeChanged: widget.onAmoledModeChanged,
               currentSelectedTheme: widget.currentSelectedTheme,
               onThemeChanged: widget.onThemeChanged,
+              currentDevMode: widget.currentDevMode,
+              onDevModeChanged: widget.onDevModeChanged,
             ),
             if (widget.currentDevMode == true) ...[
               AdvancedSettingsSection(
@@ -158,6 +138,8 @@ class _AppDrawerState extends State<AppDrawer> {
                 onDevModeChanged: widget.onDevModeChanged,
                 currentAnalyticsEnabled: widget.currentAnalyticsEnabled,
                 onAnalyticsEnabledChanged: widget.onAnalyticsEnabledChanged,
+                currentBetaTestingEnabled: widget.currentBetaTestingEnabled,
+                onBetaTestingEnabledChanged: widget.onBetaTestingEnabledChanged,
                 onResetAiProcessing: widget.onResetAiProcessing,
               ),
               const PerformanceSection(),
