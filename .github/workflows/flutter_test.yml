@@ -1,0 +1,38 @@
+name: Flutter Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "shots_studio/**"
+      - ".github/workflows/flutter_test.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.7.2"
+          channel: "stable"
+
+      - name: Get dependencies
+        run: flutter pub get
+        working-directory: shots_studio
+
+      - name: Verify formatting
+        run: flutter format --dry-run --set-exit-if-changed .
+        working-directory: shots_studio
+
+      - name: Analyze project source
+        run: flutter analyze
+        working-directory: shots_studio
+
+      - name: Run tests
+        run: flutter test
+        working-directory: shots_studio
