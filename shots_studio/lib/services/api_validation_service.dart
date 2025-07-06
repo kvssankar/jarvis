@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 
 class ApiValidationService {
   static final ApiValidationService _instance =
@@ -31,7 +32,13 @@ class ApiValidationService {
     bool showMessages = true,
     bool forceValidation = false,
   }) async {
+    // Log analytics for validation attempt
+    AnalyticsService().logFeatureUsed('api_key_validation_attempt');
+
     if (apiKey.isEmpty) {
+      // Log analytics for empty API key
+      AnalyticsService().logFeatureUsed('api_key_validation_empty');
+
       if (showMessages) {
         SnackbarService().showError(context, 'API key is required');
       }
@@ -44,6 +51,9 @@ class ApiValidationService {
 
     // Check cache first unless forced validation
     if (!forceValidation && _isCacheValid()) {
+      // Log analytics for cache hit
+      AnalyticsService().logFeatureUsed('api_key_validation_cache_hit');
+
       return ApiValidationResult(
         isValid: _cachedValidationResult ?? false,
         fromCache: true,
@@ -62,6 +72,13 @@ class ApiValidationService {
       _cachedValidationResult = result.isValid;
       _lastValidationTime = DateTime.now();
 
+      // Log analytics for validation result
+      if (result.isValid) {
+        AnalyticsService().logFeatureUsed('api_key_validation_success');
+      } else {
+        AnalyticsService().logFeatureUsed('api_key_validation_failure');
+      }
+
       if (showMessages) {
         if (result.isValid) {
           SnackbarService().showSuccess(
@@ -78,6 +95,9 @@ class ApiValidationService {
 
       return result;
     } catch (e) {
+      // Log analytics for validation error
+      AnalyticsService().logFeatureUsed('api_key_validation_error');
+
       if (showMessages) {
         SnackbarService().showError(
           context,

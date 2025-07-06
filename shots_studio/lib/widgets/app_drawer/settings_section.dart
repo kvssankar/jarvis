@@ -784,6 +784,12 @@ class _SettingsSectionState extends State<SettingsSection> {
               _devMode = value;
             });
             _saveDevMode(value);
+
+            // Track analytics for expert/dev mode setting
+            AnalyticsService().logFeatureUsed(
+              'settings_expert_mode_${value ? 'enabled' : 'disabled'}',
+            );
+
             if (widget.onDevModeChanged != null) {
               widget.onDevModeChanged!(value);
             }

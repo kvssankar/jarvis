@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/utils/privacy_content_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 
 class PrivacyAcknowledgementDialog extends StatelessWidget {
   final VoidCallback onAgreed;
@@ -17,6 +18,9 @@ class PrivacyAcknowledgementDialog extends StatelessWidget {
   });
 
   Future<void> _launchURL(BuildContext context, String urlString) async {
+    // Track URL launches from privacy dialog
+    AnalyticsService().logFeatureUsed('privacy_dialog_url_clicked');
+
     final Uri url = Uri.parse(urlString);
     if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
       SnackbarService().showError(context, 'Could not launch $urlString');
@@ -53,6 +57,9 @@ class PrivacyAcknowledgementDialog extends StatelessWidget {
             style: TextStyle(color: theme.colorScheme.secondary),
           ),
           onPressed: () {
+            // Track privacy disagreement
+            AnalyticsService().logFeatureUsed('privacy_dialog_disagreed');
+
             Navigator.of(context).pop();
             if (onDisagreed != null) {
               onDisagreed!();
@@ -70,6 +77,9 @@ class PrivacyAcknowledgementDialog extends StatelessWidget {
             style: TextStyle(color: theme.colorScheme.onPrimary),
           ),
           onPressed: () {
+            // Track privacy agreement
+            AnalyticsService().logFeatureUsed('privacy_dialog_agreed');
+
             Navigator.of(context).pop();
             onAgreed();
           },
@@ -90,6 +100,9 @@ Future<bool> showPrivacyDialogIfNeeded(BuildContext context) async {
   }
 
   if (!context.mounted) return false;
+
+  // Track privacy dialog shown
+  AnalyticsService().logFeatureUsed('privacy_dialog_shown');
 
   // Create a completer to handle the async result
   Completer<bool> dialogCompleter = Completer<bool>();

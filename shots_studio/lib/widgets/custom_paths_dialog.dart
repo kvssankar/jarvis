@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:shots_studio/services/custom_path_service.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 
 class CustomPathsDialog extends StatefulWidget {
   final VoidCallback? onPathAdded;
@@ -22,6 +23,9 @@ class _CustomPathsDialogState extends State<CustomPathsDialog> {
   void initState() {
     super.initState();
     _loadCustomPaths();
+
+    // Track dialog access
+    AnalyticsService().logFeatureUsed('custom_paths_dialog_opened');
   }
 
   @override
@@ -89,6 +93,9 @@ class _CustomPathsDialogState extends State<CustomPathsDialog> {
       // Add path
       final success = await CustomPathService.addCustomPath(path);
       if (success) {
+        // Track successful path addition
+        AnalyticsService().logFeatureUsed('custom_path_added_manual');
+
         _pathController.clear();
         await _loadCustomPaths();
         SnackbarService().showSuccess(
@@ -134,6 +141,9 @@ class _CustomPathsDialogState extends State<CustomPathsDialog> {
       // Add path
       final success = await CustomPathService.addCustomPath(selectedDirectory);
       if (success) {
+        // Track successful path addition
+        AnalyticsService().logFeatureUsed('custom_path_added_native');
+
         await _loadCustomPaths();
         SnackbarService().showSuccess(
           context,
@@ -167,6 +177,9 @@ class _CustomPathsDialogState extends State<CustomPathsDialog> {
     try {
       final success = await CustomPathService.removeCustomPath(path);
       if (success) {
+        // Track successful path removal
+        AnalyticsService().logFeatureUsed('custom_path_removed');
+
         await _loadCustomPaths();
         SnackbarService().showSuccess(context, 'Custom path removed');
       } else {

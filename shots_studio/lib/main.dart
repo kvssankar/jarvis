@@ -1577,6 +1577,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
+          // Track FAB pressed
+          AnalyticsService().logFeatureUsed('fab_pressed');
+
           // Show options for selecting screenshots
           showModalBottomSheet(
             context: context,
@@ -1594,6 +1597,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                         leading: const Icon(Icons.photo_library),
                         title: const Text('Select from gallery'),
                         onTap: () {
+                          // Track gallery selection
+                          AnalyticsService().logFeatureUsed(
+                            'fab_gallery_selected',
+                          );
+
                           Navigator.pop(context);
                           _takeScreenshot(ImageSource.gallery);
                         },
@@ -1603,6 +1611,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           leading: const Icon(Icons.camera_alt),
                           title: const Text('Take a photo'),
                           onTap: () {
+                            // Track camera selection
+                            AnalyticsService().logFeatureUsed(
+                              'fab_camera_selected',
+                            );
+
                             Navigator.pop(context);
                             _takeScreenshot(ImageSource.camera);
                           },
@@ -1612,6 +1625,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           leading: const Icon(Icons.folder_open),
                           title: const Text('Load device screenshots'),
                           onTap: () {
+                            // Track load device screenshots
+                            AnalyticsService().logFeatureUsed(
+                              'fab_load_device_screenshots',
+                            );
+
                             Navigator.pop(context);
                             _loadAndroidScreenshots(forceReload: true).then((
                               _,
@@ -1633,6 +1651,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                           leading: const Icon(Icons.create_new_folder),
                           title: const Text('Manage custom paths'),
                           onTap: () {
+                            // Track custom paths management
+                            AnalyticsService().logFeatureUsed(
+                              'fab_manage_custom_paths',
+                            );
+
                             Navigator.pop(context);
                             _showCustomPathsDialog();
                           },

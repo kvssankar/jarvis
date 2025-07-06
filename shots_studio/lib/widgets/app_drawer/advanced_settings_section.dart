@@ -233,6 +233,12 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
               _isLimitEnabled = value;
             });
             _saveLimitEnabled(value);
+
+            // Track analytics for screenshot limit setting
+            AnalyticsService().logFeatureUsed(
+              'settings_screenshot_limit_${value ? 'enabled' : 'disabled'}',
+            );
+
             if (widget.onLimitEnabledChanged != null) {
               widget.onLimitEnabledChanged!(value);
             }
@@ -266,6 +272,11 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
                 if (intValue != null) {
                   widget.onLimitChanged(intValue);
                   _saveLimit(intValue);
+
+                  // Track analytics for screenshot limit value change
+                  AnalyticsService().logFeatureUsed(
+                    'settings_screenshot_limit_value_changed',
+                  );
                 }
               },
             ),
@@ -295,6 +306,11 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
               if (intValue != null) {
                 widget.onMaxParallelChanged(intValue);
                 _saveMaxParallel(intValue);
+
+                // Track analytics for max parallel processes change
+                AnalyticsService().logFeatureUsed(
+                  'settings_max_parallel_changed',
+                );
               }
             },
           ),
@@ -321,6 +337,12 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
               _analyticsEnabled = value;
             });
             _saveAnalyticsEnabled(value);
+
+            // Track analytics for analytics setting (meta-analytics!)
+            AnalyticsService().logFeatureUsed(
+              'settings_analytics_${value ? 'enabled' : 'disabled'}',
+            );
+
             if (widget.onAnalyticsEnabledChanged != null) {
               widget.onAnalyticsEnabledChanged!(value);
             }
@@ -348,6 +370,12 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
               _serverMessagesEnabled = value;
             });
             _saveServerMessagesEnabled(value);
+
+            // Track analytics for server messages setting
+            AnalyticsService().logFeatureUsed(
+              'settings_server_messages_${value ? 'enabled' : 'disabled'}',
+            );
+
             if (widget.onServerMessagesEnabledChanged != null) {
               widget.onServerMessagesEnabledChanged!(value);
             }
@@ -375,6 +403,12 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
               _betaTestingEnabled = value;
             });
             _saveBetaTestingEnabled(value);
+
+            // Track analytics for beta testing setting
+            AnalyticsService().logFeatureUsed(
+              'settings_beta_testing_${value ? 'enabled' : 'disabled'}',
+            );
+
             if (widget.onBetaTestingEnabledChanged != null) {
               widget.onBetaTestingEnabledChanged!(value);
             }
@@ -386,7 +420,16 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
           child: SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: widget.onResetAiProcessing,
+              onPressed: () {
+                // Track analytics for reset AI processing
+                AnalyticsService().logFeatureUsed(
+                  'settings_reset_ai_processing',
+                );
+
+                if (widget.onResetAiProcessing != null) {
+                  widget.onResetAiProcessing!();
+                }
+              },
               icon: Icon(Icons.refresh, color: theme.colorScheme.onPrimary),
               label: Text(
                 'Reset AI Processing',

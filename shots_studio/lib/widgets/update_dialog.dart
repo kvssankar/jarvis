@@ -49,8 +49,10 @@ class UpdateDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () {
-            // Log analytics for update dismissal
-            AnalyticsService().logFeatureUsed('update_dismissed');
+            // Log analytics for update dismissal also include current version
+            AnalyticsService().logFeatureUsed(
+              'update_dialog_later_clicked_${updateInfo.currentVersion}',
+            );
             Navigator.of(context).pop();
           },
           child: const Text('Later'),
@@ -58,7 +60,9 @@ class UpdateDialog extends StatelessWidget {
         FilledButton(
           onPressed: () {
             // Log analytics for update button clicks
-            AnalyticsService().logFeatureUsed('update_initiated');
+            AnalyticsService().logFeatureUsed(
+              'update_dialog_update_clicked_${updateInfo.currentVersion}',
+            );
             _openUpdatePage(context);
           },
           child: const Text('Update'),

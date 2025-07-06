@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 
 /// A dialog widget to display OCR results with copy functionality
 class OCRResultDialog extends StatelessWidget {
@@ -11,6 +12,9 @@ class OCRResultDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Track OCR result dialog shown
+    AnalyticsService().logFeatureUsed('ocr_result_dialog_shown');
+
     return AlertDialog(
       title: Row(
         children: [
@@ -74,6 +78,9 @@ class OCRResultDialog extends StatelessWidget {
       actions: [
         TextButton(
           onPressed: () async {
+            // Track OCR text copy action
+            AnalyticsService().logFeatureUsed('ocr_text_copied');
+
             await Clipboard.setData(ClipboardData(text: extractedText));
             if (context.mounted) {
               SnackbarService().showSuccess(
@@ -89,6 +96,9 @@ class OCRResultDialog extends StatelessWidget {
         ),
         TextButton(
           onPressed: () {
+            // Track OCR dialog close action
+            AnalyticsService().logFeatureUsed('ocr_result_dialog_closed');
+
             Navigator.of(context).pop();
             onClose?.call();
           },

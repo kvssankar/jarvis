@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/screens/screenshot_details_screen.dart';
+import 'package:shots_studio/services/analytics_service.dart';
 
 class ScreenshotSwipeDetailScreen extends StatefulWidget {
   final List<Screenshot> screenshots;
@@ -38,6 +39,10 @@ class _ScreenshotSwipeDetailScreenState
     super.initState();
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: widget.initialIndex);
+
+    // Track screen access
+    AnalyticsService().logScreenView('screenshot_swipe_detail_screen');
+    AnalyticsService().logFeatureUsed('screenshot_swipe_viewer_opened');
   }
 
   @override
@@ -47,6 +52,9 @@ class _ScreenshotSwipeDetailScreenState
   }
 
   void _onPageChanged(int index) {
+    // Track page swipe analytics
+    AnalyticsService().logFeatureUsed('screenshot_swipe_navigation');
+
     setState(() {
       _currentIndex = index;
     });
