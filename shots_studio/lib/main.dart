@@ -11,7 +11,7 @@ import 'package:shots_studio/screens/app_drawer_screen.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/screens/search_screen.dart';
-import 'package:shots_studio/widgets/privacy_dialog.dart';
+import 'package:shots_studio/screens/privacy_screen.dart';
 import 'package:shots_studio/widgets/onboarding/api_key_guide_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
@@ -234,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Show privacy dialog after the first frame
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       // Show privacy dialog and only proceed to API key guide if accepted
-      bool privacyAccepted = await showPrivacyDialogIfNeeded(context);
+      bool privacyAccepted = await showPrivacyScreenIfNeeded(context);
       if (privacyAccepted && context.mounted) {
         // Log install info when onboarding is completed
         AnalyticsService().logInstallInfo();
