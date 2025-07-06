@@ -18,6 +18,8 @@ class SettingsSection extends StatefulWidget {
   final Function(bool)? onAmoledModeChanged;
   final String? currentSelectedTheme;
   final Function(String)? onThemeChanged;
+  final bool? currentDevMode;
+  final Function(bool)? onDevModeChanged;
 
   const SettingsSection({
     super.key,
@@ -32,6 +34,8 @@ class SettingsSection extends StatefulWidget {
     this.onAmoledModeChanged,
     this.currentSelectedTheme,
     this.onThemeChanged,
+    this.currentDevMode,
+    this.onDevModeChanged,
   });
 
   @override
@@ -47,11 +51,13 @@ class _SettingsSectionState extends State<SettingsSection> {
   String _selectedTheme = 'Dynamic Theme';
   bool _isValidatingApiKey = false;
   bool? _apiKeyValid;
+  bool _devMode = false;
 
   static const String _apiKeyPrefKey = 'apiKey';
   static const String _modelNamePrefKey = 'modelName';
   static const String _autoProcessEnabledPrefKey = 'auto_process_enabled';
   static const String _amoledModeEnabledPrefKey = 'amoled_mode_enabled';
+  static const String _devModePrefKey = 'dev_mode';
 
   @override
   void initState() {
@@ -82,6 +88,13 @@ class _SettingsSectionState extends State<SettingsSection> {
       _selectedTheme = widget.currentSelectedTheme!;
     } else {
       _loadThemePref();
+    }
+
+    // Initialize dev mode state
+    if (widget.currentDevMode != null) {
+      _devMode = widget.currentDevMode!;
+    } else {
+      _loadDevModePref();
     }
 
     // Request focus on the API key field when it's empty
@@ -117,6 +130,13 @@ class _SettingsSectionState extends State<SettingsSection> {
     });
   }
 
+  void _loadDevModePref() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _devMode = prefs.getBool(_devModePrefKey) ?? false;
+    });
+  }
+
   @override
   void didUpdateWidget(covariant SettingsSection oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -148,6 +168,10 @@ class _SettingsSectionState extends State<SettingsSection> {
     if (widget.currentSelectedTheme != oldWidget.currentSelectedTheme) {
       _selectedTheme = widget.currentSelectedTheme ?? 'Dynamic Theme';
     }
+    if (widget.currentDevMode != oldWidget.currentDevMode &&
+        widget.currentDevMode != null) {
+      _devMode = widget.currentDevMode!;
+    }
   }
 
   Future<void> _saveApiKey(String value) async {
@@ -172,6 +196,11 @@ class _SettingsSectionState extends State<SettingsSection> {
 
   Future<void> _saveSelectedTheme(String value) async {
     await ThemeManager.setSelectedTheme(value);
+  }
+
+  Future<void> _saveDevMode(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_devModePrefKey, value);
   }
 
   Future<void> _validateApiKey() async {
@@ -734,6 +763,31 @@ class _SettingsSectionState extends State<SettingsSection> {
               ),
             ],
           ),
+        ),
+        SwitchListTile(
+          secondary: Icon(
+            Icons.developer_mode,
+            color: theme.colorScheme.primary,
+          ),
+          title: Text(
+            'Expert Mode',
+            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+          ),
+          subtitle: Text(
+            'Show extra info and enable advanced settings',
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          value: _devMode,
+          activeColor: theme.colorScheme.primary,
+          onChanged: (bool value) {
+            setState(() {
+              _devMode = value;
+            });
+            _saveDevMode(value);
+            if (widget.onDevModeChanged != null) {
+              widget.onDevModeChanged!(value);
+            }
+          },
         ),
       ],
     );

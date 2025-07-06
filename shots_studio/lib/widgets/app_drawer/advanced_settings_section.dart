@@ -48,7 +48,6 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
   late TextEditingController _limitController;
   late TextEditingController _maxParallelController;
   bool _isLimitEnabled = true;
-  bool _devMode = false;
   bool _analyticsEnabled =
       !kDebugMode; // Default to false in debug mode, true in production
   bool _serverMessagesEnabled = true;
@@ -57,7 +56,6 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
   static const String _limitPrefKey = 'limit';
   static const String _maxParallelPrefKey = 'maxParallel';
   static const String _limitEnabledPrefKey = 'limit_enabled';
-  static const String _devModePrefKey = 'dev_mode';
   static const String _serverMessagesPrefKey = 'server_messages_enabled';
   static const String _betaTestingPrefKey = 'beta_testing_enabled';
 
@@ -76,12 +74,6 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
       _isLimitEnabled = widget.currentLimitEnabled!;
     } else {
       _loadLimitEnabledPref();
-    }
-
-    if (widget.currentDevMode != null) {
-      _devMode = widget.currentDevMode!;
-    } else {
-      _loadDevModePref();
     }
 
     // Initialize analytics consent state
@@ -110,13 +102,6 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _isLimitEnabled = prefs.getBool(_limitEnabledPrefKey) ?? true;
-    });
-  }
-
-  Future<void> _loadDevModePref() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _devMode = prefs.getBool(_devModePrefKey) ?? false;
     });
   }
 
@@ -191,11 +176,6 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
     await prefs.setBool(_limitEnabledPrefKey, value);
   }
 
-  Future<void> _saveDevMode(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_devModePrefKey, value);
-  }
-
   Future<void> _saveAnalyticsEnabled(bool value) async {
     final analyticsService = AnalyticsService();
     if (value) {
@@ -233,33 +213,6 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
               fontWeight: FontWeight.bold,
             ),
           ),
-        ),
-        SwitchListTile(
-          secondary: Icon(
-            Icons.developer_mode,
-            color: theme.colorScheme.primary,
-          ),
-          title: Text(
-            'Developer Mode',
-            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
-          ),
-          subtitle: Text(
-            _devMode
-                ? 'Additional settings are enabled'
-                : 'Additional settings are hidden',
-            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-          ),
-          value: _devMode,
-          activeColor: theme.colorScheme.primary,
-          onChanged: (bool value) {
-            setState(() {
-              _devMode = value;
-            });
-            _saveDevMode(value);
-            if (widget.onDevModeChanged != null) {
-              widget.onDevModeChanged!(value);
-            }
-          },
         ),
         SwitchListTile(
           secondary: Icon(Icons.filter_list, color: theme.colorScheme.primary),
