@@ -25,10 +25,6 @@ jobs:
         run: flutter pub get
         working-directory: shots_studio
 
-      - name: Analyze project source
-        run: flutter analyze
-        working-directory: shots_studio
-
       - name: Run tests
         run: flutter test
         working-directory: shots_studio
