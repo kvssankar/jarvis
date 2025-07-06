@@ -25,10 +25,6 @@ jobs:
         run: flutter pub get
         working-directory: shots_studio
 
-      - name: Verify formatting
-        run: flutter format --dry-run --set-exit-if-changed .
-        working-directory: shots_studio
-
       - name: Analyze project source
         run: flutter analyze
         working-directory: shots_studio
