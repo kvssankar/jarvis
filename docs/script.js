@@ -95,6 +95,82 @@ document.addEventListener('DOMContentLoaded', function() {
     // Track page view
     trackPageView();
 
+    // Variable to track if stats animation has been triggered
+    let statsAnimationTriggered = false;
+
+    // Fetch GitHub stats
+    async function fetchGitHubStats() {
+        try {
+            // Fetch repository data
+            const response = await fetch('https://api.github.com/repos/AnsahMohammad/shots-studio');
+            const data = await response.json();
+            
+            // Fetch releases data for download count
+            const releasesResponse = await fetch('https://api.github.com/repos/AnsahMohammad/shots-studio/releases');
+            const releases = await releasesResponse.json();
+            
+            // Calculate total downloads
+            let totalDownloads = 0;
+            releases.forEach(release => {
+                release.assets.forEach(asset => {
+                    totalDownloads += asset.download_count;
+                });
+            });
+            
+            // Update hero stats
+            const downloadsElement = document.getElementById('downloads-count');
+            const starsElement = document.getElementById('stars-count');
+            
+            if (downloadsElement) {
+                downloadsElement.textContent = totalDownloads.toLocaleString();
+                downloadsElement.dataset.target = totalDownloads;
+            }
+            
+            if (starsElement) {
+                starsElement.textContent = `${data.stargazers_count}★`;
+                starsElement.dataset.target = data.stargazers_count;
+            }
+            
+            // Update about section stats
+            const aboutDownloadsElement = document.getElementById('about-downloads');
+            const aboutStarsElement = document.getElementById('about-stars');
+            
+            if (aboutDownloadsElement) {
+                aboutDownloadsElement.textContent = totalDownloads.toLocaleString();
+                aboutDownloadsElement.dataset.target = totalDownloads;
+            }
+            
+            if (aboutStarsElement) {
+                aboutStarsElement.textContent = `${data.stargazers_count}★`;
+                aboutStarsElement.dataset.target = data.stargazers_count;
+            }
+            
+            // Mark that GitHub stats have been loaded
+            statsAnimationTriggered = false;
+            
+            // Trigger counter animation if the stats section is visible
+            const statsSection = document.querySelector('.hero-stats');
+            if (statsSection) {
+                const rect = statsSection.getBoundingClientRect();
+                const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
+                
+                if (isVisible) {
+                    setTimeout(() => {
+                        animateCounters();
+                        statsAnimationTriggered = true;
+                    }, 100);
+                }
+            }
+            
+        } catch (error) {
+            console.log('Could not fetch GitHub stats:', error);
+            // Fallback values are already set in HTML
+        }
+    }
+
+    // Call fetchGitHubStats when page loads
+    fetchGitHubStats();
+
     // Track navigation clicks
     navLinks.forEach(link => {
         link.addEventListener('click', function() {
@@ -372,8 +448,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const counters = document.querySelectorAll('.stat-number, .about-stat h3');
         
         counters.forEach(counter => {
-            const target = parseInt(counter.textContent.replace(/[^\d]/g, ''));
-            if (target) {
+            const originalText = counter.textContent;
+            const hasStars = originalText.includes('★');
+            const target = parseInt(originalText.replace(/[^\d]/g, '')) || parseInt(counter.dataset.target) || 0;
+            
+            if (target > 0) {
                 const increment = target / 200;
                 let current = 0;
                 
@@ -383,19 +462,38 @@ document.addEventListener('DOMContentLoaded', function() {
                         let displayValue = Math.ceil(current);
                         
                         // Format the number
-                        if (target >= 1000) {
-                            displayValue = (displayValue / 1000).toFixed(1) + 'K';
+                        let formattedValue;
+                        if (target >= 1000000) {
+                            formattedValue = (displayValue / 1000000).toFixed(1) + 'M';
+                        } else if (target >= 1000) {
+                            formattedValue = (displayValue / 1000).toFixed(1) + 'K';
+                        } else {
+                            formattedValue = displayValue.toString();
                         }
                         
-                        // Add special formatting for ratings
-                        if (counter.textContent.includes('★')) {
-                            displayValue = (current / 10).toFixed(1) + '★';
+                        // Add special formatting for stars
+                        if (hasStars) {
+                            formattedValue = Math.ceil(current) + '★';
                         }
                         
-                        counter.textContent = displayValue;
+                        counter.textContent = formattedValue;
                         requestAnimationFrame(updateCounter);
                     } else {
-                        counter.textContent = counter.textContent; // Keep original format
+                        // Set final value
+                        let finalValue;
+                        if (target >= 1000000) {
+                            finalValue = (target / 1000000).toFixed(1) + 'M';
+                        } else if (target >= 1000) {
+                            finalValue = (target / 1000).toFixed(1) + 'K';
+                        } else {
+                            finalValue = target.toString();
+                        }
+                        
+                        if (hasStars) {
+                            finalValue = target + '★';
+                        }
+                        
+                        counter.textContent = finalValue;
                     }
                 };
                 
@@ -406,11 +504,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Trigger counter animation when stats section is visible
     const statsSection = document.querySelector('.hero-stats');
+    
     if (statsSection) {
         const statsObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    animateCounters();
+                if (entry.isIntersecting && !statsAnimationTriggered) {
+                    // Only trigger animation if GitHub stats haven't been loaded yet
+                    const downloadsElement = document.getElementById('downloads-count');
+                    const starsElement = document.getElementById('stars-count');
+                    
+                    // If GitHub stats are still loading, wait a bit
+                    if (downloadsElement && !downloadsElement.dataset.target) {
+                        setTimeout(() => {
+                            if (!statsAnimationTriggered) {
+                                animateCounters();
+                                statsAnimationTriggered = true;
+                            }
+                        }, 1000);
+                    } else if (!statsAnimationTriggered) {
+                        animateCounters();
+                        statsAnimationTriggered = true;
+                    }
+                    
                     statsObserver.unobserve(entry.target);
                 }
             });
