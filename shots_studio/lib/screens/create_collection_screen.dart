@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:shots_studio/services/analytics_service.dart';
-import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
@@ -84,14 +83,12 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
   }
 
   void _save() {
-    final String title = _titleController.text.trim();
+    String title = _titleController.text.trim();
 
+    // If title is empty, generate a default name
     if (title.isEmpty) {
-      SnackbarService().showError(
-        context,
-        'Please enter a title for your collection',
-      );
-      return;
+      title =
+          'Collection ${DateTime.now().millisecondsSinceEpoch.toString().substring(8)}';
     }
 
     final Collection collection;
@@ -155,20 +152,42 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextField(
-                    controller: _titleController,
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.onSecondaryContainer,
-                    ),
-                    decoration: InputDecoration(
-                      hintText: 'Collection Title',
-                      hintStyle: TextStyle(
-                        color:
-                            Theme.of(context).colorScheme.onSecondaryContainer,
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.surface,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.outline.withValues(alpha: 0.3),
+                        width: 1,
                       ),
-                      border: InputBorder.none,
+                    ),
+                    child: TextField(
+                      controller: _titleController,
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Enter collection title...',
+                        hintStyle: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 12,
+                        ),
+                        border: InputBorder.none,
+                        prefixIcon: Icon(
+                          Icons.edit,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 20,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 16),
