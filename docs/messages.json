@@ -4,14 +4,27 @@
   "messages": [
     {
       "show": true,
-      "id": "live_v1_8_90_1",
-      "title": "🔥 v1.8.90 is LIVE!",
-      "message": "🎉 We've crossed **8,000+ downloads** and processed over **300,000 screenshots** — massive thanks to everyone using and supporting Shots Studio!\n\nNow onto what's new in v1.8.90:\n\n✅ OCR is here — scan text straight from screenshots\n🎨 New Amber theme to freshen things up\n⚙️ Revamped Advanced Settings\n\n🧪 Want early access to on-device AI and other exciting beta features?\nToggle Beta Mode in the 'Advanced section' to receive pre-release updates.\n\nHuge thanks to the community for helping us level up 🙌",
+      "id": "live_v1_8_93_1",
+      "title": "🔥 v1.8.93 is LIVE!",
+      "message": "🎉 We've crossed **8,000+ downloads** and processed over **300,000 screenshots** — massive thanks to everyone using and supporting Shots Studio!\n\nHere's what's new in v1.8.93:\n\n✅ Local OCR is here — scan text directly from screenshots without needing an internet connection.\n🎨 New Amber theme to freshen things up\n⚙️ Revamped Advanced Settings and other UI improvements\n\n🧪 Want early access to on-device AI and other exciting beta features?\nToggle Beta Mode in the 'Advanced' section to receive pre-release updates.\n\nHuge thanks to the community for helping us level up 🙌",
       "type": "update",
       "priority": "high",
       "show_once": true,
       "valid_until": "2026-07-01T00:00:00Z",
       "is_notification": false,
+      "version": "1.8.93",
+      "update_route": "https://ansahmohammad.github.io/shots-studio/"
+    },
+    {
+      "show": true,
+      "id": "sunset_v1_8_90",
+      "title": "⚠️ v1.8.90 No Longer Supported",
+      "message": "v1.8.90 contains several issues that affect core features and overall functionality. While the app won't crash, this version is **no longer supported**.\n\nTo get the best experience and access to important fixes, please **update to the latest version immediately**.\n\n Thank you - Team Shots Studio",
+      "type": "update",
+      "priority": "high",
+      "show_once": false,
+      "valid_until": "2026-07-01T00:00:00Z",
+      "is_notification": true,
       "version": "1.8.90",
       "update_route": "https://ansahmohammad.github.io/shots-studio/"
     },
