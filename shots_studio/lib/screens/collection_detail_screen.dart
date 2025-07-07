@@ -8,7 +8,7 @@ import 'package:shots_studio/services/analytics_service.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
 import 'package:shots_studio/screens/manage_collection_screenshots_screen.dart';
 import 'package:shots_studio/screens/screenshot_swipe_detail_screen.dart';
-import 'package:shots_studio/screens/create_collection_screen.dart';
+import 'package:shots_studio/screens/edit_collection_screen.dart';
 import 'package:shots_studio/utils/responsive_utils.dart';
 
 class CollectionDetailScreen extends StatefulWidget {
@@ -91,38 +91,30 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
   }
 
   Future<void> _editCollection() async {
-    final currentCollection = widget.collection.copyWith(
-      name: _nameController.text.trim(),
-      description: _descriptionController.text.trim(),
-      screenshotIds: List<String>.from(
-        _currentScreenshotIds,
-      ), // Create new list
-      isAutoAddEnabled: _isAutoAddEnabled,
-    );
-
-    final Collection? updatedCollection = await Navigator.of(
-      context,
-    ).push<Collection>(
+    await Navigator.of(context).push<Collection>(
       MaterialPageRoute(
         builder:
-            (context) => CreateCollectionScreen(
-              availableScreenshots: widget.allScreenshots,
-              initialSelectedIds: Set.from(_currentScreenshotIds),
-              existingCollection: currentCollection,
+            (context) => EditCollectionScreen(
+              collection: widget.collection.copyWith(
+                name: _nameController.text.trim(),
+                description: _descriptionController.text.trim(),
+                screenshotIds: List<String>.from(_currentScreenshotIds),
+                isAutoAddEnabled: _isAutoAddEnabled,
+              ),
+              allScreenshots: widget.allScreenshots,
+              onUpdateCollection: (Collection updated) {
+                setState(() {
+                  _nameController.text = updated.name ?? '';
+                  _descriptionController.text = updated.description ?? '';
+                  _currentScreenshotIds = List.from(updated.screenshotIds);
+                  _isAutoAddEnabled = updated.isAutoAddEnabled;
+                });
+                widget.onUpdateCollection(updated);
+              },
             ),
       ),
     );
-
-    if (updatedCollection != null) {
-      setState(() {
-        _nameController.text = updatedCollection.name ?? '';
-        _descriptionController.text = updatedCollection.description ?? '';
-        _currentScreenshotIds = List.from(updatedCollection.screenshotIds);
-        _isAutoAddEnabled = updatedCollection.isAutoAddEnabled;
-      });
-
-      widget.onUpdateCollection(updatedCollection);
-    }
+    // No need to do anything here, onUpdateCollection is called from EditCollectionScreen
   }
 
   Future<void> _confirmDelete() async {
