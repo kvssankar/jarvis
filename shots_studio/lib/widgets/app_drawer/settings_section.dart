@@ -111,30 +111,38 @@ class _SettingsSectionState extends State<SettingsSection> {
 
   void _loadAutoProcessEnabledPref() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _autoProcessEnabled = prefs.getBool(_autoProcessEnabledPrefKey) ?? true;
-    });
+    if (mounted) {
+      setState(() {
+        _autoProcessEnabled = prefs.getBool(_autoProcessEnabledPrefKey) ?? true;
+      });
+    }
   }
 
   void _loadAmoledModeEnabledPref() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _amoledModeEnabled = prefs.getBool(_amoledModeEnabledPrefKey) ?? false;
-    });
+    if (mounted) {
+      setState(() {
+        _amoledModeEnabled = prefs.getBool(_amoledModeEnabledPrefKey) ?? false;
+      });
+    }
   }
 
   void _loadThemePref() async {
     final selectedTheme = await ThemeManager.getSelectedTheme();
-    setState(() {
-      _selectedTheme = selectedTheme;
-    });
+    if (mounted) {
+      setState(() {
+        _selectedTheme = selectedTheme;
+      });
+    }
   }
 
   void _loadDevModePref() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _devMode = prefs.getBool(_devModePrefKey) ?? false;
-    });
+    if (mounted) {
+      setState(() {
+        _devMode = prefs.getBool(_devModePrefKey) ?? false;
+      });
+    }
   }
 
   @override
@@ -148,6 +156,8 @@ class _SettingsSectionState extends State<SettingsSection> {
         );
         // Reset validation state when API key changes
         _apiKeyValid = null;
+        // Clear cached validation result in the service
+        ApiValidationService().clearCache();
         _loadApiKeyValidationState();
       }
     }
@@ -206,10 +216,12 @@ class _SettingsSectionState extends State<SettingsSection> {
   Future<void> _validateApiKey() async {
     if (_isValidatingApiKey) return;
 
-    setState(() {
-      _isValidatingApiKey = true;
-      _apiKeyValid = null;
-    });
+    if (mounted) {
+      setState(() {
+        _isValidatingApiKey = true;
+        _apiKeyValid = null;
+      });
+    }
 
     try {
       final result = await ApiValidationService().validateApiKey(
@@ -220,10 +232,12 @@ class _SettingsSectionState extends State<SettingsSection> {
         forceValidation: true,
       );
 
-      setState(() {
-        _apiKeyValid = result.isValid;
-        _isValidatingApiKey = false;
-      });
+      if (mounted) {
+        setState(() {
+          _apiKeyValid = result.isValid;
+          _isValidatingApiKey = false;
+        });
+      }
 
       // Track validation in analytics
       AnalyticsService().logFeatureUsed('api_key_validation');
@@ -233,14 +247,16 @@ class _SettingsSectionState extends State<SettingsSection> {
         AnalyticsService().logFeatureUsed('api_key_validation_failed');
       }
     } catch (e) {
-      setState(() {
-        _isValidatingApiKey = false;
-        _apiKeyValid = false;
-      });
-      SnackbarService().showError(
-        context,
-        'Validation failed: ${e.toString()}',
-      );
+      if (mounted) {
+        setState(() {
+          _isValidatingApiKey = false;
+          _apiKeyValid = false;
+        });
+        SnackbarService().showError(
+          context,
+          'Validation failed: ${e.toString()}',
+        );
+      }
     }
   }
 
@@ -250,9 +266,11 @@ class _SettingsSectionState extends State<SettingsSection> {
         apiKey: _apiKeyController.text,
         modelName: _selectedModelName,
       );
-      setState(() {
-        _apiKeyValid = isValid;
-      });
+      if (mounted) {
+        setState(() {
+          _apiKeyValid = isValid;
+        });
+      }
     }
   }
 
@@ -526,6 +544,9 @@ class _SettingsSectionState extends State<SettingsSection> {
                   setState(() {
                     _apiKeyValid = null;
                   });
+
+                  // Clear cached validation result in the service
+                  ApiValidationService().clearCache();
                 },
               ),
               // Validation button
