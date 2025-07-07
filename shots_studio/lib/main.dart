@@ -36,31 +36,36 @@ import 'package:shots_studio/services/custom_path_service.dart';
 import 'package:shots_studio/widgets/custom_paths_dialog.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+  await SentryFlutter.init(
+    (options) {
+      options.dsn =
+          'https://6f96d22977b283fc325e038ac45e6e5e@o4509484018958336.ingest.us.sentry.io/4509484020072448';
 
-  // Initialize Analytics (PostHog)
-  await AnalyticsService().initialize();
+      options.tracesSampleRate =
+          kDebugMode ? 0 : 0.1; // 30% in debug, 10% in production
+    },
+    appRunner: () async {
+      WidgetsFlutterBinding.ensureInitialized();
 
-  // Optimize image cache for better memory management
-  MemoryUtils.optimizeImageCache();
+      // Initialize Analytics (PostHog)
+      await AnalyticsService().initialize();
 
-  await NotificationService().init();
+      // Optimize image cache for better memory management
+      MemoryUtils.optimizeImageCache();
 
-  // Initialize background service for AI processing only on non-web platforms
-  if (!kIsWeb) {
-    print("Main: Initial background service setup");
-    // Set up notification channel for background service
-    await _setupBackgroundServiceNotificationChannel();
-    // Don't initialize service at app startup - we'll do it when needed
-  }
+      await NotificationService().init();
 
-  await SentryFlutter.init((options) {
-    options.dsn =
-        'https://6f96d22977b283fc325e038ac45e6e5e@o4509484018958336.ingest.us.sentry.io/4509484020072448';
+      // Initialize background service for AI processing only on non-web platforms
+      if (!kIsWeb) {
+        print("Main: Initial background service setup");
+        // Set up notification channel for background service
+        await _setupBackgroundServiceNotificationChannel();
+        // Don't initialize service at app startup - we'll do it when needed
+      }
 
-    options.tracesSampleRate =
-        kDebugMode ? 0 : 0.1; // 30% in debug, 10% in production
-  }, appRunner: () => runApp(SentryWidget(child: const MyApp())));
+      runApp(SentryWidget(child: const MyApp()));
+    },
+  );
 }
 
 // Set up notification channel for background service
