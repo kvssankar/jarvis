@@ -17,16 +17,29 @@
     },
     {
       "show": true,
+      "id": "sunset_v1_8_90_1",
+      "title": "⚠️ v1.8.90 No Longer Supported",
+      "message": "v1.8.90 contains several issues that affect core features and overall functionality. While the app won't crash, this version is **no longer supported**.\n\nTo get the best experience and access to important fixes, please **update to the latest version immediately**.\n\n Click on Learn more to Update\n\n Thank you - Team Shots Studio",
+      "type": "update",
+      "priority": "high",
+      "show_once": false,
+      "valid_until": "2026-07-01T00:00:00Z",
+      "is_notification": false,
+      "version": "1.8.90",
+      "update_route": "https://github.com/AnsahMohammad/shots-studio/releases/latest"
+    },
+    {
+      "show": true,
       "id": "sunset_v1_8_90",
       "title": "⚠️ v1.8.90 No Longer Supported",
-      "message": "v1.8.90 contains several issues that affect core features and overall functionality. While the app won't crash, this version is **no longer supported**.\n\nTo get the best experience and access to important fixes, please **update to the latest version immediately**.\n\n Thank you - Team Shots Studio",
+      "message": "v1.8.90 contains several issues that affect core features and overall functionality. While the app won't crash, this version is **no longer supported**.\n\nTo get the best experience and access to important fixes, please **update to the latest version immediately**.\n\n Click on Learn more to Update\n\n Thank you - Team Shots Studio",
       "type": "update",
       "priority": "high",
       "show_once": false,
       "valid_until": "2026-07-01T00:00:00Z",
       "is_notification": true,
       "version": "1.8.90",
-      "update_route": "https://ansahmohammad.github.io/shots-studio/"
+      "update_route": "https://github.com/AnsahMohammad/shots-studio/releases/latest"
     },
     {
       "show": true,
