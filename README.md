@@ -5,7 +5,7 @@
 [![Downloads](https://img.shields.io/github/downloads/AnsahMohammad/shots-studio/total)](https://github.com/AnsahMohammad/shots-studio/releases)
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/AnsahMohammad/shots-studio/master/shots_studio/assets/icon/icon.png" width="20%" height="20%" />
+  <img src="https://raw.githubusercontent.com/AnsahMohammad/shots-studio/master/shots_studio/assets/icon/icon.png" width="20%" />
 
 # Shots Studio
 A Screenshot manager to declutter your gallery
