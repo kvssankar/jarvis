@@ -11,6 +11,7 @@ class ScreenshotCard extends StatelessWidget {
   final bool isSelected;
   final VoidCallback? onLongPress;
   final VoidCallback? onSelectionToggle;
+  final VoidCallback? onCorruptionDetected;
 
   const ScreenshotCard({
     super.key,
@@ -21,7 +22,19 @@ class ScreenshotCard extends StatelessWidget {
     this.isSelected = false,
     this.onLongPress,
     this.onSelectionToggle,
+    this.onCorruptionDetected,
   });
+
+  void _handleCorruption() {
+    // Mark as AI processed if not already and notify parent
+    if (!screenshot.aiProcessed) {
+      screenshot.aiProcessed = true;
+      // Defer the callback to avoid calling setState during build
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        onCorruptionDetected?.call();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +61,7 @@ class ScreenshotCard extends StatelessWidget {
               );
             },
             errorBuilder: (context, error, stackTrace) {
+              _handleCorruption();
               return Container(
                 color: Theme.of(context).colorScheme.surface,
                 child: Center(
@@ -62,6 +76,7 @@ class ScreenshotCard extends StatelessWidget {
           ),
         );
       } else {
+        _handleCorruption();
         imageWidget = ClipRRect(
           borderRadius: BorderRadius.circular(borderRadius - 3.0),
           child: Container(
@@ -108,6 +123,7 @@ class ScreenshotCard extends StatelessWidget {
             );
           },
           errorBuilder: (context, error, stackTrace) {
+            _handleCorruption();
             return Container(
               color: Theme.of(context).colorScheme.surface,
               child: Center(
@@ -122,6 +138,7 @@ class ScreenshotCard extends StatelessWidget {
         ),
       );
     } else {
+      _handleCorruption();
       imageWidget = ClipRRect(
         borderRadius: BorderRadius.circular(borderRadius - 3.0),
         child: Container(

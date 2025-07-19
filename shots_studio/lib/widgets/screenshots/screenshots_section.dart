@@ -10,6 +10,7 @@ class ScreenshotsSection extends StatefulWidget {
   final Function(Screenshot) onScreenshotTap;
   final Widget Function(BuildContext, Screenshot)? screenshotDetailBuilder;
   final Function(List<String>)? onBulkDelete;
+  final VoidCallback? onScreenshotUpdated;
 
   const ScreenshotsSection({
     super.key,
@@ -17,6 +18,7 @@ class ScreenshotsSection extends StatefulWidget {
     required this.onScreenshotTap,
     this.screenshotDetailBuilder,
     this.onBulkDelete,
+    this.onScreenshotUpdated,
   });
 
   @override
@@ -327,6 +329,7 @@ class _ScreenshotsSectionState extends State<ScreenshotsSection> {
                 onLongPress: () => _enterSelectionMode(screenshot.id),
                 onSelectionToggle:
                     () => _toggleScreenshotSelection(screenshot.id),
+                onCorruptionDetected: widget.onScreenshotUpdated,
                 destinationBuilder:
                     widget.screenshotDetailBuilder != null && !_isSelectionMode
                         ? (context) =>

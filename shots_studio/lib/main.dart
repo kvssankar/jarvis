@@ -1058,6 +1058,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
+  void _onScreenshotUpdated() {
+    setState(() {
+      // Refresh UI when screenshot data changes (like aiProcessed flag)
+    });
+  }
+
   void _updateCollection(Collection updatedCollection) {
     // Check if autoAddEnabled was just turned on
     bool wasAutoAddJustEnabled = false;
@@ -1730,6 +1736,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   screenshots: _activeScreenshots,
                   onScreenshotTap: _showScreenshotDetail,
                   onBulkDelete: _bulkDeleteScreenshots,
+                  onScreenshotUpdated: _onScreenshotUpdated,
                   screenshotDetailBuilder: (context, screenshot) {
                     final int initialIndex = _activeScreenshots.indexWhere(
                       (s) => s.id == screenshot.id,

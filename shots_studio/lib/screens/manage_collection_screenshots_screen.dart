@@ -124,6 +124,9 @@ class _ManageCollectionScreenshotsScreenState
                               children: [
                                 ScreenshotCard(
                                   screenshot: screenshot,
+                                  onCorruptionDetected: () {
+                                    setState(() {});
+                                  },
                                   onTap:
                                       () => _toggleScreenshotSelection(
                                         screenshot.id,

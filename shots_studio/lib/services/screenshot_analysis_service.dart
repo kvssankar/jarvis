@@ -97,11 +97,28 @@ class ScreenshotAnalysisService extends AIService {
     List<Screenshot> images, {
     List<Map<String, String?>>? autoAddCollections,
   }) async {
+    // Filter out screenshots that are already AI processed (including corrupted ones)
+    final unprocessedImages =
+        images.where((image) => !image.aiProcessed).toList();
+
+    // If no images need processing, return empty request
+    if (unprocessedImages.isEmpty) {
+      return {
+        'contents': [
+          {
+            'parts': [
+              {'text': 'No images to process - all are already processed.'},
+            ],
+          },
+        ],
+      };
+    }
+
     List<Map<String, dynamic>> contentParts = [
       {'text': _getAnalysisPrompt(autoAddCollections: autoAddCollections)},
     ];
 
-    for (var image in images) {
+    for (var image in unprocessedImages) {
       String imageIdentifier = image.id;
       Map<String, String> imageData;
 
@@ -139,6 +156,23 @@ class ScreenshotAnalysisService extends AIService {
   ) async {
     if (isCancelled || _processingTerminated) {
       return {'error': 'Request cancelled by user', 'statusCode': 499};
+    }
+
+    // Check if this is an empty request (all images already processed)
+    if (requestData.containsKey('contents')) {
+      final contents = requestData['contents'] as List;
+      if (contents.length == 1 &&
+          contents[0]['parts'] != null &&
+          (contents[0]['parts'] as List).length == 1 &&
+          (contents[0]['parts'][0]['text'] as String).contains(
+            'No images to process',
+          )) {
+        return {
+          'data': '[]', // Empty results
+          'statusCode': 200,
+          'skipped': true,
+        };
+      }
     }
 
     final url = Uri.parse(
@@ -238,6 +272,20 @@ class ScreenshotAnalysisService extends AIService {
       int end = min(i + config.maxParallel, screenshots.length);
       List<Screenshot> batch = screenshots.sublist(i, end);
 
+      // Filter out already processed screenshots from this batch
+      final unprocessedBatch = batch.where((s) => !s.aiProcessed).toList();
+
+      // If no screenshots in this batch need processing, skip to next batch
+      if (unprocessedBatch.isEmpty) {
+        // Still call the callback to maintain progress tracking
+        onBatchProcessed(batch, {
+          'skipped': true,
+          'reason': 'All screenshots already processed',
+          'statusCode': 200,
+        });
+        continue;
+      }
+
       try {
         if (isCancelled) {
           finalResults['cancelled'] = true;
@@ -249,7 +297,7 @@ class ScreenshotAnalysisService extends AIService {
         }
 
         final requestData = await _prepareRequestData(
-          batch,
+          unprocessedBatch, // Use filtered batch
           autoAddCollections: autoAddCollections,
         );
         final result = await _makeAPIRequest(requestData);

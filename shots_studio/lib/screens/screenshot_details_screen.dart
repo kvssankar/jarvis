@@ -61,9 +61,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     _tags = List.from(widget.screenshot.tags);
     _descriptionController = TextEditingController(
       text: widget.screenshot.description,
-    );
-
-    // Track screenshot details screen access
+    ); // Track screenshot details screen access
     AnalyticsService().logScreenView('screenshot_details_screen');
 
     // Check for expired reminders
@@ -536,6 +534,11 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
           file,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
+            // Mark as AI processed and persist the change when image fails to load
+            if (!widget.screenshot.aiProcessed) {
+              widget.screenshot.aiProcessed = true;
+              _updateScreenshotDetails();
+            }
             return Container(
               color: Theme.of(context).colorScheme.surface,
               child: Column(
@@ -559,8 +562,11 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
           },
         );
       } else {
-        // File not found - mark as AI processed to prevent sending to AI
-        widget.screenshot.aiProcessed = true;
+        // File not found - mark as AI processed to prevent sending to AI and persist the change
+        if (!widget.screenshot.aiProcessed) {
+          widget.screenshot.aiProcessed = true;
+          _updateScreenshotDetails();
+        }
         imageWidget = Container(
           color: Theme.of(context).colorScheme.surface,
           child: Column(
@@ -598,8 +604,11 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         widget.screenshot.bytes!,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          // Mark as AI processed to prevent sending to AI if image is corrupt or unreadable
-          widget.screenshot.aiProcessed = true;
+          // Mark as AI processed and persist the change when image fails to load
+          if (!widget.screenshot.aiProcessed) {
+            widget.screenshot.aiProcessed = true;
+            _updateScreenshotDetails();
+          }
           return Container(
             color: Theme.of(context).colorScheme.surface,
             child: Column(
@@ -623,8 +632,11 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         },
       );
     } else {
-      // No image data available - mark as AI processed to prevent sending to AI
-      widget.screenshot.aiProcessed = true;
+      // No image data available - mark as AI processed to prevent sending to AI and persist the change
+      if (!widget.screenshot.aiProcessed) {
+        widget.screenshot.aiProcessed = true;
+        _updateScreenshotDetails();
+      }
       imageWidget = Container(
         color: Theme.of(context).colorScheme.surface,
         child: Column(

@@ -280,7 +280,12 @@ class _EditCollectionScreenState extends State<EditCollectionScreen> {
                                 return Stack(
                                   fit: StackFit.expand,
                                   children: [
-                                    ScreenshotCard(screenshot: screenshot),
+                                    ScreenshotCard(
+                                      screenshot: screenshot,
+                                      onCorruptionDetected: () {
+                                        setState(() {});
+                                      },
+                                    ),
                                     Positioned(
                                       top: 0,
                                       right: 0,
