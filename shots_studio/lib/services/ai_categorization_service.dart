@@ -46,8 +46,7 @@ class AICategorizer {
       return AICategorizeResult(success: false, error: 'API key not set');
     }
 
-    final String modelName =
-        prefs.getString('selected_model') ?? 'gemini-2.0-flash';
+    final String modelName = prefs.getString('modelName') ?? 'gemini-2.0-flash';
     final int maxParallel = (prefs.getInt('max_parallel_ai') ?? 4) * 6;
 
     // Keep track of the current collection state as it gets updated

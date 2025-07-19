@@ -426,7 +426,7 @@ class _SettingsSectionState extends State<SettingsSection> {
                       items:
                           <String>[
                             'gemini-2.0-flash',
-                            'gemini-2.5-flash-pro',
+                            'gemini-2.5-pro',
                           ].map<DropdownMenuItem<String>>((String value) {
                             return DropdownMenuItem<String>(
                               value: value,

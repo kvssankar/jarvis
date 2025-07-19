@@ -304,8 +304,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       return;
     }
 
-    final String modelName =
-        prefs.getString('selected_model') ?? 'gemini-2.0-flash';
+    final String modelName = prefs.getString('modelName') ?? 'gemini-2.0-flash';
 
     setState(() {
       _isProcessingAI = true;
