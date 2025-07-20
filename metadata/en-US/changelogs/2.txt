@@ -1,0 +1,16 @@
+Fixed deprecation of gemini-2.5-flash-pro fixes
+Wrong model #80
+Remove unwanted permission to start on boot. fixes
+Unwanted boot on startup permission #78
+Fixed broken update checker. Fixes
+Update check broken after 1.8.90 beta toggle #74
+Fixed the unprocessed images indefinite processing by adding a check, that fixes
+Processing fails incase of a deleted file #70
+Add support for swipe navigation within the FullScreenImageViewer to navigate without exiting. fixes
+PhotoView goto next/previous screenshot #68.
+Add Hard delete function, which allows images to be deleted from the device. Fixes
+FR: option to disable safe delete #50
+Fixed the edit collection page non-scroll-able issue. Fixes
+Edit Page in Collections only take up 3/4th space #72 .
+Update the message channel for beta users.
+Reorganized settings by categorizing the related fields.
