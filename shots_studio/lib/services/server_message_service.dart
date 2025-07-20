@@ -91,12 +91,20 @@ class ServerMessageService {
   ) async {
     final prefs = await SharedPreferences.getInstance();
 
+    // Check if user has beta testing enabled
+    final betaTestingEnabled = prefs.getBool('beta_testing_enabled') ?? false;
+
     for (final messageData in messages) {
       try {
         final message = MessageInfo.fromJson(messageData);
 
         // Check if message should be shown
         if (!message.show) continue;
+
+        // Check if message is beta-only and user is not opted into beta
+        if (message.betaOnly && !betaTestingEnabled) {
+          continue;
+        }
 
         if (!_isVersionTargeted(message.version, currentVersion)) {
           continue;
@@ -170,6 +178,7 @@ class ServerMessageService {
       "valid_until": "2025-07-01T00:00:00Z",
       "is_notification": false,
       "version": "ALL",
+      "beta_only": false,
     };
 
     try {
@@ -196,6 +205,7 @@ class MessageInfo {
   final String? actionUrl;
   final MessageActionType? actionType;
   final String? updateRoute;
+  final bool betaOnly;
 
   MessageInfo({
     required this.show,
@@ -212,6 +222,7 @@ class MessageInfo {
     this.actionUrl,
     this.actionType,
     this.updateRoute,
+    this.betaOnly = false,
   });
 
   factory MessageInfo.fromJson(Map<String, dynamic> json) {
@@ -233,6 +244,7 @@ class MessageInfo {
       actionUrl: json['action_url']?.toString(),
       actionType: _parseActionType(json['action_type']),
       updateRoute: json['update_route']?.toString(),
+      betaOnly: json['beta_only'] ?? false,
     );
   }
 
