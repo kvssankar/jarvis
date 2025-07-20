@@ -8,6 +8,7 @@ import 'package:shots_studio/screens/full_screen_image_viewer.dart';
 import 'package:shots_studio/screens/search_screen.dart';
 import 'package:shots_studio/services/analytics_service.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
+import 'package:shots_studio/services/hard_delete_service.dart';
 import 'package:shots_studio/widgets/screenshots/tags/tag_input_field.dart';
 import 'package:shots_studio/widgets/screenshots/tags/tag_chip.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_collection_dialog.dart';
@@ -60,6 +61,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   bool _isProcessingOCR = false;
   final AIServiceManager _aiServiceManager = AIServiceManager();
   final OCRService _ocrService = OCRService();
+  bool _hardDeleteEnabled = false;
 
   @override
   void initState() {
@@ -72,6 +74,9 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
 
     // Check for expired reminders
     _checkExpiredReminders();
+
+    // Load hard delete setting
+    _loadHardDeleteSetting();
   }
 
   void _checkExpiredReminders() {
@@ -83,6 +88,15 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       });
       ReminderUtils.clearReminder(context, widget.screenshot);
       _updateScreenshotDetails();
+    }
+  }
+
+  void _loadHardDeleteSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _hardDeleteEnabled = prefs.getBool('hard_delete_enabled') ?? false;
+      });
     }
   }
 
@@ -463,18 +477,34 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
 
   Future<void> _confirmDeleteScreenshot() async {
     AnalyticsService().logFeatureUsed('screenshot_deletion_initiated');
+
+    // Build dialog content based on hard delete setting
+    String dialogTitle = 'Delete Screenshot?';
+    String dialogContent =
+        'Are you sure you want to delete this screenshot? This action cannot be undone.';
+
+    if (_hardDeleteEnabled && HardDeleteService.isHardDeleteAvailable()) {
+      dialogTitle = 'Delete Screenshot?';
+      dialogContent =
+          'This will:\n'
+          '1. Remove the screenshot from the app\n'
+          '2. Delete the image file from your device\n\n'
+          'This action cannot be undone. Continue?'
+          '\n if you do not want to delete the files from your device, disable hard delete in settings.';
+    }
+
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(
-            'Delete Screenshot?',
+            dialogTitle,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSecondaryContainer,
             ),
           ),
           content: Text(
-            'Are you sure you want to delete this screenshot? This action cannot be undone.',
+            dialogContent,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onTertiaryContainer,
             ),
@@ -502,20 +532,80 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     );
 
     if (confirm == true) {
-      // Call the delete callback
+      await _performDelete();
+    }
+  }
+
+  /// Perform the actual deletion (soft delete + optional hard delete)
+  Future<void> _performDelete() async {
+    try {
+      // Step 1: Perform soft delete first
       widget.screenshot.isDeleted = true;
       widget.onDeleteScreenshot(widget.screenshot.id);
       AnalyticsService().logFeatureUsed('screenshot_deleted');
 
-      // Use navigation callback if provided, otherwise pop
+      // Step 2: Attempt hard delete if enabled and available
+      String deleteMessage = 'Screenshot deleted successfully';
+
+      if (_hardDeleteEnabled && HardDeleteService.isHardDeleteAvailable()) {
+        print(
+          'HardDeleteService: Attempting hard delete for ${widget.screenshot.path}',
+        );
+
+        final hardDeleteResult = await HardDeleteService.hardDeleteScreenshot(
+          widget.screenshot,
+        );
+
+        if (hardDeleteResult.success) {
+          if (hardDeleteResult.fileExisted) {
+            deleteMessage = 'Screenshot deleted from app and device';
+            print('HardDeleteService: Successfully hard deleted file');
+          } else {
+            deleteMessage =
+                'Screenshot deleted from app (file was already removed)';
+            print('HardDeleteService: File was already deleted or moved');
+          }
+        } else {
+          // Hard delete failed, but soft delete succeeded
+          deleteMessage =
+              'Screenshot deleted from app, but file deletion failed: ${hardDeleteResult.error}';
+          print(
+            'HardDeleteService: Hard delete failed: ${hardDeleteResult.error}',
+          );
+
+          // Show a more detailed error if hard delete failed
+          if (mounted) {
+            SnackbarService().showWarning(
+              context,
+              'Screenshot removed from app, but couldn\'t delete file: ${hardDeleteResult.error}',
+            );
+          }
+        }
+
+        print('HardDeleteService: Hard delete result: $hardDeleteResult');
+      } else {
+        print('HardDeleteService: Hard delete not available or disabled');
+      }
+
+      // Navigation and success message
       if (widget.onNavigateAfterDelete != null) {
         widget.onNavigateAfterDelete!();
       } else {
         Navigator.of(context).pop();
       }
 
-      // Show confirmation message
-      SnackbarService().showSuccess(context, 'Screenshot deleted successfully');
+      // Show appropriate success message
+      if (mounted &&
+          !(_hardDeleteEnabled &&
+              HardDeleteService.isHardDeleteAvailable() &&
+              !deleteMessage.contains('successfully'))) {
+        SnackbarService().showSuccess(context, deleteMessage);
+      }
+    } catch (e) {
+      print('Error during delete operation: $e');
+      if (mounted) {
+        SnackbarService().showError(context, 'Error deleting screenshot: $e');
+      }
     }
   }
 
