@@ -6,7 +6,7 @@
       "show": true,
       "id": "live_v1_8_103_1",
       "title": "Welcome to v1.8.103!",
-      "message": "🎉 Massive thanks to you for using and supporting Shots Studio!\n\nHere's what's you should try in v1.8.103:\n\n🧹 Hard Delete — Now you can fully remove images from your device directly by deleting from the app. (just make sure to disable the safe delete toggle in settings) \n\n📲 Swipe between screenshots in fullscreen mode - Now you can open the image in full screen mode and swipe between them without exiting to details screen\n\n⚙️ Revamped Settings layout for easier access\n\n🧪 Want early access to on-device AI and other exciting beta features?\nToggle Beta Mode in the 'Advanced' section to receive pre-release updates.\n\nHuge thanks to you for helping us level up 🙌. \n\n With Love, \nTeam Shots Studio",
+      "message": "🎉 Massive thanks to you for using and supporting Shots Studio!\n\nHere's what's you should try in v1.8.103:\n\n🧹 Hard Delete — Now you can fully remove images from your device directly by deleting from the app. (just make sure to disable the safe delete toggle in settings) \n\n📲 Swipe between screenshots in fullscreen mode - Now you can open the image in full screen mode and swipe between them without exiting to details screen\n\n⚙️ Revamped Settings layout for easier access\n\n🤖 Gemini-2.5-pro is back online!\n\n🧪 Want early access to on-device AI and other exciting beta features?\nToggle Beta Mode in the 'Advanced' section to receive pre-release updates.\n\nHuge thanks to you for helping us level up 🙌. \n\n With Love, \nTeam Shots Studio",
       "type": "update",
       "priority": "high",
       "show_once": true,
