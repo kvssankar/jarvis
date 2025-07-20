@@ -7,7 +7,8 @@ class ThemeManager {
   static const String _amoledModeKey = 'amoled_mode_enabled';
 
   static const Map<String, Color> themeColors = {
-    'Dynamic Theme': Colors.amber, // Uses dynamic colors from system wallpaper
+    'Adaptive Theme':
+        Colors.blueGrey, // Default dynamic colors from system wallpaper
     'Amber': Colors.amber,
     'Ocean Blue': Colors.blue,
     'Forest Green': Colors.green,
@@ -24,7 +25,7 @@ class ThemeManager {
 
   static Future<String> getSelectedTheme() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_themePreferenceKey) ?? 'Dynamic Theme';
+    return prefs.getString(_themePreferenceKey) ?? 'Adaptive Theme';
   }
 
   static Future<void> setSelectedTheme(String themeName) async {
@@ -43,7 +44,7 @@ class ThemeManager {
   }
 
   static Color getThemeColor(String themeName) {
-    return themeColors[themeName] ?? Colors.amber;
+    return themeColors[themeName] ?? Colors.blueGrey;
   }
 
   static List<String> getAvailableThemes() {
@@ -60,8 +61,8 @@ class ThemeManager {
     ColorScheme lightScheme;
     ColorScheme darkScheme;
 
-    // Use dynamic colors if available and "Dynamic Theme" is selected
-    if (selectedTheme == 'Dynamic Theme' &&
+    // Use dynamic colors if available and "Adaptive Theme" is selected
+    if (selectedTheme == 'Adaptive Theme' &&
         lightDynamic != null &&
         darkDynamic != null) {
       lightScheme = lightDynamic;

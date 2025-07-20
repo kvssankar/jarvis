@@ -52,7 +52,7 @@ class _SettingsSectionState extends State<SettingsSection> {
   final FocusNode _apiKeyFocusNode = FocusNode();
   bool _autoProcessEnabled = true;
   bool _amoledModeEnabled = false;
-  String _selectedTheme = 'Dynamic Theme';
+  String _selectedTheme = 'Adaptive Theme';
   bool _isValidatingApiKey = false;
   bool? _apiKeyValid;
   bool _devMode = false;
@@ -203,7 +203,7 @@ class _SettingsSectionState extends State<SettingsSection> {
       _amoledModeEnabled = widget.currentAmoledModeEnabled!;
     }
     if (widget.currentSelectedTheme != oldWidget.currentSelectedTheme) {
-      _selectedTheme = widget.currentSelectedTheme ?? 'Dynamic Theme';
+      _selectedTheme = widget.currentSelectedTheme ?? 'Adaptive Theme';
     }
     if (widget.currentDevMode != oldWidget.currentDevMode &&
         widget.currentDevMode != null) {
@@ -379,37 +379,6 @@ class _SettingsSectionState extends State<SettingsSection> {
               fontWeight: FontWeight.bold,
             ),
           ),
-        ),
-        SwitchListTile(
-          secondary: Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
-          title: Text(
-            'Auto-Process Screenshots',
-            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
-          ),
-          subtitle: Text(
-            _autoProcessEnabled
-                ? 'Screenshots will be automatically processed when added'
-                : 'Manual processing only',
-            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-          ),
-          value: _autoProcessEnabled,
-          activeColor: theme.colorScheme.primary,
-          onChanged: (bool value) {
-            setState(() {
-              _autoProcessEnabled = value;
-            });
-            _saveAutoProcessEnabled(value);
-
-            // Track settings change in analytics
-            AnalyticsService().logFeatureUsed('setting_changed_auto_process');
-            AnalyticsService().logFeatureAdopted(
-              value ? 'auto_process_enabled' : 'auto_process_disabled',
-            );
-
-            if (widget.onAutoProcessEnabledChanged != null) {
-              widget.onAutoProcessEnabledChanged!(value);
-            }
-          },
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -701,6 +670,37 @@ class _SettingsSectionState extends State<SettingsSection> {
             ),
           ),
         SwitchListTile(
+          secondary: Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
+          title: Text(
+            'Auto-Process Screenshots',
+            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+          ),
+          subtitle: Text(
+            _autoProcessEnabled
+                ? 'Screenshots will be automatically processed when added'
+                : 'Manual processing only',
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          value: _autoProcessEnabled,
+          activeColor: theme.colorScheme.primary,
+          onChanged: (bool value) {
+            setState(() {
+              _autoProcessEnabled = value;
+            });
+            _saveAutoProcessEnabled(value);
+
+            // Track settings change in analytics
+            AnalyticsService().logFeatureUsed('setting_changed_auto_process');
+            AnalyticsService().logFeatureAdopted(
+              value ? 'auto_process_enabled' : 'auto_process_disabled',
+            );
+
+            if (widget.onAutoProcessEnabledChanged != null) {
+              widget.onAutoProcessEnabledChanged!(value);
+            }
+          },
+        ),
+        SwitchListTile(
           secondary: Icon(
             Icons.nightlight_round,
             color: theme.colorScheme.primary,
@@ -734,7 +734,6 @@ class _SettingsSectionState extends State<SettingsSection> {
             }
           },
         ),
-
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Row(
