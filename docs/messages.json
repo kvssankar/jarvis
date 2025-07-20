@@ -5,7 +5,7 @@
     {
       "show": true,
       "id": "live_v1_8_103_1",
-      "title": "🔥 Welcome to v1.8.103!",
+      "title": "Welcome to v1.8.103!",
       "message": "🎉 Massive thanks to you for using and supporting Shots Studio!\n\nHere's what's you should try in v1.8.103:\n\n🧹 Hard Delete — Now you can fully remove images from your device directly by deleting from the app. (just make sure to disable the safe delete toggle in settings) \n\n📲 Swipe between screenshots in fullscreen mode - Now you can open the image in full screen mode and swipe between them without exiting to details screen\n\n⚙️ Revamped Settings layout for easier access\n\n🧪 Want early access to on-device AI and other exciting beta features?\nToggle Beta Mode in the 'Advanced' section to receive pre-release updates.\n\nHuge thanks to you for helping us level up 🙌. \n\n With Love, \nTeam Shots Studio",
       "type": "update",
       "priority": "high",
@@ -15,10 +15,10 @@
       "version": "1.8.103",
       "update_route": "https://ansahmohammad.github.io/shots-studio/donation.html"
     },
-        {
+    {
       "show": true,
       "id": "welcome_beta_103",
-      "title": "🔥 Thanks for opting for Beta",
+      "title": "Thanks for opting for Beta",
       "message": "👋 Welcome aboard, Beta Tester!\n\nThanks for joining the beta program and supporting Shots Studio.\n\n🙏 We apologize for the delay in on-device AI updates — a bug in the release channel caused the holdup. It has been fixed in the latest update, and you can expect a pre-release in the next 2 weeks.\n\nStay tuned and keep testing 💪\n\nWith Love,\nTeam Shots Studio",
       "type": "update",
       "priority": "high",
@@ -28,6 +28,32 @@
       "version": "1.8.103",
       "update_route": "https://ansahmohammad.github.io/shots-studio/donation.html",
       "beta_only": true
+    },
+    {
+      "show": true,
+      "id": "sunset_v1_8_93_1",
+      "title": "A new update available! v1.8.103 is out",
+      "message": "A new update is available! v1.8.103 is out with some exciting new features and improvements.\n\nClick on Learn more to Update\n\nThank you - Team Shots Studio",
+      "type": "update",
+      "priority": "high",
+      "show_once": true,
+      "valid_until": "2026-07-01T00:00:00Z",
+      "is_notification": false,
+      "version": "1.8.93",
+      "update_route": "https://github.com/AnsahMohammad/shots-studio/releases/tag/v1.8.103"
+    },
+    {
+      "show": true,
+      "id": "sunset_v1_8_93_2",
+      "title": "A new update available! v1.8.103 is out",
+      "message": "A new update is available! v1.8.103 is out with some exciting new features and improvements.\n\nClick on Learn more to Update\n\nThank you - Team Shots Studio",
+      "type": "update",
+      "priority": "high",
+      "show_once": false,
+      "valid_until": "2026-07-01T00:00:00Z",
+      "is_notification": true,
+      "version": "1.8.93",
+      "update_route": "https://github.com/AnsahMohammad/shots-studio/releases/tag/v1.8.103"
     },
     {
       "show": true,
