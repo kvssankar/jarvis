@@ -60,6 +60,21 @@ class _ScreenshotSwipeDetailScreenState
     });
   }
 
+  void _navigateToIndex(int index) {
+    if (index >= 0 &&
+        index < widget.screenshots.length &&
+        index != _currentIndex) {
+      setState(() {
+        _currentIndex = index;
+      });
+
+      // Jump instantly to the new page without animation
+      if (_pageController.hasClients) {
+        _pageController.jumpToPage(index);
+      }
+    }
+  }
+
   void _onScreenshotDeleted(String screenshotId) {
     // Find the index of the deleted screenshot
     final deletedIndex = widget.screenshots.indexWhere(
@@ -137,12 +152,14 @@ class _ScreenshotSwipeDetailScreenState
           screenshot: widget.screenshots[index],
           allCollections: widget.allCollections,
           allScreenshots: widget.allScreenshots,
+          contextualScreenshots: widget.screenshots,
           onUpdateCollection: widget.onUpdateCollection,
           onDeleteScreenshot: _onScreenshotDeleted,
           onScreenshotUpdated: widget.onScreenshotUpdated,
           currentIndex: index,
           totalCount: widget.screenshots.length,
           onNavigateAfterDelete: _onNavigateAfterDelete,
+          onNavigateToIndex: _navigateToIndex,
         );
       },
     );

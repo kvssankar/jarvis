@@ -23,12 +23,16 @@ class ScreenshotDetailScreen extends StatefulWidget {
   final Screenshot screenshot;
   final List<Collection> allCollections;
   final List<Screenshot> allScreenshots;
+  final List<Screenshot>?
+  contextualScreenshots; // The filtered/contextual list for swiping
   final Function(Collection) onUpdateCollection;
   final Function(String) onDeleteScreenshot;
   final VoidCallback? onScreenshotUpdated;
   final int? currentIndex;
   final int? totalCount;
   final VoidCallback? onNavigateAfterDelete;
+  final Function(int)?
+  onNavigateToIndex; // Callback for navigating to a specific index
 
   const ScreenshotDetailScreen({
     super.key,
@@ -37,10 +41,12 @@ class ScreenshotDetailScreen extends StatefulWidget {
     required this.allScreenshots,
     required this.onUpdateCollection,
     required this.onDeleteScreenshot,
+    this.contextualScreenshots,
     this.onScreenshotUpdated,
     this.currentIndex,
     this.totalCount,
     this.onNavigateAfterDelete,
+    this.onNavigateToIndex,
   });
 
   @override
@@ -1055,17 +1061,32 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             child: InkWell(
-              onTap: () {
+              onTap: () async {
                 AnalyticsService().logFeatureUsed('full_screen_image_viewer');
-                Navigator.push(
+                final result = await Navigator.push<int>(
                   context,
                   MaterialPageRoute(
                     builder:
                         (context) => FullScreenImageViewer(
-                          screenshot: widget.screenshot,
+                          screenshots:
+                              widget.contextualScreenshots ??
+                              [widget.screenshot],
+                          initialIndex:
+                              widget.contextualScreenshots?.indexWhere(
+                                (s) => s.id == widget.screenshot.id,
+                              ) ??
+                              0,
+                          onScreenshotChanged: widget.onNavigateToIndex,
                         ),
                   ),
                 );
+
+                // If user navigated to a different screenshot, use the callback to sync
+                if (result != null &&
+                    mounted &&
+                    widget.onNavigateToIndex != null) {
+                  widget.onNavigateToIndex!(result);
+                }
               },
               child: Container(
                 width: double.infinity,
@@ -1098,16 +1119,31 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
-            onTap: () {
+            onTap: () async {
               AnalyticsService().logFeatureUsed('full_screen_image_viewer');
-              Navigator.push(
+              final result = await Navigator.push<int>(
                 context,
                 MaterialPageRoute(
                   builder:
-                      (context) =>
-                          FullScreenImageViewer(screenshot: widget.screenshot),
+                      (context) => FullScreenImageViewer(
+                        screenshots:
+                            widget.contextualScreenshots ?? [widget.screenshot],
+                        initialIndex:
+                            widget.contextualScreenshots?.indexWhere(
+                              (s) => s.id == widget.screenshot.id,
+                            ) ??
+                            0,
+                        onScreenshotChanged: widget.onNavigateToIndex,
+                      ),
                 ),
               );
+
+              // If user navigated to a different screenshot, use the callback to sync
+              if (result != null &&
+                  mounted &&
+                  widget.onNavigateToIndex != null) {
+                widget.onNavigateToIndex!(result);
+              }
             },
             child: Container(
               height: MediaQuery.of(context).size.height * 0.5,
