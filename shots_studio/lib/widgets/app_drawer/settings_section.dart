@@ -825,37 +825,6 @@ class _SettingsSectionState extends State<SettingsSection> {
         ),
         SwitchListTile(
           secondary: Icon(
-            Icons.developer_mode,
-            color: theme.colorScheme.primary,
-          ),
-          title: Text(
-            'Expert Mode',
-            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
-          ),
-          subtitle: Text(
-            'Show extra info and enable advanced settings',
-            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-          ),
-          value: _devMode,
-          activeColor: theme.colorScheme.primary,
-          onChanged: (bool value) {
-            setState(() {
-              _devMode = value;
-            });
-            _saveDevMode(value);
-
-            // Track analytics for expert/dev mode setting
-            AnalyticsService().logFeatureUsed(
-              'settings_expert_mode_${value ? 'enabled' : 'disabled'}',
-            );
-
-            if (widget.onDevModeChanged != null) {
-              widget.onDevModeChanged!(value);
-            }
-          },
-        ),
-        SwitchListTile(
-          secondary: Icon(
             Icons.delete_forever,
             color: theme.colorScheme.primary,
           ),
@@ -894,6 +863,37 @@ class _SettingsSectionState extends State<SettingsSection> {
               widget.onHardDeleteChanged!(
                 !value,
               ); // Pass the hard delete value (opposite of safe delete)
+            }
+          },
+        ),
+        SwitchListTile(
+          secondary: Icon(
+            Icons.developer_mode,
+            color: theme.colorScheme.primary,
+          ),
+          title: Text(
+            'Expert Mode',
+            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+          ),
+          subtitle: Text(
+            'Show extra info and enable advanced settings',
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          value: _devMode,
+          activeColor: theme.colorScheme.primary,
+          onChanged: (bool value) {
+            setState(() {
+              _devMode = value;
+            });
+            _saveDevMode(value);
+
+            // Track analytics for expert/dev mode setting
+            AnalyticsService().logFeatureUsed(
+              'settings_expert_mode_${value ? 'enabled' : 'disabled'}',
+            );
+
+            if (widget.onDevModeChanged != null) {
+              widget.onDevModeChanged!(value);
             }
           },
         ),
