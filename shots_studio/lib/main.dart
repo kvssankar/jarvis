@@ -111,7 +111,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   bool _amoledModeEnabled = false;
-  String _selectedTheme = 'Dynamic Theme';
+  String _selectedTheme = 'Adaptive Theme';
 
   @override
   void initState() {
@@ -206,7 +206,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       !kDebugMode; // Default to false in debug mode, true in production
   bool _amoledModeEnabled = false;
   bool _betaTestingEnabled = false;
-  String _selectedTheme = 'Dynamic Theme';
+  String _selectedTheme = 'Adaptive Theme';
 
   // update screenshots
   List<Screenshot> get _activeScreenshots {
@@ -518,7 +518,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           prefs.getBool('analytics_consent_enabled') ?? !kDebugMode;
       _amoledModeEnabled = prefs.getBool('amoled_mode_enabled') ?? false;
       _betaTestingEnabled = prefs.getBool('beta_testing_enabled') ?? false;
-      _selectedTheme = prefs.getString('selected_theme') ?? 'Dynamic Theme';
+      _selectedTheme = prefs.getString('selected_theme') ?? 'Adaptive Theme';
     });
   }
 
@@ -1056,6 +1056,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         _autoProcessWithGemini();
       }
     }
+  }
+
+  void _onScreenshotUpdated() {
+    setState(() {
+      // Refresh UI when screenshot data changes (like aiProcessed flag)
+    });
   }
 
   void _updateCollection(Collection updatedCollection) {
@@ -1730,6 +1736,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   screenshots: _activeScreenshots,
                   onScreenshotTap: _showScreenshotDetail,
                   onBulkDelete: _bulkDeleteScreenshots,
+                  onScreenshotUpdated: _onScreenshotUpdated,
                   screenshotDetailBuilder: (context, screenshot) {
                     final int initialIndex = _activeScreenshots.indexWhere(
                       (s) => s.id == screenshot.id,

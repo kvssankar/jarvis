@@ -164,6 +164,9 @@ class _SearchScreenState extends State<SearchScreen> {
                   final screenshot = _filteredScreenshots[index];
                   return ScreenshotCard(
                     screenshot: screenshot,
+                    onCorruptionDetected: () {
+                      setState(() {});
+                    },
                     destinationBuilder: (context) {
                       final int initialIndex = _filteredScreenshots.indexWhere(
                         (s) => s.id == screenshot.id,

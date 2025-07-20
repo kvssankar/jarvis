@@ -352,6 +352,9 @@ class _CreateCollectionScreenState extends State<CreateCollectionScreen> {
                                     children: [
                                       ScreenshotCard(
                                         screenshot: screenshot,
+                                        onCorruptionDetected: () {
+                                          setState(() {});
+                                        },
                                         onTap:
                                             () => _toggleScreenshotSelection(
                                               screenshot.id,

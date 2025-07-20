@@ -20,6 +20,8 @@ class SettingsSection extends StatefulWidget {
   final Function(String)? onThemeChanged;
   final bool? currentDevMode;
   final Function(bool)? onDevModeChanged;
+  final bool? currentHardDeleteEnabled;
+  final Function(bool)? onHardDeleteChanged;
 
   const SettingsSection({
     super.key,
@@ -36,6 +38,8 @@ class SettingsSection extends StatefulWidget {
     this.onThemeChanged,
     this.currentDevMode,
     this.onDevModeChanged,
+    this.currentHardDeleteEnabled,
+    this.onHardDeleteChanged,
   });
 
   @override
@@ -48,16 +52,19 @@ class _SettingsSectionState extends State<SettingsSection> {
   final FocusNode _apiKeyFocusNode = FocusNode();
   bool _autoProcessEnabled = true;
   bool _amoledModeEnabled = false;
-  String _selectedTheme = 'Dynamic Theme';
+  String _selectedTheme = 'Adaptive Theme';
   bool _isValidatingApiKey = false;
   bool? _apiKeyValid;
   bool _devMode = false;
+  bool _hardDeleteEnabled = false;
+  bool _safeDeleteEnabled = true;
 
   static const String _apiKeyPrefKey = 'apiKey';
   static const String _modelNamePrefKey = 'modelName';
   static const String _autoProcessEnabledPrefKey = 'auto_process_enabled';
   static const String _amoledModeEnabledPrefKey = 'amoled_mode_enabled';
   static const String _devModePrefKey = 'dev_mode';
+  static const String _hardDeleteEnabledPrefKey = 'hard_delete_enabled';
 
   @override
   void initState() {
@@ -95,6 +102,15 @@ class _SettingsSectionState extends State<SettingsSection> {
       _devMode = widget.currentDevMode!;
     } else {
       _loadDevModePref();
+    }
+
+    // Initialize hard delete state
+    if (widget.currentHardDeleteEnabled != null) {
+      _hardDeleteEnabled = widget.currentHardDeleteEnabled!;
+      _safeDeleteEnabled =
+          !_hardDeleteEnabled; // Safe delete is opposite of hard delete
+    } else {
+      _loadHardDeleteEnabledPref();
     }
 
     // Request focus on the API key field when it's empty
@@ -145,6 +161,17 @@ class _SettingsSectionState extends State<SettingsSection> {
     }
   }
 
+  void _loadHardDeleteEnabledPref() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _hardDeleteEnabled = prefs.getBool(_hardDeleteEnabledPrefKey) ?? false;
+        _safeDeleteEnabled =
+            !_hardDeleteEnabled; // Safe delete is opposite of hard delete
+      });
+    }
+  }
+
   @override
   void didUpdateWidget(covariant SettingsSection oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -176,11 +203,17 @@ class _SettingsSectionState extends State<SettingsSection> {
       _amoledModeEnabled = widget.currentAmoledModeEnabled!;
     }
     if (widget.currentSelectedTheme != oldWidget.currentSelectedTheme) {
-      _selectedTheme = widget.currentSelectedTheme ?? 'Dynamic Theme';
+      _selectedTheme = widget.currentSelectedTheme ?? 'Adaptive Theme';
     }
     if (widget.currentDevMode != oldWidget.currentDevMode &&
         widget.currentDevMode != null) {
       _devMode = widget.currentDevMode!;
+    }
+    if (widget.currentHardDeleteEnabled != oldWidget.currentHardDeleteEnabled &&
+        widget.currentHardDeleteEnabled != null) {
+      _hardDeleteEnabled = widget.currentHardDeleteEnabled!;
+      _safeDeleteEnabled =
+          !_hardDeleteEnabled; // Safe delete is opposite of hard delete
     }
   }
 
@@ -211,6 +244,11 @@ class _SettingsSectionState extends State<SettingsSection> {
   Future<void> _saveDevMode(bool value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_devModePrefKey, value);
+  }
+
+  Future<void> _saveHardDeleteEnabled(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_hardDeleteEnabledPrefKey, value);
   }
 
   Future<void> _validateApiKey() async {
@@ -342,37 +380,6 @@ class _SettingsSectionState extends State<SettingsSection> {
             ),
           ),
         ),
-        SwitchListTile(
-          secondary: Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
-          title: Text(
-            'Auto-Process Screenshots',
-            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
-          ),
-          subtitle: Text(
-            _autoProcessEnabled
-                ? 'Screenshots will be automatically processed when added'
-                : 'Manual processing only',
-            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-          ),
-          value: _autoProcessEnabled,
-          activeColor: theme.colorScheme.primary,
-          onChanged: (bool value) {
-            setState(() {
-              _autoProcessEnabled = value;
-            });
-            _saveAutoProcessEnabled(value);
-
-            // Track settings change in analytics
-            AnalyticsService().logFeatureUsed('setting_changed_auto_process');
-            AnalyticsService().logFeatureAdopted(
-              value ? 'auto_process_enabled' : 'auto_process_disabled',
-            );
-
-            if (widget.onAutoProcessEnabledChanged != null) {
-              widget.onAutoProcessEnabledChanged!(value);
-            }
-          },
-        ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Row(
@@ -426,7 +433,7 @@ class _SettingsSectionState extends State<SettingsSection> {
                       items:
                           <String>[
                             'gemini-2.0-flash',
-                            'gemini-2.5-flash-pro',
+                            'gemini-2.5-pro',
                           ].map<DropdownMenuItem<String>>((String value) {
                             return DropdownMenuItem<String>(
                               value: value,
@@ -663,6 +670,37 @@ class _SettingsSectionState extends State<SettingsSection> {
             ),
           ),
         SwitchListTile(
+          secondary: Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
+          title: Text(
+            'Auto-Process Screenshots',
+            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+          ),
+          subtitle: Text(
+            _autoProcessEnabled
+                ? 'Screenshots will be automatically processed when added'
+                : 'Manual processing only',
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          value: _autoProcessEnabled,
+          activeColor: theme.colorScheme.primary,
+          onChanged: (bool value) {
+            setState(() {
+              _autoProcessEnabled = value;
+            });
+            _saveAutoProcessEnabled(value);
+
+            // Track settings change in analytics
+            AnalyticsService().logFeatureUsed('setting_changed_auto_process');
+            AnalyticsService().logFeatureAdopted(
+              value ? 'auto_process_enabled' : 'auto_process_disabled',
+            );
+
+            if (widget.onAutoProcessEnabledChanged != null) {
+              widget.onAutoProcessEnabledChanged!(value);
+            }
+          },
+        ),
+        SwitchListTile(
           secondary: Icon(
             Icons.nightlight_round,
             color: theme.colorScheme.primary,
@@ -696,7 +734,6 @@ class _SettingsSectionState extends State<SettingsSection> {
             }
           },
         ),
-
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Row(
@@ -787,6 +824,49 @@ class _SettingsSectionState extends State<SettingsSection> {
         ),
         SwitchListTile(
           secondary: Icon(
+            Icons.delete_forever,
+            color: theme.colorScheme.primary,
+          ),
+          title: Text(
+            'Safe Delete',
+            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+          ),
+          subtitle: Text(
+            'Screenshots will only be removed from the app',
+            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+          ),
+          value: _safeDeleteEnabled,
+          activeColor: theme.colorScheme.primary,
+          onChanged: (bool value) async {
+            if (!value) {
+              // Show warning dialog when disabling safe delete
+              final bool? confirmDisable = await _showHardDeleteWarningDialog();
+              if (confirmDisable != true) {
+                return; // User cancelled, don't disable safe delete
+              }
+            }
+
+            setState(() {
+              _safeDeleteEnabled = value;
+              _hardDeleteEnabled =
+                  !value; // Hard delete is opposite of safe delete
+            });
+            _saveHardDeleteEnabled(!value); // Save the opposite value
+
+            // Track analytics for safe delete setting
+            AnalyticsService().logFeatureUsed(
+              'settings_safe_delete_${value ? 'enabled' : 'disabled'}',
+            );
+
+            if (widget.onHardDeleteChanged != null) {
+              widget.onHardDeleteChanged!(
+                !value,
+              ); // Pass the hard delete value (opposite of safe delete)
+            }
+          },
+        ),
+        SwitchListTile(
+          secondary: Icon(
             Icons.developer_mode,
             color: theme.colorScheme.primary,
           ),
@@ -817,6 +897,117 @@ class _SettingsSectionState extends State<SettingsSection> {
           },
         ),
       ],
+    );
+  }
+
+  Future<bool?> _showHardDeleteWarningDialog() async {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        final theme = Theme.of(context);
+        return AlertDialog(
+          icon: Icon(
+            Icons.warning_amber,
+            color: theme.colorScheme.error,
+            size: 32,
+          ),
+          title: Text(
+            'Disable Safe Delete?',
+            style: TextStyle(
+              color: theme.colorScheme.onSecondaryContainer,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'This will change how deletions work in the app:',
+                style: TextStyle(
+                  color: theme.colorScheme.onTertiaryContainer,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.check_circle,
+                    color: theme.colorScheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Screenshots will be removed from the app',
+                      style: TextStyle(
+                        color: theme.colorScheme.onTertiaryContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Icon(
+                    Icons.delete_forever,
+                    color: theme.colorScheme.error,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Image files will be permanently deleted from your device storage',
+                      style: TextStyle(
+                        color: theme.colorScheme.onTertiaryContainer,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.errorContainer.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  '⚠️ Deleted files cannot be recovered.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: theme.colorScheme.error,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+              ),
+              onPressed: () => Navigator.of(context).pop(false),
+            ),
+            TextButton(
+              child: Text(
+                'Disable',
+                style: TextStyle(
+                  color: theme.colorScheme.error,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              onPressed: () => Navigator.of(context).pop(true),
+            ),
+          ],
+        );
+      },
     );
   }
 

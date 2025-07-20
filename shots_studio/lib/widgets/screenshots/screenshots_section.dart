@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
 import 'package:shots_studio/services/analytics_service.dart';
 import 'package:shots_studio/utils/responsive_utils.dart';
+import 'package:shots_studio/services/hard_delete_service.dart';
 
 class ScreenshotsSection extends StatefulWidget {
   final List<Screenshot> screenshots;
   final Function(Screenshot) onScreenshotTap;
   final Widget Function(BuildContext, Screenshot)? screenshotDetailBuilder;
   final Function(List<String>)? onBulkDelete;
+  final VoidCallback? onScreenshotUpdated;
 
   const ScreenshotsSection({
     super.key,
@@ -17,6 +20,7 @@ class ScreenshotsSection extends StatefulWidget {
     required this.onScreenshotTap,
     this.screenshotDetailBuilder,
     this.onBulkDelete,
+    this.onScreenshotUpdated,
   });
 
   @override
@@ -32,12 +36,14 @@ class _ScreenshotsSectionState extends State<ScreenshotsSection> {
   // Selection mode state
   bool _isSelectionMode = false;
   final Set<String> _selectedScreenshotIds = <String>{};
+  bool _hardDeleteEnabled = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController = ScrollController();
     _scrollController.addListener(_onScroll);
+    _loadHardDeleteSetting();
   }
 
   @override
@@ -45,6 +51,15 @@ class _ScreenshotsSectionState extends State<ScreenshotsSection> {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _loadHardDeleteSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _hardDeleteEnabled = prefs.getBool('hard_delete_enabled') ?? false;
+      });
+    }
   }
 
   void _onScroll() {
@@ -128,19 +143,34 @@ class _ScreenshotsSectionState extends State<ScreenshotsSection> {
   void _bulkDeleteSelected() async {
     if (_selectedScreenshotIds.isEmpty) return;
 
+    // Build dialog content based on hard delete setting
+    String dialogTitle =
+        'Delete ${_selectedScreenshotIds.length} Screenshot${_selectedScreenshotIds.length > 1 ? 's' : ''}?';
+    String dialogContent =
+        'This action cannot be undone. Are you sure you want to delete the selected screenshot${_selectedScreenshotIds.length > 1 ? 's' : ''}?';
+
+    if (_hardDeleteEnabled && HardDeleteService.isHardDeleteAvailable()) {
+      dialogContent =
+          'This will:\n'
+          '1. Remove ${_selectedScreenshotIds.length} screenshot${_selectedScreenshotIds.length > 1 ? 's' : ''} from the app\n'
+          '2. Delete the image file${_selectedScreenshotIds.length > 1 ? 's' : ''} from your device\n\n'
+          'This action cannot be undone. Continue?'
+          '\n if you do not want to delete the files from your device, disable hard delete in settings.';
+    }
+
     // Show confirmation dialog
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(
-            'Delete ${_selectedScreenshotIds.length} Screenshot${_selectedScreenshotIds.length > 1 ? 's' : ''}?',
+            dialogTitle,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSecondaryContainer,
             ),
           ),
           content: Text(
-            'This action cannot be undone. Are you sure you want to delete the selected screenshot${_selectedScreenshotIds.length > 1 ? 's' : ''}?',
+            dialogContent,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onTertiaryContainer,
             ),
@@ -168,15 +198,73 @@ class _ScreenshotsSectionState extends State<ScreenshotsSection> {
     );
 
     if (confirm == true) {
-      // Provide haptic feedback for successful bulk delete
+      await _performBulkDelete();
+    } else {
+      AnalyticsService().logFeatureUsed('screenshot_bulk_delete_cancelled');
+    }
+  }
+
+  /// Perform the actual bulk deletion (soft delete + optional hard delete)
+  Future<void> _performBulkDelete() async {
+    try {
+      // Provide haptic feedback for bulk delete
       HapticFeedback.heavyImpact();
 
       // Log bulk delete analytics
       AnalyticsService().logFeatureUsed('screenshot_bulk_delete_confirmed');
 
-      // Perform bulk delete
       final selectedIds = List<String>.from(_selectedScreenshotIds);
+
+      // Step 1: Perform soft delete first
       widget.onBulkDelete?.call(selectedIds);
+
+      // Step 2: Attempt hard delete if enabled and available
+      String deleteMessage =
+          '${selectedIds.length} screenshot${selectedIds.length > 1 ? 's' : ''} deleted successfully';
+
+      if (_hardDeleteEnabled && HardDeleteService.isHardDeleteAvailable()) {
+        print(
+          'HardDeleteService: Attempting bulk hard delete for ${selectedIds.length} screenshots',
+        );
+
+        // Get the screenshots to delete
+        final screenshotsToDelete =
+            widget.screenshots
+                .where((s) => selectedIds.contains(s.id))
+                .toList();
+
+        if (screenshotsToDelete.isNotEmpty) {
+          final bulkDeleteResult =
+              await HardDeleteService.hardDeleteScreenshots(
+                screenshotsToDelete,
+              );
+
+          if (bulkDeleteResult.successCount > 0) {
+            if (bulkDeleteResult.failureCount == 0) {
+              deleteMessage =
+                  '${selectedIds.length} screenshot${selectedIds.length > 1 ? 's' : ''} deleted from app and device';
+            } else {
+              deleteMessage =
+                  '${bulkDeleteResult.successCount} screenshot${bulkDeleteResult.successCount > 1 ? 's' : ''} deleted completely, ${bulkDeleteResult.failureCount} removed from app only';
+            }
+            print(
+              'HardDeleteService: Bulk hard delete completed - ${bulkDeleteResult.successCount}/${selectedIds.length} successful',
+            );
+          } else {
+            deleteMessage =
+                '${selectedIds.length} screenshot${selectedIds.length > 1 ? 's' : ''} deleted from app, but file deletion failed';
+            print('HardDeleteService: Bulk hard delete failed for all files');
+          }
+
+          print(
+            'HardDeleteService: Bulk hard delete result: $bulkDeleteResult',
+          );
+        }
+      } else {
+        print(
+          'HardDeleteService: Hard delete not available or disabled for bulk operation',
+        );
+      }
 
       // Exit selection mode
       _exitSelectionMode();
@@ -185,15 +273,25 @@ class _ScreenshotsSectionState extends State<ScreenshotsSection> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              '${selectedIds.length} screenshot${selectedIds.length > 1 ? 's' : ''} deleted successfully',
-            ),
+            content: Text(deleteMessage),
             backgroundColor: Theme.of(context).colorScheme.primary,
           ),
         );
       }
-    } else {
-      AnalyticsService().logFeatureUsed('screenshot_bulk_delete_cancelled');
+    } catch (e) {
+      print('Error during bulk delete operation: $e');
+
+      // Exit selection mode even on error
+      _exitSelectionMode();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error during bulk delete: $e'),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
     }
   }
 
@@ -327,6 +425,7 @@ class _ScreenshotsSectionState extends State<ScreenshotsSection> {
                 onLongPress: () => _enterSelectionMode(screenshot.id),
                 onSelectionToggle:
                     () => _toggleScreenshotSelection(screenshot.id),
+                onCorruptionDetected: widget.onScreenshotUpdated,
                 destinationBuilder:
                     widget.screenshotDetailBuilder != null && !_isSelectionMode
                         ? (context) =>

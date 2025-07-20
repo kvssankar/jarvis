@@ -24,6 +24,7 @@ class UpdateCheckerService {
       // Fetch latest release from GitHub (always get the very latest)
       final latestRelease = await _getLatestRelease();
       if (latestRelease == null) {
+        print('No latest release found or error fetching it.');
         return null;
       }
 
@@ -83,14 +84,10 @@ class UpdateCheckerService {
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
-        final List<dynamic> releases =
-            json.decode(response.body) as List<dynamic>;
+        final Map<String, dynamic> release =
+            json.decode(response.body) as Map<String, dynamic>;
 
-        if (releases.isNotEmpty) {
-          return releases.first as Map<String, dynamic>;
-        }
-
-        return null;
+        return release;
       } else {
         print('GitHub API error: ${response.statusCode}');
         return null;

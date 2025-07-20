@@ -87,10 +87,10 @@ class _EditCollectionScreenState extends State<EditCollectionScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Expanded(
-            child: SingleChildScrollView(
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -252,62 +252,66 @@ class _EditCollectionScreenState extends State<EditCollectionScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  SizedBox(
-                    height: 400,
-                    child:
-                        screenshotsInCollection.isEmpty
-                            ? Center(
-                              child: Text(
-                                'No screenshots in this collection.',
-                                style: TextStyle(
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            )
-                            : GridView.builder(
-                              gridDelegate:
-                                  ResponsiveUtils.getResponsiveGridDelegate(
-                                    context,
-                                    crossAxisSpacing: 12,
-                                    mainAxisSpacing: 12,
-                                  ),
-                              itemCount: screenshotsInCollection.length,
-                              cacheExtent: 1200,
-                              itemBuilder: (context, index) {
-                                final screenshot =
-                                    screenshotsInCollection[index];
-                                return Stack(
-                                  fit: StackFit.expand,
-                                  children: [
-                                    ScreenshotCard(screenshot: screenshot),
-                                    Positioned(
-                                      top: 0,
-                                      right: 0,
-                                      child: IconButton(
-                                        icon: Icon(
-                                          Icons.remove_circle,
-                                          color: theme.colorScheme.error,
-                                        ),
-                                        onPressed:
-                                            () => _removeScreenshot(
-                                              screenshot.id,
-                                            ),
-                                        tooltip: 'Remove from collection',
-                                        iconSize: 20,
-                                        padding: EdgeInsets.zero,
-                                        constraints: const BoxConstraints(),
-                                      ),
-                                    ),
-                                  ],
-                                );
-                              },
-                            ),
-                  ),
                 ],
               ),
             ),
           ),
+          screenshotsInCollection.isEmpty
+              ? SliverToBoxAdapter(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(32.0),
+                    child: Text(
+                      'No screenshots in this collection.',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              )
+              : SliverPadding(
+                padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                sliver: SliverGrid(
+                  gridDelegate: ResponsiveUtils.getResponsiveGridDelegate(
+                    context,
+                    crossAxisSpacing: 12,
+                    mainAxisSpacing: 12,
+                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final screenshot = screenshotsInCollection[index];
+                    return Stack(
+                      fit: StackFit.expand,
+                      children: [
+                        ScreenshotCard(
+                          screenshot: screenshot,
+                          onCorruptionDetected: () {
+                            setState(() {});
+                          },
+                        ),
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: IconButton(
+                            icon: Icon(
+                              Icons.remove_circle,
+                              color: theme.colorScheme.error,
+                            ),
+                            onPressed: () => _removeScreenshot(screenshot.id),
+                            tooltip: 'Remove from collection',
+                            iconSize: 20,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ),
+                      ],
+                    );
+                  }, childCount: screenshotsInCollection.length),
+                ),
+              ),
+          // Add bottom padding for better scrolling experience
+          const SliverToBoxAdapter(child: SizedBox(height: 16)),
         ],
       ),
     );

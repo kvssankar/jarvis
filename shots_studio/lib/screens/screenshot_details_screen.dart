@@ -8,6 +8,7 @@ import 'package:shots_studio/screens/full_screen_image_viewer.dart';
 import 'package:shots_studio/screens/search_screen.dart';
 import 'package:shots_studio/services/analytics_service.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
+import 'package:shots_studio/services/hard_delete_service.dart';
 import 'package:shots_studio/widgets/screenshots/tags/tag_input_field.dart';
 import 'package:shots_studio/widgets/screenshots/tags/tag_chip.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_collection_dialog.dart';
@@ -23,12 +24,16 @@ class ScreenshotDetailScreen extends StatefulWidget {
   final Screenshot screenshot;
   final List<Collection> allCollections;
   final List<Screenshot> allScreenshots;
+  final List<Screenshot>?
+  contextualScreenshots; // The filtered/contextual list for swiping
   final Function(Collection) onUpdateCollection;
   final Function(String) onDeleteScreenshot;
   final VoidCallback? onScreenshotUpdated;
   final int? currentIndex;
   final int? totalCount;
   final VoidCallback? onNavigateAfterDelete;
+  final Function(int)?
+  onNavigateToIndex; // Callback for navigating to a specific index
 
   const ScreenshotDetailScreen({
     super.key,
@@ -37,10 +42,12 @@ class ScreenshotDetailScreen extends StatefulWidget {
     required this.allScreenshots,
     required this.onUpdateCollection,
     required this.onDeleteScreenshot,
+    this.contextualScreenshots,
     this.onScreenshotUpdated,
     this.currentIndex,
     this.totalCount,
     this.onNavigateAfterDelete,
+    this.onNavigateToIndex,
   });
 
   @override
@@ -54,6 +61,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   bool _isProcessingOCR = false;
   final AIServiceManager _aiServiceManager = AIServiceManager();
   final OCRService _ocrService = OCRService();
+  bool _hardDeleteEnabled = false;
 
   @override
   void initState() {
@@ -61,13 +69,14 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     _tags = List.from(widget.screenshot.tags);
     _descriptionController = TextEditingController(
       text: widget.screenshot.description,
-    );
-
-    // Track screenshot details screen access
+    ); // Track screenshot details screen access
     AnalyticsService().logScreenView('screenshot_details_screen');
 
     // Check for expired reminders
     _checkExpiredReminders();
+
+    // Load hard delete setting
+    _loadHardDeleteSetting();
   }
 
   void _checkExpiredReminders() {
@@ -79,6 +88,15 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       });
       ReminderUtils.clearReminder(context, widget.screenshot);
       _updateScreenshotDetails();
+    }
+  }
+
+  void _loadHardDeleteSetting() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _hardDeleteEnabled = prefs.getBool('hard_delete_enabled') ?? false;
+      });
     }
   }
 
@@ -304,8 +322,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       return;
     }
 
-    final String modelName =
-        prefs.getString('selected_model') ?? 'gemini-2.0-flash';
+    final String modelName = prefs.getString('modelName') ?? 'gemini-2.0-flash';
 
     setState(() {
       _isProcessingAI = true;
@@ -460,18 +477,34 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
 
   Future<void> _confirmDeleteScreenshot() async {
     AnalyticsService().logFeatureUsed('screenshot_deletion_initiated');
+
+    // Build dialog content based on hard delete setting
+    String dialogTitle = 'Delete Screenshot?';
+    String dialogContent =
+        'Are you sure you want to delete this screenshot? This action cannot be undone.';
+
+    if (_hardDeleteEnabled && HardDeleteService.isHardDeleteAvailable()) {
+      dialogTitle = 'Delete Screenshot?';
+      dialogContent =
+          'This will:\n'
+          '1. Remove the screenshot from the app\n'
+          '2. Delete the image file from your device\n\n'
+          'This action cannot be undone. Continue?'
+          '\n if you do not want to delete the files from your device, disable hard delete in settings.';
+    }
+
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text(
-            'Delete Screenshot?',
+            dialogTitle,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSecondaryContainer,
             ),
           ),
           content: Text(
-            'Are you sure you want to delete this screenshot? This action cannot be undone.',
+            dialogContent,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onTertiaryContainer,
             ),
@@ -499,20 +532,80 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     );
 
     if (confirm == true) {
-      // Call the delete callback
+      await _performDelete();
+    }
+  }
+
+  /// Perform the actual deletion (soft delete + optional hard delete)
+  Future<void> _performDelete() async {
+    try {
+      // Step 1: Perform soft delete first
       widget.screenshot.isDeleted = true;
       widget.onDeleteScreenshot(widget.screenshot.id);
       AnalyticsService().logFeatureUsed('screenshot_deleted');
 
-      // Use navigation callback if provided, otherwise pop
+      // Step 2: Attempt hard delete if enabled and available
+      String deleteMessage = 'Screenshot deleted successfully';
+
+      if (_hardDeleteEnabled && HardDeleteService.isHardDeleteAvailable()) {
+        print(
+          'HardDeleteService: Attempting hard delete for ${widget.screenshot.path}',
+        );
+
+        final hardDeleteResult = await HardDeleteService.hardDeleteScreenshot(
+          widget.screenshot,
+        );
+
+        if (hardDeleteResult.success) {
+          if (hardDeleteResult.fileExisted) {
+            deleteMessage = 'Screenshot deleted from app and device';
+            print('HardDeleteService: Successfully hard deleted file');
+          } else {
+            deleteMessage =
+                'Screenshot deleted from app (file was already removed)';
+            print('HardDeleteService: File was already deleted or moved');
+          }
+        } else {
+          // Hard delete failed, but soft delete succeeded
+          deleteMessage =
+              'Screenshot deleted from app, but file deletion failed: ${hardDeleteResult.error}';
+          print(
+            'HardDeleteService: Hard delete failed: ${hardDeleteResult.error}',
+          );
+
+          // Show a more detailed error if hard delete failed
+          if (mounted) {
+            SnackbarService().showWarning(
+              context,
+              'Screenshot removed from app, but couldn\'t delete file: ${hardDeleteResult.error}',
+            );
+          }
+        }
+
+        print('HardDeleteService: Hard delete result: $hardDeleteResult');
+      } else {
+        print('HardDeleteService: Hard delete not available or disabled');
+      }
+
+      // Navigation and success message
       if (widget.onNavigateAfterDelete != null) {
         widget.onNavigateAfterDelete!();
       } else {
         Navigator.of(context).pop();
       }
 
-      // Show confirmation message
-      SnackbarService().showSuccess(context, 'Screenshot deleted successfully');
+      // Show appropriate success message
+      if (mounted &&
+          !(_hardDeleteEnabled &&
+              HardDeleteService.isHardDeleteAvailable() &&
+              !deleteMessage.contains('successfully'))) {
+        SnackbarService().showSuccess(context, deleteMessage);
+      }
+    } catch (e) {
+      print('Error during delete operation: $e');
+      if (mounted) {
+        SnackbarService().showError(context, 'Error deleting screenshot: $e');
+      }
     }
   }
 
@@ -537,6 +630,11 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
           file,
           fit: BoxFit.cover,
           errorBuilder: (context, error, stackTrace) {
+            // Mark as AI processed and persist the change when image fails to load
+            if (!widget.screenshot.aiProcessed) {
+              widget.screenshot.aiProcessed = true;
+              _updateScreenshotDetails();
+            }
             return Container(
               color: Theme.of(context).colorScheme.surface,
               child: Column(
@@ -560,8 +658,11 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
           },
         );
       } else {
-        // File not found - mark as AI processed to prevent sending to AI
-        widget.screenshot.aiProcessed = true;
+        // File not found - mark as AI processed to prevent sending to AI and persist the change
+        if (!widget.screenshot.aiProcessed) {
+          widget.screenshot.aiProcessed = true;
+          _updateScreenshotDetails();
+        }
         imageWidget = Container(
           color: Theme.of(context).colorScheme.surface,
           child: Column(
@@ -599,8 +700,11 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         widget.screenshot.bytes!,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          // Mark as AI processed to prevent sending to AI if image is corrupt or unreadable
-          widget.screenshot.aiProcessed = true;
+          // Mark as AI processed and persist the change when image fails to load
+          if (!widget.screenshot.aiProcessed) {
+            widget.screenshot.aiProcessed = true;
+            _updateScreenshotDetails();
+          }
           return Container(
             color: Theme.of(context).colorScheme.surface,
             child: Column(
@@ -624,8 +728,11 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         },
       );
     } else {
-      // No image data available - mark as AI processed to prevent sending to AI
-      widget.screenshot.aiProcessed = true;
+      // No image data available - mark as AI processed to prevent sending to AI and persist the change
+      if (!widget.screenshot.aiProcessed) {
+        widget.screenshot.aiProcessed = true;
+        _updateScreenshotDetails();
+      }
       imageWidget = Container(
         color: Theme.of(context).colorScheme.surface,
         child: Column(
@@ -1044,17 +1151,32 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             child: InkWell(
-              onTap: () {
+              onTap: () async {
                 AnalyticsService().logFeatureUsed('full_screen_image_viewer');
-                Navigator.push(
+                final result = await Navigator.push<int>(
                   context,
                   MaterialPageRoute(
                     builder:
                         (context) => FullScreenImageViewer(
-                          screenshot: widget.screenshot,
+                          screenshots:
+                              widget.contextualScreenshots ??
+                              [widget.screenshot],
+                          initialIndex:
+                              widget.contextualScreenshots?.indexWhere(
+                                (s) => s.id == widget.screenshot.id,
+                              ) ??
+                              0,
+                          onScreenshotChanged: widget.onNavigateToIndex,
                         ),
                   ),
                 );
+
+                // If user navigated to a different screenshot, use the callback to sync
+                if (result != null &&
+                    mounted &&
+                    widget.onNavigateToIndex != null) {
+                  widget.onNavigateToIndex!(result);
+                }
               },
               child: Container(
                 width: double.infinity,
@@ -1087,16 +1209,31 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           InkWell(
-            onTap: () {
+            onTap: () async {
               AnalyticsService().logFeatureUsed('full_screen_image_viewer');
-              Navigator.push(
+              final result = await Navigator.push<int>(
                 context,
                 MaterialPageRoute(
                   builder:
-                      (context) =>
-                          FullScreenImageViewer(screenshot: widget.screenshot),
+                      (context) => FullScreenImageViewer(
+                        screenshots:
+                            widget.contextualScreenshots ?? [widget.screenshot],
+                        initialIndex:
+                            widget.contextualScreenshots?.indexWhere(
+                              (s) => s.id == widget.screenshot.id,
+                            ) ??
+                            0,
+                        onScreenshotChanged: widget.onNavigateToIndex,
+                      ),
                 ),
               );
+
+              // If user navigated to a different screenshot, use the callback to sync
+              if (result != null &&
+                  mounted &&
+                  widget.onNavigateToIndex != null) {
+                widget.onNavigateToIndex!(result);
+              }
             },
             child: Container(
               height: MediaQuery.of(context).size.height * 0.5,

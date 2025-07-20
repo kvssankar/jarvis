@@ -620,7 +620,12 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                           }
                         }
                       },
-                      child: ScreenshotCard(screenshot: screenshot),
+                      child: ScreenshotCard(
+                        screenshot: screenshot,
+                        onCorruptionDetected: () {
+                          setState(() {});
+                        },
+                      ),
                     );
                   }, childCount: screenshotsInCollection.length),
                 ),

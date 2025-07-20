@@ -292,7 +292,32 @@ class BackgroundProcessingService {
           }
 
           try {
-            // Process batch results
+            // Check if this batch was skipped because all screenshots were already processed
+            if (response.containsKey('skipped') && response['skipped'] == true) {
+              // Count these as processed since they were already done
+              processedCount += batch.length;
+              
+              // Update notification
+              updateNotification(
+                title: 'Processing Screenshots',
+                content: 'Processing: $processedCount/$totalCount screenshots',
+                showProgress: true,
+                progress: processedCount,
+                maxProgress: totalCount,
+                ongoing: true,
+              );
+
+              // Send batch results to app (no actual updates needed)
+              service.invoke(CHANNEL_BATCH_UPDATE, {
+                'updatedScreenshots': jsonEncode([]), // No new updates
+                'response': jsonEncode(response),
+                'processedCount': processedCount,
+                'totalCount': totalCount,
+              });
+              return;
+            }
+
+            // Process batch results normally
             final updatedScreenshots = analysisService
                 .parseAndUpdateScreenshots(batch, response);
             processedCount += updatedScreenshots.length;
