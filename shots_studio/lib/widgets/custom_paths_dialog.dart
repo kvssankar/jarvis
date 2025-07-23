@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:shots_studio/services/custom_path_service.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
-import 'package:shots_studio/services/analytics_service.dart';
+import 'package:shots_studio/services/analytics/analytics_service.dart';
 
 class CustomPathsDialog extends StatefulWidget {
   final VoidCallback? onPathAdded;

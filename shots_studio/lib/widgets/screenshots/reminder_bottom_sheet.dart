@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:shots_studio/services/analytics_service.dart';
+import 'package:shots_studio/services/analytics/analytics_service.dart';
 
 class ReminderBottomSheet extends StatefulWidget {
   final DateTime? initialReminderTime;

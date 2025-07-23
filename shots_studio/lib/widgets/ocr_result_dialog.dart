@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
-import 'package:shots_studio/services/analytics_service.dart';
+import 'package:shots_studio/services/analytics/analytics_service.dart';
 
 /// A dialog widget to display OCR results with copy functionality
 class OCRResultDialog extends StatelessWidget {

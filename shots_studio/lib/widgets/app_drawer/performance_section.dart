@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shots_studio/screens/performance_monitor_screen.dart';
-import '../../services/analytics_service.dart';
+import '../../services/analytics/analytics_service.dart';
 
 class PerformanceSection extends StatelessWidget {
   const PerformanceSection({super.key});

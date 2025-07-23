@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/sponsorship_option.dart';
-import '../../services/analytics_service.dart';
+import '../../services/analytics/analytics_service.dart';
 
 class SponsorshipDialog extends StatelessWidget {
   final List<SponsorshipOption> sponsorshipOptions;

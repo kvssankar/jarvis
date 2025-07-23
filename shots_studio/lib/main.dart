@@ -23,7 +23,7 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:shots_studio/widgets/ai_processing_container.dart';
 import 'package:shots_studio/services/background_service.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:shots_studio/services/analytics_service.dart';
+import 'package:shots_studio/services/analytics/analytics_service.dart';
 import 'package:shots_studio/services/file_watcher_service.dart';
 import 'package:shots_studio/services/update_checker_service.dart';
 import 'package:shots_studio/widgets/update_dialog.dart';

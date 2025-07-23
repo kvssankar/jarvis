@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../services/sponsorship_service.dart';
-import '../../services/analytics_service.dart';
+import '../../services/analytics/analytics_service.dart';
 import '../../services/update_checker_service.dart';
 import '../sponsorship/sponsorship_dialog.dart';
 import '../update_dialog.dart';

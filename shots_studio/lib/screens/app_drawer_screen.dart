@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shots_studio/widgets/app_drawer/index.dart';
-import 'package:shots_studio/services/analytics_service.dart';
+import 'package:shots_studio/services/analytics/analytics_service.dart';
 
 class AppDrawer extends StatefulWidget {
   final String? currentApiKey;

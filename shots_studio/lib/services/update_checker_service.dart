@@ -3,6 +3,8 @@ import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+// TODO: Add don't show again functionality for messages
+
 class UpdateCheckerService {
   static const String githubApiUrl = 'https://api.github.com/repos';
   static const String repoOwner = 'AnsahMohammad';
