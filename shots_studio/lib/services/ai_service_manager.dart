@@ -13,10 +13,11 @@ class AIServiceManager {
     return _instance ??= AIServiceManager._internal();
   }
 
+  // Screenshot analysis handles the analysis of screenshots
   ScreenshotAnalysisService? _analysisService;
+  // Collection categorization handles the categorization of screenshots into collections
   CollectionCategorizationService? _categorizationService;
 
-  // Create services with configuration
   void initialize(AIConfig config) {
     _analysisService = ScreenshotAnalysisService(config);
     _categorizationService = CollectionCategorizationService(config);

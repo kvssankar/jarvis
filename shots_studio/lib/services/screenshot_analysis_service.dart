@@ -3,11 +3,12 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
-import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/services/ai_service.dart';
+import 'package:shots_studio/utils/image_conversion_utils.dart';
+import 'package:shots_studio/utils/collection_utils.dart';
+import 'package:shots_studio/utils/ai_error_utils.dart';
 
 class ScreenshotAnalysisService extends AIService {
   static const String _baseUrl =
@@ -30,6 +31,162 @@ class ScreenshotAnalysisService extends AIService {
     _processingTerminated = false;
     _apiKeyErrorShown = false;
     _lastSuccessfulRequestTime = DateTime.now();
+  }
+
+  Future<AIResult<Map<String, dynamic>>> analyzeScreenshots({
+    required List<Screenshot> screenshots,
+    required BatchProcessedCallback onBatchProcessed,
+    List<Map<String, String?>>? autoAddCollections,
+  }) async {
+    reset();
+
+    if (screenshots.isEmpty) {
+      return AIResult.error('No screenshots to analyze');
+    }
+
+    Map<String, dynamic> finalResults = {
+      'batchResults': [],
+      'statusCode': 200,
+      'processedCount': 0,
+      'totalCount': screenshots.length,
+      'cancelled': false,
+    };
+
+    // Process in batches
+    for (int i = 0; i < screenshots.length; i += config.maxParallel) {
+      if (isCancelled) {
+        finalResults['cancelled'] = true;
+        break;
+      }
+
+      int end = min(i + config.maxParallel, screenshots.length);
+      List<Screenshot> batch = screenshots.sublist(i, end);
+
+      // Filter out already processed screenshots from this batch
+      final unprocessedBatch = batch.where((s) => !s.aiProcessed).toList();
+
+      // If no screenshots in this batch need processing, skip to next batch
+      if (unprocessedBatch.isEmpty) {
+        // Still call the callback to maintain progress tracking
+        onBatchProcessed(batch, {
+          'skipped': true,
+          'reason': 'All screenshots already processed',
+          'statusCode': 200,
+        });
+        continue;
+      }
+
+      try {
+        if (isCancelled) {
+          finalResults['cancelled'] = true;
+          onBatchProcessed(batch, {
+            'error': 'Processing cancelled by user',
+            'cancelled': true,
+          });
+          break;
+        }
+
+        // TODO: Add param of model, which prepares data accordingly, and calls API appropriately
+        final requestData = await _prepareRequestData(
+          unprocessedBatch, // Use filtered batch
+          autoAddCollections: autoAddCollections,
+        );
+        final result = await _makeAPIRequest(requestData);
+
+        if (isCancelled && result['statusCode'] == 499) {
+          finalResults['cancelled'] = true;
+          onBatchProcessed(batch, result);
+          break;
+        }
+
+        (finalResults['batchResults'] as List).add({
+          'batch': batch.map((s) => s.id).toList(),
+          'result': result,
+        });
+
+        if (result.containsKey('error')) {
+          onBatchProcessed(batch, result);
+        } else {
+          finalResults['processedCount'] =
+              (finalResults['processedCount'] as int) + batch.length;
+          onBatchProcessed(batch, result);
+        }
+
+        await Future.delayed(const Duration(milliseconds: 500));
+      } catch (e) {
+        (finalResults['batchResults'] as List).add({
+          'batch': batch.map((s) => s.id).toList(),
+          'error': e.toString(),
+        });
+        onBatchProcessed(batch, {'error': e.toString()});
+      }
+    }
+
+    if (isCancelled) {
+      return AIResult.cancelled();
+    }
+
+    return AIResult.success(finalResults);
+  }
+
+  List<Screenshot> parseAndUpdateScreenshots(
+    List<Screenshot> screenshots,
+    Map<String, dynamic> response,
+  ) {
+    if (response.containsKey('error') || !response.containsKey('data')) {
+      // Don't show error messages if processing has already been terminated
+      if (!_processingTerminated) {
+        _handleResponseError(response);
+      }
+      return screenshots;
+    }
+
+    try {
+      final String responseText = response['data'];
+      List<dynamic> parsedResponse = [];
+      final RegExp jsonRegExp = RegExp(r'\[.*\]', dotAll: true);
+      final match = jsonRegExp.firstMatch(responseText);
+
+      if (match != null) {
+        try {
+          parsedResponse = jsonDecode(match.group(0)!);
+        } catch (e) {
+          try {
+            parsedResponse = jsonDecode(responseText);
+          } catch (e) {
+            return screenshots;
+          }
+        }
+      } else {
+        return screenshots;
+      }
+
+      if (parsedResponse.isEmpty) return screenshots;
+
+      AiMetaData aiMetaData = AiMetaData(
+        modelName: config.modelName,
+        processingTime: DateTime.now(),
+      );
+
+      if (screenshots.length == 1 && parsedResponse.length == 1) {
+        return _updateSingleScreenshot(
+          screenshots[0],
+          parsedResponse[0],
+          aiMetaData,
+          response,
+        );
+      }
+
+      return _updateMultipleScreenshots(
+        screenshots,
+        parsedResponse,
+        aiMetaData,
+        response,
+      );
+    } catch (e) {
+      print('Error parsing response and updating screenshots: $e');
+      return screenshots;
+    }
   }
 
   String _getAnalysisPrompt({List<Map<String, String?>>? autoAddCollections}) {
@@ -67,32 +224,6 @@ class ScreenshotAnalysisService extends AIService {
     return basePrompt;
   }
 
-  Future<Map<String, String>> _convertImageToBase64(String imagePath) async {
-    final file = File(imagePath);
-    if (!await file.exists()) {
-      throw Exception("Image file not found: $imagePath");
-    }
-    final bytes = await file.readAsBytes();
-    final encoded = base64Encode(bytes);
-    String mimeType = 'image/png';
-    if (imagePath.toLowerCase().endsWith('.jpg') ||
-        imagePath.toLowerCase().endsWith('.jpeg')) {
-      mimeType = 'image/jpeg';
-    }
-    return {'mime_type': mimeType, 'data': encoded};
-  }
-
-  Map<String, String> _bytesToBase64(Uint8List bytes, {String? fileName}) {
-    final encoded = base64Encode(bytes);
-    String mimeType = 'image/png';
-    if (fileName != null &&
-        (fileName.toLowerCase().endsWith('.jpg') ||
-            fileName.toLowerCase().endsWith('.jpeg'))) {
-      mimeType = 'image/jpeg';
-    }
-    return {'mime_type': mimeType, 'data': encoded};
-  }
-
   Future<Map<String, dynamic>> _prepareRequestData(
     List<Screenshot> images, {
     List<Map<String, String?>>? autoAddCollections,
@@ -124,7 +255,9 @@ class ScreenshotAnalysisService extends AIService {
 
       if (image.path != null && image.path!.isNotEmpty) {
         contentParts.add({'text': '\\nAnalyzing image: $imageIdentifier'});
-        imageData = await _convertImageToBase64(image.path!);
+        imageData = await ImageConversionUtils.convertImageToBase64(
+          image.path!,
+        );
         try {
           contentParts.add({'inline_data': imageData});
         } catch (e) {
@@ -132,7 +265,10 @@ class ScreenshotAnalysisService extends AIService {
         }
       } else if (image.bytes != null) {
         contentParts.add({'text': '\\nAnalyzing image: $imageIdentifier'});
-        imageData = _bytesToBase64(image.bytes!, fileName: image.path);
+        imageData = ImageConversionUtils.bytesToBase64(
+          image.bytes!,
+          fileName: image.path,
+        );
         try {
           contentParts.add({'inline_data': imageData});
         } catch (e) {
@@ -243,161 +379,6 @@ class ScreenshotAnalysisService extends AIService {
     }
   }
 
-  Future<AIResult<Map<String, dynamic>>> analyzeScreenshots({
-    required List<Screenshot> screenshots,
-    required BatchProcessedCallback onBatchProcessed,
-    List<Map<String, String?>>? autoAddCollections,
-  }) async {
-    reset();
-
-    if (screenshots.isEmpty) {
-      return AIResult.error('No screenshots to analyze');
-    }
-
-    Map<String, dynamic> finalResults = {
-      'batchResults': [],
-      'statusCode': 200,
-      'processedCount': 0,
-      'totalCount': screenshots.length,
-      'cancelled': false,
-    };
-
-    // Process in batches
-    for (int i = 0; i < screenshots.length; i += config.maxParallel) {
-      if (isCancelled) {
-        finalResults['cancelled'] = true;
-        break;
-      }
-
-      int end = min(i + config.maxParallel, screenshots.length);
-      List<Screenshot> batch = screenshots.sublist(i, end);
-
-      // Filter out already processed screenshots from this batch
-      final unprocessedBatch = batch.where((s) => !s.aiProcessed).toList();
-
-      // If no screenshots in this batch need processing, skip to next batch
-      if (unprocessedBatch.isEmpty) {
-        // Still call the callback to maintain progress tracking
-        onBatchProcessed(batch, {
-          'skipped': true,
-          'reason': 'All screenshots already processed',
-          'statusCode': 200,
-        });
-        continue;
-      }
-
-      try {
-        if (isCancelled) {
-          finalResults['cancelled'] = true;
-          onBatchProcessed(batch, {
-            'error': 'Processing cancelled by user',
-            'cancelled': true,
-          });
-          break;
-        }
-
-        final requestData = await _prepareRequestData(
-          unprocessedBatch, // Use filtered batch
-          autoAddCollections: autoAddCollections,
-        );
-        final result = await _makeAPIRequest(requestData);
-
-        if (isCancelled && result['statusCode'] == 499) {
-          finalResults['cancelled'] = true;
-          onBatchProcessed(batch, result);
-          break;
-        }
-
-        (finalResults['batchResults'] as List).add({
-          'batch': batch.map((s) => s.id).toList(),
-          'result': result,
-        });
-
-        if (result.containsKey('error')) {
-          onBatchProcessed(batch, result);
-        } else {
-          finalResults['processedCount'] =
-              (finalResults['processedCount'] as int) + batch.length;
-          onBatchProcessed(batch, result);
-        }
-
-        await Future.delayed(const Duration(milliseconds: 500));
-      } catch (e) {
-        (finalResults['batchResults'] as List).add({
-          'batch': batch.map((s) => s.id).toList(),
-          'error': e.toString(),
-        });
-        onBatchProcessed(batch, {'error': e.toString()});
-      }
-    }
-
-    if (isCancelled) {
-      return AIResult.cancelled();
-    }
-
-    return AIResult.success(finalResults);
-  }
-
-  List<Screenshot> parseAndUpdateScreenshots(
-    List<Screenshot> screenshots,
-    Map<String, dynamic> response,
-  ) {
-    if (response.containsKey('error') || !response.containsKey('data')) {
-      // Don't show error messages if processing has already been terminated
-      if (!_processingTerminated) {
-        _handleResponseError(response);
-      }
-      return screenshots;
-    }
-
-    try {
-      final String responseText = response['data'];
-      List<dynamic> parsedResponse = [];
-      final RegExp jsonRegExp = RegExp(r'\[.*\]', dotAll: true);
-      final match = jsonRegExp.firstMatch(responseText);
-
-      if (match != null) {
-        try {
-          parsedResponse = jsonDecode(match.group(0)!);
-        } catch (e) {
-          try {
-            parsedResponse = jsonDecode(responseText);
-          } catch (e) {
-            return screenshots;
-          }
-        }
-      } else {
-        return screenshots;
-      }
-
-      if (parsedResponse.isEmpty) return screenshots;
-
-      AiMetaData aiMetaData = AiMetaData(
-        modelName: config.modelName,
-        processingTime: DateTime.now(),
-      );
-
-      if (screenshots.length == 1 && parsedResponse.length == 1) {
-        return _updateSingleScreenshot(
-          screenshots[0],
-          parsedResponse[0],
-          aiMetaData,
-          response,
-        );
-      }
-
-      return _updateMultipleScreenshots(
-        screenshots,
-        parsedResponse,
-        aiMetaData,
-        response,
-      );
-    } catch (e) {
-      print('Error parsing response and updating screenshots: $e');
-      return screenshots;
-    }
-  }
-
   List<Screenshot> _updateSingleScreenshot(
     Screenshot screenshot,
     Map<String, dynamic> item,
@@ -417,7 +398,7 @@ class ScreenshotAnalysisService extends AIService {
     );
 
     if (collectionNames.isNotEmpty) {
-      _storeSuggestedCollections(
+      CollectionUtils.storeSuggestedCollections(
         response,
         updatedScreenshot.id,
         collectionNames,
@@ -471,7 +452,7 @@ class ScreenshotAnalysisService extends AIService {
         );
 
         if (collectionNames.isNotEmpty) {
-          _storeSuggestedCollections(
+          CollectionUtils.storeSuggestedCollections(
             response,
             updatedScreenshot.id,
             collectionNames,
@@ -490,77 +471,23 @@ class ScreenshotAnalysisService extends AIService {
     return updatedScreenshots;
   }
 
-  void _storeSuggestedCollections(
-    Map<String, dynamic> response,
-    String screenshotId,
-    List<String> collectionNames,
-  ) {
-    try {
-      Map<String, List<String>> suggestedCollections;
-      if (response.containsKey('suggestedCollections') &&
-          response['suggestedCollections'] is Map) {
-        suggestedCollections = Map<String, List<String>>.from(
-          response['suggestedCollections'] as Map,
-        );
-      } else {
-        suggestedCollections = {};
-      }
-      suggestedCollections[screenshotId] = collectionNames;
-      response['suggestedCollections'] = suggestedCollections;
-    } catch (e) {
-      print('Error storing collection suggestions: $e');
-    }
-  }
-
   void _handleResponseError(Map<String, dynamic> response) {
-    if (response['error'] != null &&
-        response['error'].toString().contains('API key not valid')) {
-      // Only show the error message once and terminate processing
-      if (!_apiKeyErrorShown) {
-        _apiKeyErrorShown = true;
-        cancel();
-        _processingTerminated = true;
+    final result = AIErrorHandler.handleResponseError(
+      response,
+      showMessage: config.showMessage,
+      isCancelled: () => isCancelled,
+      cancelProcessing: cancel,
+      apiKeyErrorShown: _apiKeyErrorShown,
+      processingTerminated: _processingTerminated,
+      networkErrorCount: _networkErrorCount,
+      setApiKeyErrorShown: (value) => _apiKeyErrorShown = value,
+      setProcessingTerminated: (value) => _processingTerminated = value,
+      setNetworkErrorCount: (value) => _networkErrorCount = value,
+    );
 
-        config.showMessage?.call(
-          message:
-              'Invalid API key provided. AI processing has been terminated.',
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        );
-      }
-    } else if (response['error'] != null &&
-        response['error'].toString().contains('Network error')) {
-      // Increment network error count
-      _networkErrorCount++;
-
-      // If we get repeated network errors or the app was closed and reopened,
-      // we should cancel all AI processing
-      if (_networkErrorCount >= 2 || _processingTerminated) {
-        // Cancel all AI processing
-        cancel();
-        _processingTerminated = true;
-
-        config.showMessage?.call(
-          message:
-              'Network issues detected. AI processing has been terminated.',
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        );
-      } else {
-        config.showMessage?.call(
-          message:
-              'Network issue detected. Please check your internet connection and try again.',
-          backgroundColor: Colors.orange,
-          duration: const Duration(seconds: 2),
-        );
-      }
-    } else {
-      config.showMessage?.call(
-        message:
-            'No data found in response or error occurred: ${response['error']}',
-        backgroundColor: Colors.orange,
-        duration: const Duration(seconds: 1),
-      );
+    // Update state based on error handling result
+    if (result.shouldTerminate) {
+      _processingTerminated = true;
     }
   }
 }
