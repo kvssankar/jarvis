@@ -227,59 +227,53 @@ class ScreenshotAnalysisService extends AIService {
     final unprocessedImages =
         images.where((image) => !image.aiProcessed).toList();
 
-    // If no images need processing, return empty request
-    if (unprocessedImages.isEmpty) {
-      return {
-        'contents': [
-          {
-            'parts': [
-              {'text': 'No images to process - all are already processed.'},
-            ],
-          },
-        ],
-      };
-    }
-
-    List<Map<String, dynamic>> contentParts = [
-      {'text': _getAnalysisPrompt(autoAddCollections: autoAddCollections)},
-    ];
+    // Prepare image data in a generic format
+    List<Map<String, dynamic>> imageData = [];
 
     for (var image in unprocessedImages) {
       String imageIdentifier = image.id;
-      Map<String, String> imageData;
+      Map<String, String>? imageBase64Data;
 
-      if (image.path != null && image.path!.isNotEmpty) {
-        contentParts.add({'text': '\\nAnalyzing image: $imageIdentifier'});
-        imageData = await ImageConversionUtils.convertImageToBase64(
-          image.path!,
-        );
-        try {
-          contentParts.add({'inline_data': imageData});
-        } catch (e) {
-          print("Error adding path-based image data for ${image.id}: $e");
+      try {
+        if (image.path != null && image.path!.isNotEmpty) {
+          imageBase64Data = await ImageConversionUtils.convertImageToBase64(
+            image.path!,
+          );
+        } else if (image.bytes != null) {
+          imageBase64Data = ImageConversionUtils.bytesToBase64(
+            image.bytes!,
+            fileName: image.path,
+          );
+        } else {
+          print(
+            "Warning: Screenshot with id ${image.id} has no path or bytes.",
+          );
+          continue;
         }
-      } else if (image.bytes != null) {
-        contentParts.add({'text': '\\nAnalyzing image: $imageIdentifier'});
-        imageData = ImageConversionUtils.bytesToBase64(
-          image.bytes!,
-          fileName: image.path,
-        );
-        try {
-          contentParts.add({'inline_data': imageData});
-        } catch (e) {
-          print("Error adding byte-based image data for ${image.id}: $e");
-        }
-      } else {
-        print("Warning: Screenshot with id ${image.id} has no path or bytes.");
-        continue;
+
+        imageData.add({'identifier': imageIdentifier, 'data': imageBase64Data});
+      } catch (e) {
+        print("Error adding image data for ${image.id}: $e");
       }
     }
 
-    return {
-      'contents': [
-        {'parts': contentParts},
-      ],
-    };
+    // Use the provider-specific request preparation
+    final requestData = prepareScreenshotAnalysisRequest(
+      prompt: _getAnalysisPrompt(autoAddCollections: autoAddCollections),
+      imageData: imageData,
+    );
+
+    // Fallback to old format if provider doesn't support new format
+    return requestData ??
+        {
+          'contents': [
+            {
+              'parts': [
+                {'text': 'No images to process - provider not supported.'},
+              ],
+            },
+          ],
+        };
   }
 
   // Wrapper method that adds screenshot-specific logic before calling base API method

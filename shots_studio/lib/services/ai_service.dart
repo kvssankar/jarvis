@@ -133,9 +133,21 @@ abstract class APIProvider {
   );
 
   bool canHandleModel(String modelName);
-}
 
-// Gemini API provider implementation
+  // Prepare request data in the format specific to this provider
+  Map<String, dynamic> prepareScreenshotAnalysisRequest({
+    required String prompt,
+    required List<Map<String, dynamic>> imageData,
+    Map<String, dynamic> additionalParams = const {},
+  });
+
+  Map<String, dynamic> prepareCategorizationRequest({
+    required String prompt,
+    required List<Map<String, String>> screenshotMetadata,
+    Map<String, dynamic> additionalParams = const {},
+  });
+} // Gemini API provider implementation
+
 class GeminiAPIProvider implements APIProvider {
   static const String _baseUrl =
       'https://generativelanguage.googleapis.com/v1beta/models';
@@ -215,6 +227,86 @@ class GeminiAPIProvider implements APIProvider {
       return {'error': 'Unexpected error: ${e.toString()}', 'statusCode': 500};
     }
   }
+
+  @override
+  Map<String, dynamic> prepareScreenshotAnalysisRequest({
+    required String prompt,
+    required List<Map<String, dynamic>> imageData,
+    Map<String, dynamic> additionalParams = const {},
+  }) {
+    // If no images need processing, return empty request
+    if (imageData.isEmpty) {
+      return {
+        'contents': [
+          {
+            'parts': [
+              {'text': 'No images to process - all are already processed.'},
+            ],
+          },
+        ],
+      };
+    }
+
+    List<Map<String, dynamic>> contentParts = [
+      {'text': prompt},
+    ];
+
+    // Add all image data to content parts
+    for (var imageItem in imageData) {
+      if (imageItem['identifier'] != null) {
+        contentParts.add({
+          'text': '\nAnalyzing image: ${imageItem['identifier']}',
+        });
+      }
+      if (imageItem['data'] != null) {
+        contentParts.add({'inline_data': imageItem['data']});
+      }
+    }
+
+    return {
+      'contents': [
+        {'parts': contentParts},
+      ],
+      ...additionalParams,
+    };
+  }
+
+  @override
+  Map<String, dynamic> prepareCategorizationRequest({
+    required String prompt,
+    required List<Map<String, String>> screenshotMetadata,
+    Map<String, dynamic> additionalParams = const {},
+  }) {
+    List<Map<String, dynamic>> contentParts = [
+      {'text': prompt},
+    ];
+
+    if (screenshotMetadata.isEmpty) {
+      contentParts.add({'text': '\nNo eligible screenshots to analyze.'});
+    } else {
+      contentParts.add({
+        'text':
+            '\nScreenshots to analyze (${screenshotMetadata.length} total):',
+      });
+
+      for (var metadata in screenshotMetadata) {
+        String screenshotInfo = '''
+          ID: ${metadata['id'] ?? 'Unknown'}
+          Title: ${metadata['title'] ?? 'No title'}
+          Description: ${metadata['description'] ?? 'No description'}
+          Tags: ${metadata['tags'] ?? 'No tags'}
+          ''';
+        contentParts.add({'text': screenshotInfo});
+      }
+    }
+
+    return {
+      'contents': [
+        {'parts': contentParts},
+      ],
+      ...additionalParams,
+    };
+  }
 }
 
 // Factory for API providers
@@ -279,5 +371,41 @@ abstract class AIService {
     } catch (e) {
       return {'error': 'Provider error: ${e.toString()}', 'statusCode': 500};
     }
+  }
+
+  // Protected method for preparing screenshot analysis requests
+  Map<String, dynamic>? prepareScreenshotAnalysisRequest({
+    required String prompt,
+    required List<Map<String, dynamic>> imageData,
+    Map<String, dynamic> additionalParams = const {},
+  }) {
+    final provider = APIProviderFactory.getProvider(config.modelName);
+    if (provider == null) {
+      return null;
+    }
+
+    return provider.prepareScreenshotAnalysisRequest(
+      prompt: prompt,
+      imageData: imageData,
+      additionalParams: additionalParams,
+    );
+  }
+
+  // Protected method for preparing categorization requests
+  Map<String, dynamic>? prepareCategorizationRequest({
+    required String prompt,
+    required List<Map<String, String>> screenshotMetadata,
+    Map<String, dynamic> additionalParams = const {},
+  }) {
+    final provider = APIProviderFactory.getProvider(config.modelName);
+    if (provider == null) {
+      return null;
+    }
+
+    return provider.prepareCategorizationRequest(
+      prompt: prompt,
+      screenshotMetadata: screenshotMetadata,
+      additionalParams: additionalParams,
+    );
   }
 }

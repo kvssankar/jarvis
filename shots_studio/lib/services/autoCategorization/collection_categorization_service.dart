@@ -48,34 +48,36 @@ class CollectionCategorizationService extends AIService {
                   screenshot.tags.isNotEmpty);
         }).toList();
 
-    List<Map<String, dynamic>> contentParts = [
-      {'text': _getCategorizationPrompt(collectionName, collectionDescription)},
-    ];
+    // Convert to generic metadata format
+    List<Map<String, String>> screenshotMetadata =
+        screenshotsToProcess
+            .map(
+              (screenshot) => {
+                'id': screenshot.id,
+                'title': screenshot.title ?? 'No title',
+                'description': screenshot.description ?? 'No description',
+                'tags': screenshot.tags.join(', '),
+              },
+            )
+            .toList();
 
-    if (screenshotsToProcess.isEmpty) {
-      contentParts.add({'text': '\nNo eligible screenshots to analyze.'});
-    } else {
-      contentParts.add({
-        'text':
-            '\nScreenshots to analyze (${screenshotsToProcess.length} total):',
-      });
+    // Use the provider-specific request preparation
+    final requestData = prepareCategorizationRequest(
+      prompt: _getCategorizationPrompt(collectionName, collectionDescription),
+      screenshotMetadata: screenshotMetadata,
+    );
 
-      for (var screenshot in screenshotsToProcess) {
-        String screenshotInfo = '''
-          ID: ${screenshot.id}
-          Title: ${screenshot.title ?? 'No title'}
-          Description: ${screenshot.description ?? 'No description'}
-          Tags: ${screenshot.tags.join(', ')}
-          ''';
-        contentParts.add({'text': screenshotInfo});
-      }
-    }
-
-    return {
-      'contents': [
-        {'parts': contentParts},
-      ],
-    };
+    // Fallback to old format if provider doesn't support new format
+    return requestData ??
+        {
+          'contents': [
+            {
+              'parts': [
+                {'text': 'Provider not supported for categorization.'},
+              ],
+            },
+          ],
+        };
   }
 
   Future<Map<String, dynamic>> _makeAPIRequest(
