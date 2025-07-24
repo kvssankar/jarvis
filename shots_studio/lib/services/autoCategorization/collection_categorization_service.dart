@@ -1,17 +1,12 @@
 // Collection Categorization Service used for AutoCategorization
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
-import 'package:http/http.dart' as http;
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/services/ai_service.dart';
 
 class CollectionCategorizationService extends AIService {
-  static const String _baseUrl =
-      'https://generativelanguage.googleapis.com/v1beta/models';
-
   CollectionCategorizationService(super.config);
 
   String _getCategorizationPrompt(
@@ -86,57 +81,8 @@ class CollectionCategorizationService extends AIService {
   Future<Map<String, dynamic>> _makeAPIRequest(
     Map<String, dynamic> requestData,
   ) async {
-    if (isCancelled) {
-      return {'error': 'Request cancelled by user', 'statusCode': 499};
-    }
-
-    final url = Uri.parse(
-      '$_baseUrl/${config.modelName}:generateContent?key=${config.apiKey}',
-    );
-
-    final requestBody = jsonEncode(requestData);
-    final headers = {'Content-Type': 'application/json'};
-
-    try {
-      final response = await http
-          .post(url, headers: headers, body: requestBody)
-          .timeout(Duration(seconds: config.timeoutSeconds));
-
-      final responseJson = jsonDecode(response.body);
-
-      if (response.statusCode == 200) {
-        final candidates = responseJson['candidates'] as List?;
-        if (candidates != null && candidates.isNotEmpty) {
-          final content = candidates[0]['content'] as Map?;
-          if (content != null) {
-            final parts = content['parts'] as List?;
-            if (parts != null && parts.isNotEmpty) {
-              final text = parts[0]['text'] as String?;
-              if (text != null) {
-                return {'data': text, 'statusCode': response.statusCode};
-              }
-            }
-          }
-        }
-        return {
-          'error': 'No response text from AI',
-          'statusCode': response.statusCode,
-          'rawResponse': response.body,
-        };
-      } else {
-        return {
-          'error': responseJson['error']?['message'] ?? 'API Error',
-          'statusCode': response.statusCode,
-          'rawResponse': response.body,
-        };
-      }
-    } on SocketException catch (e) {
-      return {'error': 'Network error: ${e.message}', 'statusCode': 503};
-    } on TimeoutException catch (_) {
-      return {'error': 'Request timed out', 'statusCode': 408};
-    } catch (e) {
-      return {'error': 'Unexpected error: ${e.toString()}', 'statusCode': 500};
-    }
+    // Call the base class method to make the actual API request
+    return await makeAPIRequest(requestData);
   }
 
   List<String> _parseResponse(Map<String, dynamic> response) {

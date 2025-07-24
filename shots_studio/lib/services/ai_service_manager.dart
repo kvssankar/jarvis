@@ -96,6 +96,7 @@ class AIServiceManager {
     int maxParallel = 4,
     int timeoutSeconds = 120,
     ShowMessageCallback? showMessage,
+    Map<String, dynamic> providerSpecificConfig = const {},
   }) {
     return AIConfig(
       apiKey: apiKey,
@@ -103,6 +104,7 @@ class AIServiceManager {
       maxParallel: maxParallel,
       timeoutSeconds: timeoutSeconds,
       showMessage: showMessage,
+      providerSpecificConfig: providerSpecificConfig,
     );
   }
 }

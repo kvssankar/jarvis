@@ -1,9 +1,7 @@
 // Screenshot Analysis Service
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
-import 'package:http/http.dart' as http;
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/services/ai_service.dart';
 import 'package:shots_studio/utils/image_conversion_utils.dart';
@@ -11,9 +9,6 @@ import 'package:shots_studio/utils/collection_utils.dart';
 import 'package:shots_studio/utils/ai_error_utils.dart';
 
 class ScreenshotAnalysisService extends AIService {
-  static const String _baseUrl =
-      'https://generativelanguage.googleapis.com/v1beta/models';
-
   // Track network errors to prevent multiple notifications
   int _networkErrorCount = 0;
   bool _processingTerminated = false;
@@ -287,6 +282,7 @@ class ScreenshotAnalysisService extends AIService {
     };
   }
 
+  // Wrapper method that adds screenshot-specific logic before calling base API method
   Future<Map<String, dynamic>> _makeAPIRequest(
     Map<String, dynamic> requestData,
   ) async {
@@ -294,89 +290,31 @@ class ScreenshotAnalysisService extends AIService {
       return {'error': 'Request cancelled by user', 'statusCode': 499};
     }
 
-    // Check if this is an empty request (all images already processed)
-    if (requestData.containsKey('contents')) {
-      final contents = requestData['contents'] as List;
-      if (contents.length == 1 &&
-          contents[0]['parts'] != null &&
-          (contents[0]['parts'] as List).length == 1 &&
-          (contents[0]['parts'][0]['text'] as String).contains(
-            'No images to process',
-          )) {
+    // Check if it has been a long time since the last successful request
+    if (_lastSuccessfulRequestTime != null) {
+      final timeSinceLastRequest = DateTime.now().difference(
+        _lastSuccessfulRequestTime!,
+      );
+      // If more than 2 minutes have passed since the last successful request, assume app was reopened
+      if (timeSinceLastRequest.inMinutes > 2) {
+        _processingTerminated = true;
         return {
-          'data': '[]', // Empty results
-          'statusCode': 200,
-          'skipped': true,
+          'error':
+              'App was likely closed and reopened. AI processing terminated.',
+          'statusCode': 499,
         };
       }
     }
 
-    final url = Uri.parse(
-      '$_baseUrl/${config.modelName}:generateContent?key=${config.apiKey}',
-    );
+    // Call the base class method to make the actual API request
+    final result = await makeAPIRequest(requestData);
 
-    final requestBody = jsonEncode(requestData);
-    final headers = {'Content-Type': 'application/json'};
-
-    try {
-      // Check if it has been a long time since the last successful request
-      if (_lastSuccessfulRequestTime != null) {
-        final timeSinceLastRequest = DateTime.now().difference(
-          _lastSuccessfulRequestTime!,
-        );
-        // If more than 2 minutes have passed since the last successful request, assume app was reopened
-        if (timeSinceLastRequest.inMinutes > 2) {
-          _processingTerminated = true;
-          return {
-            'error':
-                'App was likely closed and reopened. AI processing terminated.',
-            'statusCode': 499,
-          };
-        }
-      }
-
-      final response = await http
-          .post(url, headers: headers, body: requestBody)
-          .timeout(Duration(seconds: config.timeoutSeconds));
-
-      final responseJson = jsonDecode(response.body);
-
-      if (response.statusCode == 200) {
-        // Update last successful request time
-        _lastSuccessfulRequestTime = DateTime.now();
-
-        final candidates = responseJson['candidates'] as List?;
-        if (candidates != null && candidates.isNotEmpty) {
-          final content = candidates[0]['content'] as Map?;
-          if (content != null) {
-            final parts = content['parts'] as List?;
-            if (parts != null && parts.isNotEmpty) {
-              final text = parts[0]['text'] as String?;
-              if (text != null) {
-                return {'data': text, 'statusCode': response.statusCode};
-              }
-            }
-          }
-        }
-        return {
-          'error': 'No response text from AI',
-          'statusCode': response.statusCode,
-          'rawResponse': response.body,
-        };
-      } else {
-        return {
-          'error': responseJson['error']?['message'] ?? 'API Error',
-          'statusCode': response.statusCode,
-          'rawResponse': response.body,
-        };
-      }
-    } on SocketException catch (e) {
-      return {'error': 'Network error: ${e.message}', 'statusCode': 503};
-    } on TimeoutException catch (_) {
-      return {'error': 'Request timed out', 'statusCode': 408};
-    } catch (e) {
-      return {'error': 'Unexpected error: ${e.toString()}', 'statusCode': 500};
+    // Update last successful request time if the request was successful
+    if (result['statusCode'] == 200) {
+      _lastSuccessfulRequestTime = DateTime.now();
     }
+
+    return result;
   }
 
   List<Screenshot> _updateSingleScreenshot(
