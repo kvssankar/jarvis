@@ -5,6 +5,8 @@ import 'package:shots_studio/services/analytics/analytics_service.dart';
 import 'package:shots_studio/services/api_validation_service.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/utils/theme_manager.dart';
+import 'package:shots_studio/screens/ai_settings_screen.dart';
+import 'package:shots_studio/utils/ai_provider_config.dart';
 
 class SettingsSection extends StatefulWidget {
   final String? currentApiKey;
@@ -123,6 +125,54 @@ class _SettingsSectionState extends State<SettingsSection> {
 
     // Load API key validation state
     _loadApiKeyValidationState();
+  }
+
+  Future<List<String>> _getAvailableModels() async {
+    final prefs = await SharedPreferences.getInstance();
+    List<String> availableModels = [];
+
+    // Check which providers are enabled
+    for (final provider in AIProviderConfig.getProviders()) {
+      final prefKey = AIProviderConfig.getPrefKeyForProvider(provider);
+      if (prefKey != null) {
+        final isEnabled = prefs.getBool(prefKey) ?? (provider == 'gemini');
+        if (isEnabled) {
+          availableModels.addAll(
+            AIProviderConfig.getModelsForProvider(provider),
+          );
+        }
+      }
+    }
+
+    // If no providers are enabled, default to none models
+    if (availableModels.isEmpty) {
+      availableModels.addAll(AIProviderConfig.getModelsForProvider('none'));
+    }
+
+    return availableModels;
+  }
+
+  void _navigateToAISettings() {
+    // Track AI settings navigation
+    AnalyticsService().logFeatureUsed('ai_settings_navigation');
+    AnalyticsService().logScreenView('ai_settings_screen');
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) => AISettingsScreen(
+              currentModelName: _selectedModelName,
+              onModelChanged: (String newModel) {
+                setState(() {
+                  _selectedModelName = newModel;
+                });
+                widget.onModelChanged(newModel);
+                _saveModelName(newModel);
+              },
+            ),
+      ),
+    );
   }
 
   void _loadAutoProcessEnabledPref() async {
@@ -393,59 +443,144 @@ class _SettingsSectionState extends State<SettingsSection> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'AI Model',
-                      style: TextStyle(
-                        color: theme.colorScheme.onSecondaryContainer,
-                        fontSize: 16,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          'AI Model',
+                          style: TextStyle(
+                            color: theme.colorScheme.onSecondaryContainer,
+                            fontSize: 16,
+                          ),
+                        ),
+                        const Spacer(),
+                        TextButton.icon(
+                          onPressed: _navigateToAISettings,
+                          icon: Icon(
+                            Icons.settings_outlined,
+                            size: 16,
+                            color: theme.colorScheme.primary,
+                          ),
+                          label: Text(
+                            'AI Settings',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            minimumSize: Size.zero,
+                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
-                    DropdownButton<String>(
-                      value: _selectedModelName,
-                      dropdownColor: theme.colorScheme.secondaryContainer,
-                      icon: Icon(
-                        Icons.arrow_drop_down,
-                        color: theme.colorScheme.onSecondaryContainer,
-                      ),
-                      style: TextStyle(
-                        color: theme.colorScheme.onSecondaryContainer,
-                      ),
-                      underline: SizedBox.shrink(),
-                      isExpanded: true,
-                      onChanged: (String? newValue) {
-                        if (newValue != null) {
-                          setState(() {
-                            _selectedModelName = newValue;
-                          });
-                          widget.onModelChanged(newValue);
-                          _saveModelName(newValue);
-
-                          // Track model change in analytics
-                          AnalyticsService().logFeatureUsed(
-                            'setting_changed_ai_model',
-                          );
-                          AnalyticsService().logFeatureAdopted(
-                            'model_$newValue',
+                    FutureBuilder<List<String>>(
+                      future: _getAvailableModels(),
+                      builder: (context, snapshot) {
+                        if (!snapshot.hasData) {
+                          return DropdownButton<String>(
+                            value: _selectedModelName,
+                            dropdownColor: theme.colorScheme.secondaryContainer,
+                            icon: Icon(
+                              Icons.arrow_drop_down,
+                              color: theme.colorScheme.onSecondaryContainer,
+                            ),
+                            style: TextStyle(
+                              color: theme.colorScheme.onSecondaryContainer,
+                            ),
+                            underline: SizedBox.shrink(),
+                            isExpanded: true,
+                            items: [
+                              DropdownMenuItem<String>(
+                                value: _selectedModelName,
+                                child: Text(
+                                  _selectedModelName,
+                                  style: TextStyle(
+                                    color:
+                                        theme.colorScheme.onSecondaryContainer,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                            onChanged: null,
                           );
                         }
+
+                        final availableModels = snapshot.data!;
+
+                        // Ensure current model is in available models
+                        if (!availableModels.contains(_selectedModelName) &&
+                            availableModels.isNotEmpty) {
+                          // Auto-switch to first available model
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            setState(() {
+                              _selectedModelName = availableModels.first;
+                            });
+                            widget.onModelChanged(availableModels.first);
+                            _saveModelName(availableModels.first);
+                          });
+                        }
+
+                        return DropdownButton<String>(
+                          value:
+                              availableModels.contains(_selectedModelName)
+                                  ? _selectedModelName
+                                  : (availableModels.isNotEmpty
+                                      ? availableModels.first
+                                      : _selectedModelName),
+                          dropdownColor: theme.colorScheme.secondaryContainer,
+                          icon: Icon(
+                            Icons.arrow_drop_down,
+                            color: theme.colorScheme.onSecondaryContainer,
+                          ),
+                          style: TextStyle(
+                            color: theme.colorScheme.onSecondaryContainer,
+                          ),
+                          underline: SizedBox.shrink(),
+                          isExpanded: true,
+                          onChanged: (String? newValue) {
+                            if (newValue != null) {
+                              setState(() {
+                                _selectedModelName = newValue;
+                              });
+                              widget.onModelChanged(newValue);
+                              _saveModelName(newValue);
+
+                              // Track model change in analytics
+                              AnalyticsService().logFeatureUsed(
+                                'setting_changed_ai_model',
+                              );
+                              AnalyticsService().logFeatureAdopted(
+                                'model_$newValue',
+                              );
+                            }
+                          },
+                          items:
+                              availableModels.map<DropdownMenuItem<String>>((
+                                String value,
+                              ) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(
+                                    value,
+                                    style: TextStyle(
+                                      color:
+                                          theme
+                                              .colorScheme
+                                              .onSecondaryContainer,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                );
+                              }).toList(),
+                        );
                       },
-                      items:
-                          <String>[
-                            'gemini-2.0-flash',
-                            'gemini-2.5-pro',
-                          ].map<DropdownMenuItem<String>>((String value) {
-                            return DropdownMenuItem<String>(
-                              value: value,
-                              child: Text(
-                                value,
-                                style: TextStyle(
-                                  color: theme.colorScheme.onSecondaryContainer,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            );
-                          }).toList(),
                     ),
                   ],
                 ),
