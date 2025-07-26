@@ -1,5 +1,9 @@
 // AI Service Interface and Base Classes
+import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:shots_studio/models/screenshot_model.dart';
 
 typedef ShowMessageCallback =
@@ -43,6 +47,7 @@ class AIConfig {
   final int maxParallel;
   final int timeoutSeconds;
   final ShowMessageCallback? showMessage;
+  final Map<String, dynamic> providerSpecificConfig;
 
   const AIConfig({
     required this.apiKey,
@@ -50,6 +55,7 @@ class AIConfig {
     this.maxParallel = 4,
     this.timeoutSeconds = 120,
     this.showMessage,
+    this.providerSpecificConfig = const {},
   });
 }
 
@@ -119,6 +125,209 @@ class AIResult<T> {
   }
 }
 
+// Abstract API provider interface for different AI models
+abstract class APIProvider {
+  Future<Map<String, dynamic>> makeRequest(
+    Map<String, dynamic> requestData,
+    AIConfig config,
+  );
+
+  bool canHandleModel(String modelName);
+
+  // Prepare request data in the format specific to this provider
+  Map<String, dynamic> prepareScreenshotAnalysisRequest({
+    required String prompt,
+    required List<Map<String, dynamic>> imageData,
+    Map<String, dynamic> additionalParams = const {},
+  });
+
+  Map<String, dynamic> prepareCategorizationRequest({
+    required String prompt,
+    required List<Map<String, String>> screenshotMetadata,
+    Map<String, dynamic> additionalParams = const {},
+  });
+} // Gemini API provider implementation
+
+class GeminiAPIProvider implements APIProvider {
+  static const String _baseUrl =
+      'https://generativelanguage.googleapis.com/v1beta/models';
+
+  @override
+  bool canHandleModel(String modelName) {
+    return modelName.toLowerCase().contains('gemini');
+  }
+
+  @override
+  Future<Map<String, dynamic>> makeRequest(
+    Map<String, dynamic> requestData,
+    AIConfig config,
+  ) async {
+    // Check if this is an empty request (all images already processed)
+    if (requestData.containsKey('contents')) {
+      final contents = requestData['contents'] as List;
+      if (contents.length == 1 &&
+          contents[0]['parts'] != null &&
+          (contents[0]['parts'] as List).length == 1 &&
+          (contents[0]['parts'][0]['text'] as String).contains(
+            'No images to process',
+          )) {
+        return {
+          'data': '[]', // Empty results
+          'statusCode': 200,
+          'skipped': true,
+        };
+      }
+    }
+
+    final url = Uri.parse(
+      '$_baseUrl/${config.modelName}:generateContent?key=${config.apiKey}',
+    );
+
+    final requestBody = jsonEncode(requestData);
+    final headers = {'Content-Type': 'application/json'};
+
+    try {
+      final response = await http
+          .post(url, headers: headers, body: requestBody)
+          .timeout(Duration(seconds: config.timeoutSeconds));
+
+      final responseJson = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        final candidates = responseJson['candidates'] as List?;
+        if (candidates != null && candidates.isNotEmpty) {
+          final content = candidates[0]['content'] as Map?;
+          if (content != null) {
+            final parts = content['parts'] as List?;
+            if (parts != null && parts.isNotEmpty) {
+              final text = parts[0]['text'] as String?;
+              if (text != null) {
+                return {'data': text, 'statusCode': response.statusCode};
+              }
+            }
+          }
+        }
+        return {
+          'error': 'No response text from AI',
+          'statusCode': response.statusCode,
+          'rawResponse': response.body,
+        };
+      } else {
+        return {
+          'error': responseJson['error']?['message'] ?? 'API Error',
+          'statusCode': response.statusCode,
+          'rawResponse': response.body,
+        };
+      }
+    } on SocketException catch (e) {
+      return {'error': 'Network error: ${e.message}', 'statusCode': 503};
+    } on TimeoutException catch (_) {
+      return {'error': 'Request timed out', 'statusCode': 408};
+    } catch (e) {
+      return {'error': 'Unexpected error: ${e.toString()}', 'statusCode': 500};
+    }
+  }
+
+  @override
+  Map<String, dynamic> prepareScreenshotAnalysisRequest({
+    required String prompt,
+    required List<Map<String, dynamic>> imageData,
+    Map<String, dynamic> additionalParams = const {},
+  }) {
+    // If no images need processing, return empty request
+    if (imageData.isEmpty) {
+      return {
+        'contents': [
+          {
+            'parts': [
+              {'text': 'No images to process - all are already processed.'},
+            ],
+          },
+        ],
+      };
+    }
+
+    List<Map<String, dynamic>> contentParts = [
+      {'text': prompt},
+    ];
+
+    // Add all image data to content parts
+    for (var imageItem in imageData) {
+      if (imageItem['identifier'] != null) {
+        contentParts.add({
+          'text': '\nAnalyzing image: ${imageItem['identifier']}',
+        });
+      }
+      if (imageItem['data'] != null) {
+        contentParts.add({'inline_data': imageItem['data']});
+      }
+    }
+
+    return {
+      'contents': [
+        {'parts': contentParts},
+      ],
+      ...additionalParams,
+    };
+  }
+
+  @override
+  Map<String, dynamic> prepareCategorizationRequest({
+    required String prompt,
+    required List<Map<String, String>> screenshotMetadata,
+    Map<String, dynamic> additionalParams = const {},
+  }) {
+    List<Map<String, dynamic>> contentParts = [
+      {'text': prompt},
+    ];
+
+    if (screenshotMetadata.isEmpty) {
+      contentParts.add({'text': '\nNo eligible screenshots to analyze.'});
+    } else {
+      contentParts.add({
+        'text':
+            '\nScreenshots to analyze (${screenshotMetadata.length} total):',
+      });
+
+      for (var metadata in screenshotMetadata) {
+        String screenshotInfo = '''
+          ID: ${metadata['id'] ?? 'Unknown'}
+          Title: ${metadata['title'] ?? 'No title'}
+          Description: ${metadata['description'] ?? 'No description'}
+          Tags: ${metadata['tags'] ?? 'No tags'}
+          ''';
+        contentParts.add({'text': screenshotInfo});
+      }
+    }
+
+    return {
+      'contents': [
+        {'parts': contentParts},
+      ],
+      ...additionalParams,
+    };
+  }
+}
+
+// Factory for API providers
+class APIProviderFactory {
+  static final List<APIProvider> _providers = [
+    GeminiAPIProvider(),
+    // Future providers can be added here:
+    // GemmaProvider(),
+    // LocalLlamaAPIProvider(),
+  ];
+
+  static APIProvider? getProvider(String modelName) {
+    for (final provider in _providers) {
+      if (provider.canHandleModel(modelName)) {
+        return provider;
+      }
+    }
+    return null;
+  }
+}
+
 // Abstract base class for AI services
 abstract class AIService {
   final AIConfig config;
@@ -139,5 +348,64 @@ abstract class AIService {
 
   void reset() {
     _isCancelled = false;
+  }
+
+  // Protected method for making API requests that delegates to appropriate provider
+  Future<Map<String, dynamic>> makeAPIRequest(
+    Map<String, dynamic> requestData,
+  ) async {
+    if (isCancelled) {
+      return {'error': 'Request cancelled by user', 'statusCode': 499};
+    }
+
+    final provider = APIProviderFactory.getProvider(config.modelName);
+    if (provider == null) {
+      return {
+        'error': 'No API provider found for model: ${config.modelName}',
+        'statusCode': 400,
+      };
+    }
+
+    try {
+      return await provider.makeRequest(requestData, config);
+    } catch (e) {
+      return {'error': 'Provider error: ${e.toString()}', 'statusCode': 500};
+    }
+  }
+
+  // Protected method for preparing screenshot analysis requests
+  Map<String, dynamic>? prepareScreenshotAnalysisRequest({
+    required String prompt,
+    required List<Map<String, dynamic>> imageData,
+    Map<String, dynamic> additionalParams = const {},
+  }) {
+    final provider = APIProviderFactory.getProvider(config.modelName);
+    if (provider == null) {
+      return null;
+    }
+
+    return provider.prepareScreenshotAnalysisRequest(
+      prompt: prompt,
+      imageData: imageData,
+      additionalParams: additionalParams,
+    );
+  }
+
+  // Protected method for preparing categorization requests
+  Map<String, dynamic>? prepareCategorizationRequest({
+    required String prompt,
+    required List<Map<String, String>> screenshotMetadata,
+    Map<String, dynamic> additionalParams = const {},
+  }) {
+    final provider = APIProviderFactory.getProvider(config.modelName);
+    if (provider == null) {
+      return null;
+    }
+
+    return provider.prepareCategorizationRequest(
+      prompt: prompt,
+      screenshotMetadata: screenshotMetadata,
+      additionalParams: additionalParams,
+    );
   }
 }

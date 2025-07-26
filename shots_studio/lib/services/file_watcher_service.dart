@@ -1,3 +1,4 @@
+// Filewatcher Service that monitors directories for new screenshots
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -5,6 +6,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/services/custom_path_service.dart';
 import 'package:uuid/uuid.dart';
+
+// TODO: There's a bug that causes the app unusable when the watcher is running
 
 class FileWatcherService {
   static final FileWatcherService _instance = FileWatcherService._internal();

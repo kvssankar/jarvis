@@ -3,7 +3,7 @@ import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/screens/screenshot_swipe_detail_screen.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
-import 'package:shots_studio/services/analytics_service.dart';
+import 'package:shots_studio/services/analytics/analytics_service.dart';
 import 'package:shots_studio/utils/responsive_utils.dart';
 
 class SearchScreen extends StatefulWidget {

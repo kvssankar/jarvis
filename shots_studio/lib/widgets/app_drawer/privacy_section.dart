@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../services/analytics_service.dart';
+import '../../services/analytics/analytics_service.dart';
 import '../../screens/privacy_screen.dart';
 
 class PrivacySection extends StatelessWidget {

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/server_message_service.dart';
-import '../services/analytics_service.dart';
+import '../services/analytics/analytics_service.dart';
 import '../services/notification_service.dart';
 
 class ServerMessageDialog extends StatelessWidget {

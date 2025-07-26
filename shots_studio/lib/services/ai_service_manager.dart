@@ -3,7 +3,7 @@ import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/services/ai_service.dart';
 import 'package:shots_studio/services/screenshot_analysis_service.dart';
-import 'package:shots_studio/services/collection_categorization_service.dart';
+import 'package:shots_studio/services/autoCategorization/collection_categorization_service.dart';
 
 class AIServiceManager {
   static AIServiceManager? _instance;
@@ -13,10 +13,11 @@ class AIServiceManager {
     return _instance ??= AIServiceManager._internal();
   }
 
+  // Screenshot analysis handles the analysis of screenshots
   ScreenshotAnalysisService? _analysisService;
+  // Collection categorization handles the categorization of screenshots into collections
   CollectionCategorizationService? _categorizationService;
 
-  // Create services with configuration
   void initialize(AIConfig config) {
     _analysisService = ScreenshotAnalysisService(config);
     _categorizationService = CollectionCategorizationService(config);
@@ -95,6 +96,7 @@ class AIServiceManager {
     int maxParallel = 4,
     int timeoutSeconds = 120,
     ShowMessageCallback? showMessage,
+    Map<String, dynamic> providerSpecificConfig = const {},
   }) {
     return AIConfig(
       apiKey: apiKey,
@@ -102,6 +104,7 @@ class AIServiceManager {
       maxParallel: maxParallel,
       timeoutSeconds: timeoutSeconds,
       showMessage: showMessage,
+      providerSpecificConfig: providerSpecificConfig,
     );
   }
 }

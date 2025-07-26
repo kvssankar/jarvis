@@ -1,3 +1,5 @@
+// AutoCategorization Service
+// This service handles the automatic categorization of screenshots which are already processed by AI.
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:shots_studio/models/collection_model.dart';
@@ -5,7 +7,7 @@ import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/services/ai_service_manager.dart';
 import 'package:shots_studio/services/ai_service.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
-import 'package:shots_studio/services/analytics_service.dart';
+import 'package:shots_studio/services/analytics/analytics_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AICategorizer {
@@ -52,6 +54,7 @@ class AICategorizer {
     // Keep track of the current collection state as it gets updated
     Collection currentCollection = collection;
 
+    // Filter candidate screenshots that are not already in the collection
     final List<Screenshot> candidateScreenshots =
         allScreenshots
             .where(

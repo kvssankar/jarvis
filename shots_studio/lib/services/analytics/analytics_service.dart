@@ -32,7 +32,10 @@ class AnalyticsService {
     int processingTimeMs,
     int screenshotCount,
   ) async {
-    await _postHogService.logBatchProcessingTime(processingTimeMs, screenshotCount);
+    await _postHogService.logBatchProcessingTime(
+      processingTimeMs,
+      screenshotCount,
+    );
   }
 
   Future<void> logAIProcessingSuccess(int screenshotCount) async {
@@ -132,7 +135,10 @@ class AnalyticsService {
     int processingTimeMs,
     int memoryUsageMB,
   ) async {
-    await _postHogService.logBackgroundResourceUsage(processingTimeMs, memoryUsageMB);
+    await _postHogService.logBackgroundResourceUsage(
+      processingTimeMs,
+      memoryUsageMB,
+    );
   }
 
   // App Health
@@ -149,7 +155,11 @@ class AnalyticsService {
     bool successful,
     int durationMs,
   ) async {
-    await _postHogService.logBackgroundTaskCompleted(taskName, successful, durationMs);
+    await _postHogService.logBackgroundTaskCompleted(
+      taskName,
+      successful,
+      durationMs,
+    );
   }
 
   // Statistics (Very Important)
@@ -165,7 +175,10 @@ class AnalyticsService {
     int collectionId,
     int screenshotCount,
   ) async {
-    await _postHogService.logScreenshotsInCollection(collectionId, screenshotCount);
+    await _postHogService.logScreenshotsInCollection(
+      collectionId,
+      screenshotCount,
+    );
   }
 
   Future<void> logScreenshotsAutoCategorized(int count) async {
@@ -185,9 +198,12 @@ class AnalyticsService {
   }
 
   // Additional PostHog-specific methods (optional to use)
-  
+
   /// Identify a user (useful for authenticated users)
-  Future<void> identifyUser(String userId, [Map<String, dynamic>? properties]) async {
+  Future<void> identifyUser(
+    String userId, [
+    Map<String, dynamic>? properties,
+  ]) async {
     await _postHogService.identifyUser(userId, properties);
   }
 
@@ -212,7 +228,11 @@ class AnalyticsService {
   }
 
   /// Group analytics (for organization-level analytics)
-  Future<void> group(String groupType, String groupKey, [Map<String, dynamic>? properties]) async {
+  Future<void> group(
+    String groupType,
+    String groupKey, [
+    Map<String, dynamic>? properties,
+  ]) async {
     await _postHogService.group(groupType, groupKey, properties);
   }
 }

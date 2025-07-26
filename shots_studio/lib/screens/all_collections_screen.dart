@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/screens/collection_detail_screen.dart';
-import 'package:shots_studio/services/analytics_service.dart';
+import 'package:shots_studio/services/analytics/analytics_service.dart';
 import 'package:shots_studio/widgets/collections/collection_list_item.dart';
 
 class AllCollectionsScreen extends StatefulWidget {
@@ -43,7 +43,9 @@ class _AllCollectionsScreenState extends State<AllCollectionsScreen> {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.collections != widget.collections) {
       _sortedCollections = List.from(widget.collections);
-      _sortedCollections.sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
+      _sortedCollections.sort(
+        (a, b) => a.displayOrder.compareTo(b.displayOrder),
+      );
     }
   }
 
@@ -51,9 +53,13 @@ class _AllCollectionsScreenState extends State<AllCollectionsScreen> {
     setState(() {
       _isReorderMode = !_isReorderMode;
     });
-    
+
     // Log analytics for reorder mode toggle
-    AnalyticsService().logFeatureUsed(_isReorderMode ? 'collection_reorder_mode_enabled' : 'collection_reorder_mode_disabled');
+    AnalyticsService().logFeatureUsed(
+      _isReorderMode
+          ? 'collection_reorder_mode_enabled'
+          : 'collection_reorder_mode_disabled',
+    );
   }
 
   void _onReorder(int oldIndex, int newIndex) {
@@ -72,18 +78,18 @@ class _AllCollectionsScreenState extends State<AllCollectionsScreen> {
     for (int i = 0; i < _sortedCollections.length; i++) {
       updatedCollections.add(_sortedCollections[i].copyWith(displayOrder: i));
     }
-    
+
     // Call the callback to update all collections
     widget.onUpdateCollections(updatedCollections);
-    
+
     // Exit reorder mode
     setState(() {
       _isReorderMode = false;
     });
-    
+
     // Log analytics for successful reordering
     AnalyticsService().logFeatureUsed('collections_reordered');
-    
+
     // Show success message
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -93,6 +99,7 @@ class _AllCollectionsScreenState extends State<AllCollectionsScreen> {
       ),
     );
   }
+
   @override
   Widget build(BuildContext context) {
     // Track screen access
@@ -120,7 +127,9 @@ class _AllCollectionsScreenState extends State<AllCollectionsScreen> {
                   _isReorderMode = false;
                   // Reset to original order
                   _sortedCollections = List.from(widget.collections);
-                  _sortedCollections.sort((a, b) => a.displayOrder.compareTo(b.displayOrder));
+                  _sortedCollections.sort(
+                    (a, b) => a.displayOrder.compareTo(b.displayOrder),
+                  );
                 });
               },
               tooltip: 'Cancel',
@@ -134,121 +143,133 @@ class _AllCollectionsScreenState extends State<AllCollectionsScreen> {
           ],
         ],
       ),
-      body: _sortedCollections.isEmpty
-          ? Center(
-              child: Text(
-                'No collections yet. Create one from the home screen!',
-                style: TextStyle(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontSize: 16,
+      body:
+          _sortedCollections.isEmpty
+              ? Center(
+                child: Text(
+                  'No collections yet. Create one from the home screen!',
+                  style: TextStyle(
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    fontSize: 16,
+                  ),
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
-              ),
-            )
-          : _isReorderMode
+              )
+              : _isReorderMode
               ? ReorderableListView.builder(
-                  padding: const EdgeInsets.all(16.0),
-                  itemCount: _sortedCollections.length,
-                  onReorder: _onReorder,
-                  itemBuilder: (context, index) {
-                    final collection = _sortedCollections[index];
-                    return Container(
-                      key: ValueKey(collection.id),
-                      margin: const EdgeInsets.only(bottom: 16.0),
-                      child: Card(
-                        color: Theme.of(context).colorScheme.secondaryContainer,
-                        child: ListTile(
-                          leading: Icon(
-                            Icons.drag_handle,
-                            color: Theme.of(context).colorScheme.onSecondaryContainer,
+                padding: const EdgeInsets.all(16.0),
+                itemCount: _sortedCollections.length,
+                onReorder: _onReorder,
+                itemBuilder: (context, index) {
+                  final collection = _sortedCollections[index];
+                  return Container(
+                    key: ValueKey(collection.id),
+                    margin: const EdgeInsets.only(bottom: 16.0),
+                    child: Card(
+                      color: Theme.of(context).colorScheme.secondaryContainer,
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.drag_handle,
+                          color:
+                              Theme.of(
+                                context,
+                              ).colorScheme.onSecondaryContainer,
+                        ),
+                        title: Text(
+                          collection.name ?? 'Untitled Collection',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color:
+                                Theme.of(
+                                  context,
+                                ).colorScheme.onSecondaryContainer,
                           ),
-                          title: Text(
-                            collection.name ?? 'Untitled Collection',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onSecondaryContainer,
-                            ),
-                          ),
-                          subtitle: collection.description != null && collection.description!.isNotEmpty
-                              ? Text(
+                        ),
+                        subtitle:
+                            collection.description != null &&
+                                    collection.description!.isNotEmpty
+                                ? Text(
                                   collection.description!,
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: Theme.of(context).colorScheme.onSecondaryContainer,
+                                    color:
+                                        Theme.of(
+                                          context,
+                                        ).colorScheme.onSecondaryContainer,
                                   ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 )
-                              : null,
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '${collection.screenshotCount}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: Theme.of(context).colorScheme.onPrimary,
-                              ),
+                                : null,
+                        trailing: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            '${collection.screenshotCount}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onPrimary,
                             ),
                           ),
                         ),
                       ),
-                    );
-                  },
-                )
+                    ),
+                  );
+                },
+              )
               : ListView.builder(
-                  padding: const EdgeInsets.all(16.0),
-                  itemCount: _sortedCollections.length,
-                  itemBuilder: (context, index) {
-                    final collection = _sortedCollections[index];
-                    return Padding(
-                      padding: const EdgeInsets.only(bottom: 16.0),
-                      child: CollectionListItem(
-                        collection: collection,
-                        onTap: () {
-                          AnalyticsService().logFeatureUsed(
-                            'collection_opened_from_all_collections',
-                          );
-                          Navigator.of(context)
-                              .push(
-                                MaterialPageRoute(
-                                  builder:
-                                      (context) => CollectionDetailScreen(
-                                        collection: collection,
-                                        allCollections: widget.collections,
-                                        allScreenshots: widget.allScreenshots,
-                                        onUpdateCollection: (updatedCollection) {
-                                          widget.onUpdateCollection(
-                                            updatedCollection,
-                                          );
-                                          setState(() {
-                                            // This will trigger a rebuild of the UI
-                                          });
-                                        },
-                                        onDeleteCollection:
-                                            widget.onDeleteCollection,
-                                        onDeleteScreenshot:
-                                            widget.onDeleteScreenshot,
-                                      ),
-                                ),
-                              )
-                              .then((_) {
-                                // Refresh the UI when returning from collection detail
-                                setState(() {});
-                              });
-                        },
-                      ),
-                    );
-                  },
-                ),
+                padding: const EdgeInsets.all(16.0),
+                itemCount: _sortedCollections.length,
+                itemBuilder: (context, index) {
+                  final collection = _sortedCollections[index];
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 16.0),
+                    child: CollectionListItem(
+                      collection: collection,
+                      onTap: () {
+                        AnalyticsService().logFeatureUsed(
+                          'collection_opened_from_all_collections',
+                        );
+                        Navigator.of(context)
+                            .push(
+                              MaterialPageRoute(
+                                builder:
+                                    (context) => CollectionDetailScreen(
+                                      collection: collection,
+                                      allCollections: widget.collections,
+                                      allScreenshots: widget.allScreenshots,
+                                      onUpdateCollection: (updatedCollection) {
+                                        widget.onUpdateCollection(
+                                          updatedCollection,
+                                        );
+                                        setState(() {
+                                          // This will trigger a rebuild of the UI
+                                        });
+                                      },
+                                      onDeleteCollection:
+                                          widget.onDeleteCollection,
+                                      onDeleteScreenshot:
+                                          widget.onDeleteScreenshot,
+                                    ),
+                              ),
+                            )
+                            .then((_) {
+                              // Refresh the UI when returning from collection detail
+                              setState(() {});
+                            });
+                      },
+                    ),
+                  );
+                },
+              ),
     );
   }
 }

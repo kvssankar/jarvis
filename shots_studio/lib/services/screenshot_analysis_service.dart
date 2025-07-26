@@ -1,18 +1,14 @@
 // Screenshot Analysis Service
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
-import 'dart:typed_data';
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/services/ai_service.dart';
+import 'package:shots_studio/utils/image_conversion_utils.dart';
+import 'package:shots_studio/utils/collection_utils.dart';
+import 'package:shots_studio/utils/ai_error_utils.dart';
 
 class ScreenshotAnalysisService extends AIService {
-  static const String _baseUrl =
-      'https://generativelanguage.googleapis.com/v1beta/models';
-
   // Track network errors to prevent multiple notifications
   int _networkErrorCount = 0;
   bool _processingTerminated = false;
@@ -30,217 +26,6 @@ class ScreenshotAnalysisService extends AIService {
     _processingTerminated = false;
     _apiKeyErrorShown = false;
     _lastSuccessfulRequestTime = DateTime.now();
-  }
-
-  String _getAnalysisPrompt({List<Map<String, String?>>? autoAddCollections}) {
-    String basePrompt = """
-      You are a screenshot analyzer. You will be given single or multiple images.
-      For each image, generate a title, short description and 3-5 relevant tags
-      with which users can search and find later with ease.
-    """;
-
-    if (autoAddCollections != null && autoAddCollections.isNotEmpty) {
-      basePrompt += """
-      
-      Here are list of collections and their descriptions that these images can potentially fit in.
-      If the image belongs to any of these collections, include them in the response, if not, keep the collections list empty.
-      
-      Available collections:
-      """;
-
-      for (var collection in autoAddCollections) {
-        basePrompt += """
-        - Name: "${collection['name'] ?? 'Unnamed'}"
-          Description: "${collection['description'] ?? 'No description'}"
-        """;
-      }
-    }
-
-    basePrompt += """
-      
-      Respond strictly in this JSON format:
-      [{filename: '', title: '', desc: '', tags: [], collections: [], other: []}, ...]
-      
-      The "collections" field should contain names of collections that match the image content.
-    """;
-
-    return basePrompt;
-  }
-
-  Future<Map<String, String>> _convertImageToBase64(String imagePath) async {
-    final file = File(imagePath);
-    if (!await file.exists()) {
-      throw Exception("Image file not found: $imagePath");
-    }
-    final bytes = await file.readAsBytes();
-    final encoded = base64Encode(bytes);
-    String mimeType = 'image/png';
-    if (imagePath.toLowerCase().endsWith('.jpg') ||
-        imagePath.toLowerCase().endsWith('.jpeg')) {
-      mimeType = 'image/jpeg';
-    }
-    return {'mime_type': mimeType, 'data': encoded};
-  }
-
-  Map<String, String> _bytesToBase64(Uint8List bytes, {String? fileName}) {
-    final encoded = base64Encode(bytes);
-    String mimeType = 'image/png';
-    if (fileName != null &&
-        (fileName.toLowerCase().endsWith('.jpg') ||
-            fileName.toLowerCase().endsWith('.jpeg'))) {
-      mimeType = 'image/jpeg';
-    }
-    return {'mime_type': mimeType, 'data': encoded};
-  }
-
-  Future<Map<String, dynamic>> _prepareRequestData(
-    List<Screenshot> images, {
-    List<Map<String, String?>>? autoAddCollections,
-  }) async {
-    // Filter out screenshots that are already AI processed (including corrupted ones)
-    final unprocessedImages =
-        images.where((image) => !image.aiProcessed).toList();
-
-    // If no images need processing, return empty request
-    if (unprocessedImages.isEmpty) {
-      return {
-        'contents': [
-          {
-            'parts': [
-              {'text': 'No images to process - all are already processed.'},
-            ],
-          },
-        ],
-      };
-    }
-
-    List<Map<String, dynamic>> contentParts = [
-      {'text': _getAnalysisPrompt(autoAddCollections: autoAddCollections)},
-    ];
-
-    for (var image in unprocessedImages) {
-      String imageIdentifier = image.id;
-      Map<String, String> imageData;
-
-      if (image.path != null && image.path!.isNotEmpty) {
-        contentParts.add({'text': '\\nAnalyzing image: $imageIdentifier'});
-        imageData = await _convertImageToBase64(image.path!);
-        try {
-          contentParts.add({'inline_data': imageData});
-        } catch (e) {
-          print("Error adding path-based image data for ${image.id}: $e");
-        }
-      } else if (image.bytes != null) {
-        contentParts.add({'text': '\\nAnalyzing image: $imageIdentifier'});
-        imageData = _bytesToBase64(image.bytes!, fileName: image.path);
-        try {
-          contentParts.add({'inline_data': imageData});
-        } catch (e) {
-          print("Error adding byte-based image data for ${image.id}: $e");
-        }
-      } else {
-        print("Warning: Screenshot with id ${image.id} has no path or bytes.");
-        continue;
-      }
-    }
-
-    return {
-      'contents': [
-        {'parts': contentParts},
-      ],
-    };
-  }
-
-  Future<Map<String, dynamic>> _makeAPIRequest(
-    Map<String, dynamic> requestData,
-  ) async {
-    if (isCancelled || _processingTerminated) {
-      return {'error': 'Request cancelled by user', 'statusCode': 499};
-    }
-
-    // Check if this is an empty request (all images already processed)
-    if (requestData.containsKey('contents')) {
-      final contents = requestData['contents'] as List;
-      if (contents.length == 1 &&
-          contents[0]['parts'] != null &&
-          (contents[0]['parts'] as List).length == 1 &&
-          (contents[0]['parts'][0]['text'] as String).contains(
-            'No images to process',
-          )) {
-        return {
-          'data': '[]', // Empty results
-          'statusCode': 200,
-          'skipped': true,
-        };
-      }
-    }
-
-    final url = Uri.parse(
-      '$_baseUrl/${config.modelName}:generateContent?key=${config.apiKey}',
-    );
-
-    final requestBody = jsonEncode(requestData);
-    final headers = {'Content-Type': 'application/json'};
-
-    try {
-      // Check if it has been a long time since the last successful request
-      if (_lastSuccessfulRequestTime != null) {
-        final timeSinceLastRequest = DateTime.now().difference(
-          _lastSuccessfulRequestTime!,
-        );
-        // If more than 2 minutes have passed since the last successful request, assume app was reopened
-        if (timeSinceLastRequest.inMinutes > 2) {
-          _processingTerminated = true;
-          return {
-            'error':
-                'App was likely closed and reopened. AI processing terminated.',
-            'statusCode': 499,
-          };
-        }
-      }
-
-      final response = await http
-          .post(url, headers: headers, body: requestBody)
-          .timeout(Duration(seconds: config.timeoutSeconds));
-
-      final responseJson = jsonDecode(response.body);
-
-      if (response.statusCode == 200) {
-        // Update last successful request time
-        _lastSuccessfulRequestTime = DateTime.now();
-
-        final candidates = responseJson['candidates'] as List?;
-        if (candidates != null && candidates.isNotEmpty) {
-          final content = candidates[0]['content'] as Map?;
-          if (content != null) {
-            final parts = content['parts'] as List?;
-            if (parts != null && parts.isNotEmpty) {
-              final text = parts[0]['text'] as String?;
-              if (text != null) {
-                return {'data': text, 'statusCode': response.statusCode};
-              }
-            }
-          }
-        }
-        return {
-          'error': 'No response text from AI',
-          'statusCode': response.statusCode,
-          'rawResponse': response.body,
-        };
-      } else {
-        return {
-          'error': responseJson['error']?['message'] ?? 'API Error',
-          'statusCode': response.statusCode,
-          'rawResponse': response.body,
-        };
-      }
-    } on SocketException catch (e) {
-      return {'error': 'Network error: ${e.message}', 'statusCode': 503};
-    } on TimeoutException catch (_) {
-      return {'error': 'Request timed out', 'statusCode': 408};
-    } catch (e) {
-      return {'error': 'Unexpected error: ${e.toString()}', 'statusCode': 500};
-    }
   }
 
   Future<AIResult<Map<String, dynamic>>> analyzeScreenshots({
@@ -296,6 +81,7 @@ class ScreenshotAnalysisService extends AIService {
           break;
         }
 
+        // TODO: Add param of model, which prepares data accordingly, and calls API appropriately
         final requestData = await _prepareRequestData(
           unprocessedBatch, // Use filtered batch
           autoAddCollections: autoAddCollections,
@@ -398,6 +184,133 @@ class ScreenshotAnalysisService extends AIService {
     }
   }
 
+  String _getAnalysisPrompt({List<Map<String, String?>>? autoAddCollections}) {
+    String basePrompt = """
+      You are a screenshot analyzer. You will be given single or multiple images.
+      For each image, generate a title, short description and 3-5 relevant tags
+      with which users can search and find later with ease.
+    """;
+
+    if (autoAddCollections != null && autoAddCollections.isNotEmpty) {
+      basePrompt += """
+      
+      Here are list of collections and their descriptions that these images can potentially fit in.
+      If the image belongs to any of these collections, include them in the response, if not, keep the collections list empty.
+      
+      Available collections:
+      """;
+
+      for (var collection in autoAddCollections) {
+        basePrompt += """
+        - Name: "${collection['name'] ?? 'Unnamed'}"
+          Description: "${collection['description'] ?? 'No description'}"
+        """;
+      }
+    }
+
+    basePrompt += """
+      
+      Respond strictly in this JSON format:
+      [{filename: '', title: '', desc: '', tags: [], collections: [], other: []}, ...]
+      
+      The "collections" field should contain names of collections that match the image content.
+    """;
+
+    return basePrompt;
+  }
+
+  Future<Map<String, dynamic>> _prepareRequestData(
+    List<Screenshot> images, {
+    List<Map<String, String?>>? autoAddCollections,
+  }) async {
+    // Filter out screenshots that are already AI processed (including corrupted ones)
+    final unprocessedImages =
+        images.where((image) => !image.aiProcessed).toList();
+
+    // Prepare image data in a generic format
+    List<Map<String, dynamic>> imageData = [];
+
+    for (var image in unprocessedImages) {
+      String imageIdentifier = image.id;
+      Map<String, String>? imageBase64Data;
+
+      try {
+        if (image.path != null && image.path!.isNotEmpty) {
+          imageBase64Data = await ImageConversionUtils.convertImageToBase64(
+            image.path!,
+          );
+        } else if (image.bytes != null) {
+          imageBase64Data = ImageConversionUtils.bytesToBase64(
+            image.bytes!,
+            fileName: image.path,
+          );
+        } else {
+          print(
+            "Warning: Screenshot with id ${image.id} has no path or bytes.",
+          );
+          continue;
+        }
+
+        imageData.add({'identifier': imageIdentifier, 'data': imageBase64Data});
+      } catch (e) {
+        print("Error adding image data for ${image.id}: $e");
+      }
+    }
+
+    // Use the provider-specific request preparation
+    final requestData = prepareScreenshotAnalysisRequest(
+      prompt: _getAnalysisPrompt(autoAddCollections: autoAddCollections),
+      imageData: imageData,
+    );
+
+    // Fallback to old format if provider doesn't support new format
+    return requestData ??
+        {
+          'contents': [
+            {
+              'parts': [
+                {'text': 'No images to process - provider not supported.'},
+              ],
+            },
+          ],
+        };
+  }
+
+  // Wrapper method that adds screenshot-specific logic before calling base API method
+  Future<Map<String, dynamic>> _makeAPIRequest(
+    Map<String, dynamic> requestData,
+  ) async {
+    if (isCancelled || _processingTerminated) {
+      return {'error': 'Request cancelled by user', 'statusCode': 499};
+    }
+
+    // Check if it has been a long time since the last successful request
+    if (_lastSuccessfulRequestTime != null) {
+      final timeSinceLastRequest = DateTime.now().difference(
+        _lastSuccessfulRequestTime!,
+      );
+      // If more than 2 minutes have passed since the last successful request, assume app was reopened
+      if (timeSinceLastRequest.inMinutes > 2) {
+        _processingTerminated = true;
+        return {
+          'error':
+              'App was likely closed and reopened. AI processing terminated.',
+          'statusCode': 499,
+        };
+      }
+    }
+
+    // Call the base class method to make the actual API request
+    final result = await makeAPIRequest(requestData);
+
+    // Update last successful request time if the request was successful
+    if (result['statusCode'] == 200) {
+      _lastSuccessfulRequestTime = DateTime.now();
+    }
+
+    return result;
+  }
+
   List<Screenshot> _updateSingleScreenshot(
     Screenshot screenshot,
     Map<String, dynamic> item,
@@ -417,7 +330,7 @@ class ScreenshotAnalysisService extends AIService {
     );
 
     if (collectionNames.isNotEmpty) {
-      _storeSuggestedCollections(
+      CollectionUtils.storeSuggestedCollections(
         response,
         updatedScreenshot.id,
         collectionNames,
@@ -471,7 +384,7 @@ class ScreenshotAnalysisService extends AIService {
         );
 
         if (collectionNames.isNotEmpty) {
-          _storeSuggestedCollections(
+          CollectionUtils.storeSuggestedCollections(
             response,
             updatedScreenshot.id,
             collectionNames,
@@ -490,77 +403,23 @@ class ScreenshotAnalysisService extends AIService {
     return updatedScreenshots;
   }
 
-  void _storeSuggestedCollections(
-    Map<String, dynamic> response,
-    String screenshotId,
-    List<String> collectionNames,
-  ) {
-    try {
-      Map<String, List<String>> suggestedCollections;
-      if (response.containsKey('suggestedCollections') &&
-          response['suggestedCollections'] is Map) {
-        suggestedCollections = Map<String, List<String>>.from(
-          response['suggestedCollections'] as Map,
-        );
-      } else {
-        suggestedCollections = {};
-      }
-      suggestedCollections[screenshotId] = collectionNames;
-      response['suggestedCollections'] = suggestedCollections;
-    } catch (e) {
-      print('Error storing collection suggestions: $e');
-    }
-  }
-
   void _handleResponseError(Map<String, dynamic> response) {
-    if (response['error'] != null &&
-        response['error'].toString().contains('API key not valid')) {
-      // Only show the error message once and terminate processing
-      if (!_apiKeyErrorShown) {
-        _apiKeyErrorShown = true;
-        cancel();
-        _processingTerminated = true;
+    final result = AIErrorHandler.handleResponseError(
+      response,
+      showMessage: config.showMessage,
+      isCancelled: () => isCancelled,
+      cancelProcessing: cancel,
+      apiKeyErrorShown: _apiKeyErrorShown,
+      processingTerminated: _processingTerminated,
+      networkErrorCount: _networkErrorCount,
+      setApiKeyErrorShown: (value) => _apiKeyErrorShown = value,
+      setProcessingTerminated: (value) => _processingTerminated = value,
+      setNetworkErrorCount: (value) => _networkErrorCount = value,
+    );
 
-        config.showMessage?.call(
-          message:
-              'Invalid API key provided. AI processing has been terminated.',
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 3),
-        );
-      }
-    } else if (response['error'] != null &&
-        response['error'].toString().contains('Network error')) {
-      // Increment network error count
-      _networkErrorCount++;
-
-      // If we get repeated network errors or the app was closed and reopened,
-      // we should cancel all AI processing
-      if (_networkErrorCount >= 2 || _processingTerminated) {
-        // Cancel all AI processing
-        cancel();
-        _processingTerminated = true;
-
-        config.showMessage?.call(
-          message:
-              'Network issues detected. AI processing has been terminated.',
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 2),
-        );
-      } else {
-        config.showMessage?.call(
-          message:
-              'Network issue detected. Please check your internet connection and try again.',
-          backgroundColor: Colors.orange,
-          duration: const Duration(seconds: 2),
-        );
-      }
-    } else {
-      config.showMessage?.call(
-        message:
-            'No data found in response or error occurred: ${response['error']}',
-        backgroundColor: Colors.orange,
-        duration: const Duration(seconds: 1),
-      );
+    // Update state based on error handling result
+    if (result.shouldTerminate) {
+      _processingTerminated = true;
     }
   }
 }
