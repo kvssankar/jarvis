@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shots_studio/services/analytics/analytics_service.dart';
 import 'package:shots_studio/utils/ai_provider_config.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
 
 class AISettingsScreen extends StatefulWidget {
@@ -221,6 +223,68 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
     return availableModels;
   }
 
+  Future<void> _showGemmaWarningDialog(String provider) async {
+    final bool? confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('⚠️ Warning: Local AI Model'),
+          content: const Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Important Notice:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 8),
+              Text('• App may crash during model initialization or inference'),
+              Text('• Requires at least 8GB of RAM to work properly'),
+              Text('• Make sure your device is capable of running this model'),
+              SizedBox(height: 12),
+              Text(
+                'This feature may have limitations and could produce unexpected results. Use this feature at your own discretion.',
+                style: TextStyle(fontStyle: FontStyle.italic),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              style: TextButton.styleFrom(
+                foregroundColor: Theme.of(context).colorScheme.error,
+                backgroundColor:
+                    Theme.of(context).colorScheme.tertiaryContainer,
+              ),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    Theme.of(context).colorScheme.secondaryContainer,
+              ),
+              child: const Text('I Understand'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      setState(() {
+        _providerStates[provider] = true;
+      });
+
+      await _saveProviderSetting(provider, true);
+
+      // Track provider toggle in analytics
+      AnalyticsService().logFeatureUsed(
+        'ai_provider_${provider}_enabled_with_warning',
+      );
+    }
+  }
+
   void _onProviderToggle(String provider, bool enabled) async {
     // For Gemma provider, check if model file is available before enabling
     if (provider == 'gemma' &&
@@ -235,6 +299,12 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
           ),
         );
       }
+      return;
+    }
+
+    // Show warning dialog when enabling Gemma
+    if (provider == 'gemma' && enabled) {
+      await _showGemmaWarningDialog(provider);
       return;
     }
 
@@ -361,10 +431,132 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Select a local Gemma model file (.bin or .gguf) to use for on-device AI processing.',
+              'Select a local Gemma model file (.bin or .task) to use for on-device AI processing.',
               style: TextStyle(
                 fontSize: 12,
                 color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12.0),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondaryContainer.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: theme.colorScheme.secondary.withOpacity(0.2),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.download,
+                        color: theme.colorScheme.secondary,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Download Model',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Recommended: Gemma 3N E2B IT INT4',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  InkWell(
+                    onTap: () async {
+                      const url =
+                          'https://www.kaggle.com/models/google/gemma-3n/tfLite/gemma-3n-e2b-it-int4';
+                      try {
+                        final uri = Uri.parse(url);
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(
+                            uri,
+                            mode: LaunchMode.externalApplication,
+                          );
+                        } else {
+                          // Fallback to copying to clipboard if URL can't be launched
+                          await Clipboard.setData(
+                            const ClipboardData(text: url),
+                          );
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Could not open browser. Link copied to clipboard!',
+                                ),
+                                backgroundColor: Colors.orange,
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          }
+                        }
+                      } catch (e) {
+                        // Fallback to copying to clipboard on error
+                        await Clipboard.setData(const ClipboardData(text: url));
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Error opening link. URL copied to clipboard!',
+                              ),
+                              backgroundColor: Colors.orange,
+                              duration: Duration(seconds: 2),
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 6,
+                        horizontal: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: theme.colorScheme.primary.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.link,
+                            color: theme.colorScheme.primary,
+                            size: 14,
+                          ),
+                          const SizedBox(width: 4),
+                          Expanded(
+                            child: Text(
+                              'kaggle.com/models/google/gemma-3n/tfLite/gemma-3n-e2b-it-int4',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: theme.colorScheme.primary,
+                                decoration: TextDecoration.underline,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
             const SizedBox(height: 12),
@@ -449,12 +641,15 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                             height: 16,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: theme.colorScheme.onPrimary,
+                              color: theme.colorScheme.onSecondary,
                             ),
                           )
                           : const Icon(Icons.folder_open),
                   label: Text(
                     _isLoadingGemmaModel ? 'Loading...' : 'Select Model File',
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: theme.colorScheme.secondaryContainer,
                   ),
                 ),
               ),
