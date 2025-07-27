@@ -7,6 +7,7 @@ import 'package:shots_studio/services/ai_service.dart';
 import 'package:shots_studio/utils/image_conversion_utils.dart';
 import 'package:shots_studio/utils/collection_utils.dart';
 import 'package:shots_studio/utils/ai_error_utils.dart';
+import 'package:shots_studio/utils/json_utils.dart';
 
 class ScreenshotAnalysisService extends AIService {
   // Track network errors to prevent multiple notifications
@@ -81,7 +82,6 @@ class ScreenshotAnalysisService extends AIService {
           break;
         }
 
-        // TODO: Add param of model, which prepares data accordingly, and calls API appropriately
         final requestData = await _prepareRequestData(
           unprocessedBatch, // Use filtered batch
           autoAddCollections: autoAddCollections,
@@ -139,21 +139,38 @@ class ScreenshotAnalysisService extends AIService {
     try {
       final String responseText = response['data'];
       List<dynamic> parsedResponse = [];
-      final RegExp jsonRegExp = RegExp(r'\[.*\]', dotAll: true);
-      final match = jsonRegExp.firstMatch(responseText);
+      // Clean the response text by removing markdown code fences
+      String cleanedResponseText = JsonUtils.cleanMarkdownCodeFences(
+        responseText,
+      );
 
-      if (match != null) {
-        try {
-          parsedResponse = jsonDecode(match.group(0)!);
-        } catch (e) {
+      // Check if the JSON is complete (has matching brackets)
+      if (!JsonUtils.isCompleteJson(cleanedResponseText)) {
+        print("WARNING: JSON appears to be truncated or incomplete");
+        // Try to fix incomplete JSON
+        cleanedResponseText = JsonUtils.attemptJsonFix(cleanedResponseText);
+      }
+
+      // Try to parse the cleaned text directly first
+      try {
+        parsedResponse = jsonDecode(cleanedResponseText);
+      } catch (e) {
+        // Try to extract JSON array with regex as fallback
+        final RegExp jsonRegExp = RegExp(r'\[.*\]', dotAll: true);
+        final match = jsonRegExp.firstMatch(cleanedResponseText);
+
+        if (match != null) {
           try {
-            parsedResponse = jsonDecode(responseText);
-          } catch (e) {
+            String extractedJson = match.group(0)!;
+            parsedResponse = jsonDecode(extractedJson);
+          } catch (e2) {
+            print("Failed to parse extracted JSON: $e2");
             return screenshots;
           }
+        } else {
+          print("No JSON array pattern found in response");
+          return screenshots;
         }
-      } else {
-        return screenshots;
       }
 
       if (parsedResponse.isEmpty) return screenshots;
@@ -211,8 +228,8 @@ class ScreenshotAnalysisService extends AIService {
     basePrompt += """
       
       Respond strictly in this JSON format:
-      [{filename: '', title: '', desc: '', tags: [], collections: [], other: []}, ...]
-      
+      [{"filename": '', "title": '', "desc": '', "tags": [], "collections": [], "other": []}, ...]
+      The "other" field can contain any additional information you find relevant.
       The "collections" field should contain names of collections that match the image content.
     """;
 

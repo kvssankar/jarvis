@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shots_studio/models/screenshot_model.dart';
+import 'package:shots_studio/services/gemma_service.dart';
 
 typedef ShowMessageCallback =
     void Function({
@@ -309,12 +310,271 @@ class GeminiAPIProvider implements APIProvider {
   }
 }
 
+// Gemma Local API provider implementation
+class GemmaAPIProvider implements APIProvider {
+  final GemmaService _gemmaService = GemmaService();
+
+  @override
+  bool canHandleModel(String modelName) {
+    return modelName.toLowerCase().contains('gemma');
+  }
+
+  @override
+  Future<Map<String, dynamic>> makeRequest(
+    Map<String, dynamic> requestData,
+    AIConfig config,
+  ) async {
+    File? tempFile;
+
+    try {
+      // Ensure Gemma model is ready
+      final isReady = await _gemmaService.ensureModelReady();
+      if (!isReady) {
+        return {
+          'error':
+              'Gemma model not loaded. Please select a model file in AI Settings.',
+          'statusCode': 400,
+        };
+      }
+
+      // Extract prompt and image data from request
+      final String prompt = _extractPromptFromRequest(requestData);
+      tempFile = await _extractImageFromRequest(requestData);
+
+      // print("requestData: $requestData");
+      // print("Extracted prompt: $prompt");
+
+      // Generate response using Gemma service
+      final response = await _gemmaService.generateResponse(
+        prompt: prompt,
+        imageFile: tempFile,
+        temperature: 0.8,
+        randomSeed: 1,
+        topK: 1,
+      );
+
+      // print("Gemma response: $response");
+
+      return {'data': response, 'statusCode': 200};
+    } catch (e) {
+      return {
+        'error': 'Gemma processing error: ${e.toString()}',
+        'statusCode': 500,
+      };
+    } finally {
+      // Clean up temporary file if created
+      if (tempFile != null) {
+        try {
+          if (await tempFile.exists()) {
+            await tempFile.delete();
+          }
+        } catch (e) {
+          print('Warning: Could not delete temporary file: $e');
+        }
+      }
+    }
+  }
+
+  @override
+  Map<String, dynamic> prepareScreenshotAnalysisRequest({
+    required String prompt,
+    required List<Map<String, dynamic>> imageData,
+    Map<String, dynamic> additionalParams = const {},
+  }) {
+    // For Gemma, we only process one image at a time
+    // Take the first image if multiple are provided
+    Map<String, dynamic>? firstImageData;
+    if (imageData.isNotEmpty) {
+      firstImageData = imageData.first;
+    }
+
+    return {
+      'prompt': prompt,
+      'imageData': firstImageData,
+      'type': 'screenshot_analysis',
+      ...additionalParams,
+    };
+  }
+
+  @override
+  Map<String, dynamic> prepareCategorizationRequest({
+    required String prompt,
+    required List<Map<String, String>> screenshotMetadata,
+    Map<String, dynamic> additionalParams = const {},
+  }) {
+    // For categorization, we don't need images, just text
+    String metadataText = '';
+
+    if (screenshotMetadata.isEmpty) {
+      metadataText = 'No eligible screenshots to analyze.';
+    } else {
+      metadataText =
+          'Screenshots to analyze (${screenshotMetadata.length} total):\n';
+
+      for (var metadata in screenshotMetadata) {
+        metadataText += '''
+        ID: ${metadata['id'] ?? 'Unknown'}
+        Title: ${metadata['title'] ?? 'No title'}
+        Description: ${metadata['description'] ?? 'No description'}
+        Tags: ${metadata['tags'] ?? 'No tags'}
+        
+        ''';
+      }
+    }
+
+    return {
+      'prompt': '$prompt\n\n$metadataText',
+      'imageData': null, // No image for categorization
+      'type': 'categorization',
+      ...additionalParams,
+    };
+  }
+
+  // Extract prompt text from the request data
+  String _extractPromptFromRequest(Map<String, dynamic> requestData) {
+    if (requestData.containsKey('prompt')) {
+      // we need to add imageData.identifier to make sure the model knows the image identifier to reference in the output
+      // to do that, append the identifier to the prompt
+      if (requestData.containsKey('imageData') &&
+          requestData['imageData'] != null &&
+          requestData['imageData'] is Map<String, dynamic> &&
+          requestData['imageData'].containsKey('identifier')) {
+        final identifier =
+            requestData['imageData']['identifier'] as String? ?? '';
+        return '${requestData['prompt']} (Image ID: $identifier)';
+      }
+
+      return requestData['prompt'] as String;
+    }
+
+    // Fallback: extract from contents structure (Gemini format)
+    if (requestData.containsKey('contents')) {
+      final contents = requestData['contents'] as List;
+      for (var content in contents) {
+        if (content is Map && content.containsKey('parts')) {
+          final parts = content['parts'] as List;
+          for (var part in parts) {
+            if (part is Map && part.containsKey('text')) {
+              return part['text'] as String;
+            }
+          }
+        }
+      }
+    }
+
+    return 'Analyze this image and provide title, description, and tags.';
+  }
+
+  // Extract image file from request data
+  Future<File?> _extractImageFromRequest(
+    Map<String, dynamic> requestData,
+  ) async {
+    try {
+      // Check if imageData is provided directly
+      if (requestData.containsKey('imageData') &&
+          requestData['imageData'] != null) {
+        final imageData = requestData['imageData'] as Map<String, dynamic>;
+        return await _convertImageDataToFile(imageData);
+      }
+
+      // TODO: Remove this if not needed
+      // Check if inline_data is provided in parts (Gemini format)
+      // Fallback: extract from contents structure (Gemini format)
+      if (requestData.containsKey('contents')) {
+        final contents = requestData['contents'] as List;
+        for (var content in contents) {
+          if (content is Map && content.containsKey('parts')) {
+            final parts = content['parts'] as List;
+            for (var part in parts) {
+              if (part is Map && part.containsKey('inline_data')) {
+                return await _convertInlineDataToFile(part['inline_data']);
+              }
+            }
+          }
+        }
+      }
+    } catch (e) {
+      print('Error extracting image from request: $e');
+    }
+
+    return null;
+  }
+
+  // Convert image data to temporary file
+  Future<File?> _convertImageDataToFile(Map<String, dynamic> imageData) async {
+    try {
+      if (imageData.containsKey('data') && imageData['data'] is Map) {
+        final data = imageData['data'] as Map<String, String>;
+        if (data.containsKey('mime_type') && data.containsKey('data')) {
+          return await _createTempFileFromBase64(
+            data['data']!,
+            data['mime_type']!,
+          );
+        }
+      }
+    } catch (e) {
+      print('Error converting image data to file: $e');
+    }
+    return null;
+  }
+
+  // Convert inline data to temporary file
+  Future<File?> _convertInlineDataToFile(
+    Map<String, dynamic> inlineData,
+  ) async {
+    try {
+      if (inlineData.containsKey('mime_type') &&
+          inlineData.containsKey('data')) {
+        return await _createTempFileFromBase64(
+          inlineData['data'] as String,
+          inlineData['mime_type'] as String,
+        );
+      }
+    } catch (e) {
+      print('Error converting inline data to file: $e');
+    }
+    return null;
+  }
+
+  // Create temporary file from base64 data
+  Future<File> _createTempFileFromBase64(
+    String base64Data,
+    String mimeType,
+  ) async {
+    final bytes = base64Decode(base64Data);
+    final tempDir = Directory.systemTemp;
+    final extension = _getExtensionFromMimeType(mimeType);
+    final tempFile = File(
+      '${tempDir.path}/gemma_temp_${DateTime.now().millisecondsSinceEpoch}.$extension',
+    );
+
+    await tempFile.writeAsBytes(bytes);
+    return tempFile;
+  }
+
+  // Get file extension from MIME type
+  String _getExtensionFromMimeType(String mimeType) {
+    switch (mimeType.toLowerCase()) {
+      case 'image/jpeg':
+        return 'jpg';
+      case 'image/png':
+        return 'png';
+      case 'image/gif':
+        return 'gif';
+      case 'image/webp':
+        return 'webp';
+      default:
+        return 'jpg';
+    }
+  }
+}
+
 // Factory for API providers
 class APIProviderFactory {
   static final List<APIProvider> _providers = [
     GeminiAPIProvider(),
+    GemmaAPIProvider(), // Add Gemma provider
     // Future providers can be added here:
-    // GemmaProvider(),
     // LocalLlamaAPIProvider(),
   ];
 

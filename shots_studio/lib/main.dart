@@ -557,6 +557,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     setState(() {
       _maxParallelAI = newMaxParallel;
     });
+    // Save to SharedPreferences
+    SharedPreferences.getInstance().then((prefs) {
+      prefs.setInt('maxParallel', newMaxParallel);
+    });
   }
 
   void _updateDevMode(bool value) {
@@ -672,7 +676,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     print("Main app: _processWithGemini called");
 
     // Check for API key
-    if (_apiKey == null || _apiKey!.isEmpty) {
+    //  if gemma skip API key check
+    if (_selectedModelName == 'gemma') {
+      print("Main app: Using Gemma model, no API key required");
+    } else if (!(_apiKey == null || _apiKey!.isEmpty)) {
       print("Main app: No API key configured");
       SnackbarService().showError(
         context,

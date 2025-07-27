@@ -2,8 +2,15 @@ class AIProviderConfig {
   // Available models for each provider
   static const Map<String, List<String>> providerModels = {
     'gemini': ['gemini-2.0-flash', 'gemini-2.5-pro'],
-    'gemma': ['gemma-3n-e4b', 'gemma-3n-e2b'],
+    'gemma': ['gemma'],
     'none': ['No AI Model'],
+  };
+
+  // Model-specific maxParallel limits
+  static const Map<String, int> modelMaxParallelLimits = {
+    'gemini-2.0-flash': 4,
+    'gemini-2.5-pro': 4,
+    'gemma': 1,
   };
 
   // Preference keys for provider settings
@@ -35,5 +42,16 @@ class AIProviderConfig {
       }
     }
     return 'unknown';
+  }
+
+  // Get the model-specific maxParallel limit
+  static int getMaxParallelLimitForModel(String model) {
+    return modelMaxParallelLimits[model] ?? 4; // Default to 4 if not found
+  }
+
+  // Get the effective maxParallel value (minimum of model limit and global preference)
+  static int getEffectiveMaxParallel(String model, int globalMaxParallel) {
+    final modelLimit = getMaxParallelLimitForModel(model);
+    return modelLimit < globalMaxParallel ? modelLimit : globalMaxParallel;
   }
 }

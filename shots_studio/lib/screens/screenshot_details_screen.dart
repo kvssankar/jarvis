@@ -312,12 +312,14 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
 
     // Get settings from SharedPreferences
     final prefs = await SharedPreferences.getInstance();
-    final String? apiKey = prefs.getString('apiKey');
+    String? apiKey = prefs.getString('apiKey');
 
-    if (apiKey == null || apiKey.isEmpty) {
+    if (prefs.getString('modelName') == 'gemma') {
+      apiKey = 'gemma-v1'; // explicitly set APIKey to gemma-v1
+    } else if (apiKey == null || apiKey.isEmpty) {
       SnackbarService().showError(
         context,
-        'Gemini API key not configured. Please check app settings.',
+        'AI API key not configured. Please check app settings.',
       );
       return;
     }
