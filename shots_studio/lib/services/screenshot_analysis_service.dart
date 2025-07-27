@@ -102,9 +102,28 @@ class ScreenshotAnalysisService extends AIService {
         if (result.containsKey('error')) {
           onBatchProcessed(batch, result);
         } else {
-          finalResults['processedCount'] =
-              (finalResults['processedCount'] as int) + batch.length;
-          onBatchProcessed(batch, result);
+          // Try to parse and update screenshots
+          try {
+            parseAndUpdateScreenshots(unprocessedBatch, result);
+            finalResults['processedCount'] =
+                (finalResults['processedCount'] as int) + batch.length;
+            onBatchProcessed(batch, result);
+          } catch (parseError) {
+            // Handle parsing errors by stopping processing and showing error
+            print("Parsing error occurred: $parseError");
+            final errorResult = {
+              'error': parseError.toString(),
+              'statusCode': 422, // Unprocessable Entity
+              'parsing_error': true,
+            };
+            (finalResults['batchResults'] as List).add({
+              'batch': batch.map((s) => s.id).toList(),
+              'result': errorResult,
+            });
+            onBatchProcessed(batch, errorResult);
+            // Stop processing further batches on parsing error
+            break;
+          }
         }
 
         await Future.delayed(const Duration(milliseconds: 500));
@@ -155,6 +174,8 @@ class ScreenshotAnalysisService extends AIService {
       try {
         parsedResponse = jsonDecode(cleanedResponseText);
       } catch (e) {
+        print("Initial JSON parsing failed: $e");
+
         // Try to extract JSON array with regex as fallback
         final RegExp jsonRegExp = RegExp(r'\[.*\]', dotAll: true);
         final match = jsonRegExp.firstMatch(cleanedResponseText);
@@ -165,15 +186,28 @@ class ScreenshotAnalysisService extends AIService {
             parsedResponse = jsonDecode(extractedJson);
           } catch (e2) {
             print("Failed to parse extracted JSON: $e2");
-            return screenshots;
+            // Throw parsing error to stop processing and show error to user
+            throw Exception(
+              'JSON parsing failed: Unable to parse AI response. The response format is invalid or corrupted. Please try again.',
+            );
           }
         } else {
           print("No JSON array pattern found in response");
-          return screenshots;
+          // Throw parsing error to stop processing and show error to user
+          throw Exception(
+            'JSON parsing failed: No valid JSON array found in AI response. Please try again.',
+          );
         }
       }
 
-      if (parsedResponse.isEmpty) return screenshots;
+      if (parsedResponse.isEmpty) {
+        throw Exception(
+          'JSON parsing failed: AI response is empty or invalid. Please try again.',
+        );
+      }
+
+      // Validate and sanitize the parsed response
+      parsedResponse = _validateAndSanitizeResponse(parsedResponse);
 
       AiMetaData aiMetaData = AiMetaData(
         modelName: config.modelName,
@@ -199,6 +233,91 @@ class ScreenshotAnalysisService extends AIService {
       print('Error parsing response and updating screenshots: $e');
       return screenshots;
     }
+  }
+
+  /// Validates and sanitizes the parsed response to ensure it has the correct structure
+  List<dynamic> _validateAndSanitizeResponse(List<dynamic> parsedResponse) {
+    List<dynamic> sanitizedResponse = [];
+
+    for (var item in parsedResponse) {
+      if (item is Map<String, dynamic>) {
+        Map<String, dynamic> sanitizedItem = Map<String, dynamic>.from(item);
+
+        // Ensure required fields exist and have correct types
+        sanitizedItem['filename'] =
+            (sanitizedItem['filename'] ?? '').toString();
+        sanitizedItem['title'] = (sanitizedItem['title'] ?? '').toString();
+        sanitizedItem['desc'] = (sanitizedItem['desc'] ?? '').toString();
+
+        // Ensure tags is always a list
+        if (sanitizedItem['tags'] is! List) {
+          if (sanitizedItem['tags'] is String) {
+            // If tags is a string, split by comma or other delimiters
+            String tagString = sanitizedItem['tags'].toString();
+            sanitizedItem['tags'] =
+                tagString
+                    .split(RegExp(r'[,;|]'))
+                    .map((tag) => tag.trim())
+                    .where((tag) => tag.isNotEmpty)
+                    .toList();
+          } else {
+            sanitizedItem['tags'] = [];
+          }
+        } else {
+          // Ensure all items in tags list are strings
+          sanitizedItem['tags'] =
+              (sanitizedItem['tags'] as List)
+                  .map((tag) => tag.toString())
+                  .toList();
+        }
+
+        // Ensure collections is always a list
+        if (sanitizedItem['collections'] is! List) {
+          if (sanitizedItem['collections'] is String) {
+            // If collections is a string, split by comma or other delimiters
+            String collectionString = sanitizedItem['collections'].toString();
+            sanitizedItem['collections'] =
+                collectionString
+                    .split(RegExp(r'[,;|]'))
+                    .map((col) => col.trim())
+                    .where((col) => col.isNotEmpty)
+                    .toList();
+          } else {
+            sanitizedItem['collections'] = [];
+          }
+        } else {
+          // Ensure all items in collections list are strings
+          sanitizedItem['collections'] =
+              (sanitizedItem['collections'] as List)
+                  .map((col) => col.toString())
+                  .toList();
+        }
+
+        // Ensure other is always a list
+        if (sanitizedItem['other'] is! List) {
+          if (sanitizedItem['other'] is String) {
+            // If other is a string, convert to single-item list
+            sanitizedItem['other'] = [sanitizedItem['other'].toString()];
+          } else if (sanitizedItem['other'] != null) {
+            sanitizedItem['other'] = [sanitizedItem['other'].toString()];
+          } else {
+            sanitizedItem['other'] = [];
+          }
+        } else {
+          // Ensure all items in other list are strings
+          sanitizedItem['other'] =
+              (sanitizedItem['other'] as List)
+                  .map((item) => item.toString())
+                  .toList();
+        }
+
+        sanitizedResponse.add(sanitizedItem);
+      } else {
+        print("Warning: Invalid item found in response, skipping: $item");
+      }
+    }
+
+    return sanitizedResponse;
   }
 
   String _getAnalysisPrompt({List<Map<String, String?>>? autoAddCollections}) {
@@ -421,6 +540,20 @@ class ScreenshotAnalysisService extends AIService {
   }
 
   void _handleResponseError(Map<String, dynamic> response) {
+    // Check if this is a parsing error
+    if (response.containsKey('parsing_error') &&
+        response['parsing_error'] == true) {
+      // For parsing errors, always show the message and terminate processing
+      if (config.showMessage != null) {
+        config.showMessage!(
+          message:
+              'AI Processing Error: ${response['error'] ?? 'Failed to parse AI response'}',
+        );
+      }
+      _processingTerminated = true;
+      return;
+    }
+
     final result = AIErrorHandler.handleResponseError(
       response,
       showMessage: config.showMessage,

@@ -679,7 +679,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     //  if gemma skip API key check
     if (_selectedModelName == 'gemma') {
       print("Main app: Using Gemma model, no API key required");
-    } else if (!(_apiKey == null || _apiKey!.isEmpty)) {
+    } else if (_apiKey == null || _apiKey!.isEmpty) {
       print("Main app: No API key configured");
       SnackbarService().showError(
         context,
