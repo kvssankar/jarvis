@@ -4,6 +4,19 @@
   "messages": [
     {
       "show": true,
+      "id": "beta_hello_gemma",
+      "title": "Say Hello to Gemma!",
+      "message": "🎉 Say hello to Gemma - the long-awaited local AI engine is finally here!\n\nYou're one of the first beta testers, and your feedback is incredibly valuable to shape its future. Gemma now allows full on-device processing - your images never go to the cloud.\n\nThis is an early alpha release, so expect some bugs: batch processing may not always work, and the app might crash or even affect background apps. You can still try the single-image processing reliably by tapping the AI icon on the screenshot details page.\n\nI've shared a Google Form for your feedback [click on LEARN MORE button] (and again after a week). Please report any issues so we can polish everything before public launch.\n\nThank you for being a part of this journey 🙌\n\n- With love,\nTeam Shots Studio",
+      "type": "update",
+      "priority": "high",
+      "show_once": true,
+      "valid_until": "2026-07-01T00:00:00Z",
+      "is_notification": false,
+      "version": "1.8.115",
+      "update_route": "https://forms.gle/AVj41mSvJqx7ti5X7"
+    },
+    {
+      "show": true,
       "id": "live_v1_8_103_1",
       "title": "Welcome to v1.8.103!",
       "message": "🎉 Massive thanks to you for using and supporting Shots Studio!\n\nHere's what's you should try in v1.8.103:\n\n🧹 Hard Delete — Now you can fully remove images from your device directly by deleting from the app. (just make sure to disable the safe delete toggle in settings) \n\n📲 Swipe between screenshots in fullscreen mode - Now you can open the image in full screen mode and swipe between them without exiting to details screen\n\n⚙️ Revamped Settings layout for easier access\n\n🤖 Gemini-2.5-pro is back online!\n\n🧪 Want early access to on-device AI and other exciting beta features?\nToggle Beta Mode in the 'Advanced' section to receive pre-release updates.\n\nHuge thanks to you for helping us level up 🙌. \n\n With Love, \nTeam Shots Studio",
