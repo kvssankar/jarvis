@@ -4,6 +4,7 @@ import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/services/ai_service.dart';
 import 'package:shots_studio/services/screenshot_analysis_service.dart';
 import 'package:shots_studio/services/autoCategorization/collection_categorization_service.dart';
+import 'package:shots_studio/utils/ai_provider_config.dart';
 
 class AIServiceManager {
   static AIServiceManager? _instance;
@@ -19,8 +20,24 @@ class AIServiceManager {
   CollectionCategorizationService? _categorizationService;
 
   void initialize(AIConfig config) {
-    _analysisService = ScreenshotAnalysisService(config);
-    _categorizationService = CollectionCategorizationService(config);
+    // Calculate effective maxParallel using model-specific limits and global preference
+    final effectiveMaxParallel = AIProviderConfig.getEffectiveMaxParallel(
+      config.modelName,
+      config.maxParallel,
+    );
+
+    // Create adjusted config with the effective maxParallel value
+    AIConfig adjustedConfig = AIConfig(
+      apiKey: config.apiKey,
+      modelName: config.modelName,
+      maxParallel: effectiveMaxParallel,
+      timeoutSeconds: config.timeoutSeconds,
+      showMessage: config.showMessage,
+      providerSpecificConfig: config.providerSpecificConfig,
+    );
+
+    _analysisService = ScreenshotAnalysisService(adjustedConfig);
+    _categorizationService = CollectionCategorizationService(adjustedConfig);
   }
 
   // Screenshot Analysis Methods
@@ -87,24 +104,5 @@ class AIServiceManager {
   void dispose() {
     _analysisService = null;
     _categorizationService = null;
-  }
-
-  // Helper method to create AI config from preferences
-  static AIConfig createConfigFromPreferences({
-    required String apiKey,
-    required String modelName,
-    int maxParallel = 4,
-    int timeoutSeconds = 120,
-    ShowMessageCallback? showMessage,
-    Map<String, dynamic> providerSpecificConfig = const {},
-  }) {
-    return AIConfig(
-      apiKey: apiKey,
-      modelName: modelName,
-      maxParallel: maxParallel,
-      timeoutSeconds: timeoutSeconds,
-      showMessage: showMessage,
-      providerSpecificConfig: providerSpecificConfig,
-    );
   }
 }

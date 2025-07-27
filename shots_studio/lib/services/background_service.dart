@@ -8,6 +8,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/services/ai_service.dart';
 import 'package:shots_studio/services/screenshot_analysis_service.dart';
+import 'package:shots_studio/utils/ai_provider_config.dart';
 
 @pragma('vm:entry-point')
 class BackgroundProcessingService {
@@ -273,11 +274,17 @@ class BackgroundProcessingService {
       int processedCount = 0;
       final totalCount = screenshots.length;
 
+      // Apply model-specific maxParallel limits
+      final effectiveMaxParallel = AIProviderConfig.getEffectiveMaxParallel(
+        modelName,
+        maxParallel,
+      );
+
       // Set up AI service
       final config = AIConfig(
         apiKey: apiKey,
         modelName: modelName,
-        maxParallel: maxParallel,
+        maxParallel: effectiveMaxParallel,
       );
 
       final analysisService = ScreenshotAnalysisService(config);
@@ -293,10 +300,11 @@ class BackgroundProcessingService {
 
           try {
             // Check if this batch was skipped because all screenshots were already processed
-            if (response.containsKey('skipped') && response['skipped'] == true) {
+            if (response.containsKey('skipped') &&
+                response['skipped'] == true) {
               // Count these as processed since they were already done
               processedCount += batch.length;
-              
+
               // Update notification
               updateNotification(
                 title: 'Processing Screenshots',
