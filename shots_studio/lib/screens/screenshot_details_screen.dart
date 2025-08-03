@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'dart:math';
+import 'dart:async';
 import 'package:intl/intl.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
@@ -20,6 +21,7 @@ import 'package:shots_studio/services/ai_service.dart';
 import 'package:shots_studio/services/ocr_service.dart';
 import 'package:shots_studio/widgets/ocr_result_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 class ScreenshotDetailScreen extends StatefulWidget {
   final Screenshot screenshot;
@@ -104,6 +106,12 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   @override
   void dispose() {
     _descriptionController.dispose();
+
+    // Ensure wakelock is disabled when the screen is disposed
+    WakelockPlus.disable().catchError((e) {
+      print('Failed to disable wakelock on dispose: $e');
+    });
+
     super.dispose();
   }
 
@@ -266,6 +274,14 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   Future<void> _processSingleScreenshotWithAI() async {
     // Track AI reprocessing requests
     AnalyticsService().logFeatureUsed('ai_reprocessing_requested');
+
+    // Enable wakelock to prevent screen from sleeping during processing
+    try {
+      await WakelockPlus.enable();
+    } catch (e) {
+      print('Failed to enable wakelock: $e');
+    }
+
     // Check if already processed and confirmed by user
     if (widget.screenshot.aiProcessed) {
       final bool? shouldReprocess = await showDialog<bool>(
@@ -308,7 +324,14 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         },
       );
 
-      if (shouldReprocess != true) return;
+      if (shouldReprocess != true) {
+        try {
+          await WakelockPlus.disable();
+        } catch (e) {
+          print('Failed to disable wakelock: $e');
+        }
+        return;
+      }
     }
 
     // Get settings from SharedPreferences
@@ -318,6 +341,11 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     if (prefs.getString('modelName') == 'gemma') {
       apiKey = 'gemma-v1'; // explicitly set APIKey to gemma-v1
     } else if (apiKey == null || apiKey.isEmpty) {
+      try {
+        await WakelockPlus.disable();
+      } catch (e) {
+        print('Failed to disable wakelock: $e');
+      }
       SnackbarService().showError(
         context,
         'AI API key not configured. Please check app settings.',
@@ -348,6 +376,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       apiKey: apiKey,
       modelName: modelName,
       maxParallel: 1, // Single screenshot processing
+      timeoutSeconds: 120,
       showMessage: ({
         required String message,
         Color? backgroundColor,
@@ -366,94 +395,106 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       // Initialize the AI service manager
       _aiServiceManager.initialize(config);
 
-      // Process the single screenshot (pass as single-item list)
-      final result = await _aiServiceManager.analyzeScreenshots(
-        screenshots: [widget.screenshot],
-        onBatchProcessed: (batch, response) {
-          // Update the screenshot with processed data
-          final updatedScreenshots = _aiServiceManager
-              .parseAndUpdateScreenshots(batch, response);
+      // Process the single screenshot with timeout wrapper
+      final result = await _aiServiceManager
+          .analyzeScreenshots(
+            screenshots: [widget.screenshot],
+            onBatchProcessed: (batch, response) {
+              // Update the screenshot with processed data
+              final updatedScreenshots = _aiServiceManager
+                  .parseAndUpdateScreenshots(batch, response);
 
-          if (updatedScreenshots.isNotEmpty) {
-            final updatedScreenshot = updatedScreenshots.first;
+              if (updatedScreenshots.isNotEmpty) {
+                final updatedScreenshot = updatedScreenshots.first;
 
-            setState(() {
-              // Update the screenshot properties
-              widget.screenshot.title = updatedScreenshot.title;
-              widget.screenshot.description = updatedScreenshot.description;
-              widget.screenshot.tags = updatedScreenshot.tags;
-              widget.screenshot.aiProcessed = updatedScreenshot.aiProcessed;
-              widget.screenshot.aiMetadata = updatedScreenshot.aiMetadata;
+                setState(() {
+                  // Update the screenshot properties
+                  widget.screenshot.title = updatedScreenshot.title;
+                  widget.screenshot.description = updatedScreenshot.description;
+                  widget.screenshot.tags = updatedScreenshot.tags;
+                  widget.screenshot.aiProcessed = updatedScreenshot.aiProcessed;
+                  widget.screenshot.aiMetadata = updatedScreenshot.aiMetadata;
 
-              // Update local state
-              _tags = List.from(updatedScreenshot.tags);
-              _descriptionController.text = updatedScreenshot.description ?? '';
-            });
+                  // Update local state
+                  _tags = List.from(updatedScreenshot.tags);
+                  _descriptionController.text =
+                      updatedScreenshot.description ?? '';
+                });
 
-            // Handle auto-categorization
-            if (response['suggestedCollections'] != null) {
-              try {
-                Map<dynamic, dynamic>? suggestionsMap;
-                if (response['suggestedCollections']
-                    is Map<String, List<String>>) {
-                  suggestionsMap =
-                      response['suggestedCollections']
-                          as Map<String, List<String>>;
-                } else if (response['suggestedCollections']
-                    is Map<dynamic, dynamic>) {
-                  suggestionsMap =
-                      response['suggestedCollections'] as Map<dynamic, dynamic>;
-                }
-
-                List<String> suggestedCollections = [];
-                if (suggestionsMap != null &&
-                    suggestionsMap.containsKey(updatedScreenshot.id)) {
-                  final suggestions = suggestionsMap[updatedScreenshot.id];
-                  if (suggestions is List) {
-                    suggestedCollections = List<String>.from(
-                      suggestions.whereType<String>(),
-                    );
-                  } else if (suggestions is String) {
-                    suggestedCollections = [suggestions];
-                  }
-                }
-
-                if (suggestedCollections.isNotEmpty) {
-                  int autoAddedCount = 0;
-                  for (var collection in widget.allCollections) {
-                    if (collection.isAutoAddEnabled &&
-                        suggestedCollections.contains(collection.name) &&
-                        !updatedScreenshot.collectionIds.contains(
-                          collection.id,
-                        ) &&
-                        !collection.screenshotIds.contains(
-                          updatedScreenshot.id,
-                        )) {
-                      // Auto-add screenshot to this collection
-                      final updatedCollection = collection.addScreenshot(
-                        updatedScreenshot.id,
-                        isAutoCategorized: true,
-                      );
-                      widget.onUpdateCollection(updatedCollection);
-                      autoAddedCount++;
+                // Handle auto-categorization
+                if (response['suggestedCollections'] != null) {
+                  try {
+                    Map<dynamic, dynamic>? suggestionsMap;
+                    if (response['suggestedCollections']
+                        is Map<String, List<String>>) {
+                      suggestionsMap =
+                          response['suggestedCollections']
+                              as Map<String, List<String>>;
+                    } else if (response['suggestedCollections']
+                        is Map<dynamic, dynamic>) {
+                      suggestionsMap =
+                          response['suggestedCollections']
+                              as Map<dynamic, dynamic>;
                     }
-                  }
 
-                  if (autoAddedCount > 0) {
-                    SnackbarService().showSuccess(
-                      context,
-                      'Screenshot processed and auto-categorized into $autoAddedCount collection${autoAddedCount > 1 ? 's' : ''}',
-                    );
+                    List<String> suggestedCollections = [];
+                    if (suggestionsMap != null &&
+                        suggestionsMap.containsKey(updatedScreenshot.id)) {
+                      final suggestions = suggestionsMap[updatedScreenshot.id];
+                      if (suggestions is List) {
+                        suggestedCollections = List<String>.from(
+                          suggestions.whereType<String>(),
+                        );
+                      } else if (suggestions is String) {
+                        suggestedCollections = [suggestions];
+                      }
+                    }
+
+                    if (suggestedCollections.isNotEmpty) {
+                      int autoAddedCount = 0;
+                      for (var collection in widget.allCollections) {
+                        if (collection.isAutoAddEnabled &&
+                            suggestedCollections.contains(collection.name) &&
+                            !updatedScreenshot.collectionIds.contains(
+                              collection.id,
+                            ) &&
+                            !collection.screenshotIds.contains(
+                              updatedScreenshot.id,
+                            )) {
+                          // Auto-add screenshot to this collection
+                          final updatedCollection = collection.addScreenshot(
+                            updatedScreenshot.id,
+                            isAutoCategorized: true,
+                          );
+                          widget.onUpdateCollection(updatedCollection);
+                          autoAddedCount++;
+                        }
+                      }
+
+                      if (autoAddedCount > 0) {
+                        SnackbarService().showSuccess(
+                          context,
+                          'Screenshot processed and auto-categorized into $autoAddedCount collection${autoAddedCount > 1 ? 's' : ''}',
+                        );
+                      }
+                    }
+                  } catch (e) {
+                    print('Error handling auto-categorization: $e');
                   }
                 }
-              } catch (e) {
-                print('Error handling auto-categorization: $e');
               }
-            }
-          }
-        },
-        autoAddCollections: autoAddCollections,
-      );
+            },
+            autoAddCollections: autoAddCollections,
+          )
+          .timeout(
+            Duration(seconds: 120),
+            onTimeout: () {
+              throw TimeoutException(
+                'AI processing timed out after 120 seconds',
+                Duration(seconds: 120),
+              );
+            },
+          );
 
       if (result.success) {
         SnackbarService().showSuccess(
@@ -469,12 +510,23 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
           result.error ?? 'Failed to process screenshot',
         );
       }
+    } on TimeoutException catch (_) {
+      SnackbarService().showError(
+        context,
+        'AI processing timed out after 120 seconds. Please try again.',
+      );
     } catch (e) {
       SnackbarService().showError(context, 'Error processing screenshot: $e');
     } finally {
       setState(() {
         _isProcessingAI = false;
       });
+
+      try {
+        await WakelockPlus.disable();
+      } catch (e) {
+        print('Failed to disable wakelock: $e');
+      }
     }
   }
 
@@ -1273,6 +1325,13 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       return;
     }
 
+    // Enable wakelock to prevent screen from sleeping during processing
+    try {
+      await WakelockPlus.enable();
+    } catch (e) {
+      print('Failed to enable wakelock: $e');
+    }
+
     setState(() {
       _isProcessingOCR = true;
     });
@@ -1307,6 +1366,13 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       setState(() {
         _isProcessingOCR = false;
       });
+
+      // Disable wakelock when processing is complete
+      try {
+        await WakelockPlus.disable();
+      } catch (e) {
+        print('Failed to disable wakelock: $e');
+      }
     }
   }
 }

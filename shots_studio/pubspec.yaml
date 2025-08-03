@@ -5,7 +5,7 @@ publish_to: 'none'
 
 # The patch version numbering is automatically incremented by the git hook. 
 # Only update major and minor versions manually. 
-version: 1.8.118+1
+version: 1.8.119+1
 
 environment:
   sdk: ^3.7.2
@@ -46,6 +46,7 @@ dependencies:
   file_picker: ^8.1.5
   tesseract_ocr: ^0.5.0
   flutter_gemma: ^0.10.0
+  wakelock_plus: ^1.2.8
 
 dev_dependencies:
   sentry_dart_plugin: ^2.4.1
