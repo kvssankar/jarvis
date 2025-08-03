@@ -461,6 +461,18 @@ class PostHogAnalyticsService {
     }
   }
 
+  Future<void> logInstallSource(String source) async {
+    if (!_shouldLog()) return;
+
+    await Posthog().capture(
+      eventName: 'install_$source',
+      properties: {
+        'source': source,
+        'install_date': DateTime.now().toIso8601String(),
+      },
+    );
+  }
+
   // Helper method to calculate time of day
   String _getTimeOfDay() {
     final hour = DateTime.now().hour;

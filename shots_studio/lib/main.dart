@@ -36,6 +36,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shots_studio/services/image_loader_service.dart';
 import 'package:shots_studio/services/custom_path_service.dart';
 import 'package:shots_studio/widgets/custom_paths_dialog.dart';
+import 'package:shots_studio/utils/build_source.dart';
 
 void main() async {
   await SentryFlutter.init(
@@ -288,6 +289,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (privacyAccepted && context.mounted) {
         // Log install info when onboarding is completed
         AnalyticsService().logInstallInfo();
+        // Log install source analytics
+        AnalyticsService().logInstallSource(BuildSource.current.value);
 
         // API key guide will only show after privacy is accepted
         await showApiKeyGuideIfNeeded(context, _apiKey, _updateApiKey);
@@ -675,6 +678,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   /// Check for app updates from GitHub releases
   Future<void> _checkForUpdates() async {
+    // Skip update check for F-Droid and Play Store builds
+    final buildSource = BuildSource.current;
+    if (!buildSource.allowsUpdateCheck) {
+      print('MainApp: Update check disabled for ${buildSource.displayName} builds');
+      return;
+    }
+
     try {
       final updateInfo = await UpdateCheckerService.checkForUpdates();
 

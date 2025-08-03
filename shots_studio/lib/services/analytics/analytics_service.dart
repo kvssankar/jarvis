@@ -193,6 +193,10 @@ class AnalyticsService {
     await _postHogService.logInstallInfo();
   }
 
+  Future<void> logInstallSource(String source) async {
+    await _postHogService.logInstallSource(source);
+  }
+
   Future<void> logCurrentUsageTime() async {
     await _postHogService.logCurrentUsageTime();
   }

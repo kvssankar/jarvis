@@ -6,6 +6,7 @@ import '../../services/update_checker_service.dart';
 import '../sponsorship/sponsorship_dialog.dart';
 import '../update_dialog.dart';
 import '../../l10n/app_localizations.dart';
+import '../../utils/build_source.dart';
 
 class AboutSection extends StatelessWidget {
   final String appVersion;
@@ -134,7 +135,7 @@ class AboutSection extends StatelessWidget {
             style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
           ),
           subtitle: Text(
-            'Version $appVersion',
+            'Version $appVersion (${BuildSource.current.displayName})',
             style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
           ),
           onTap: () {
