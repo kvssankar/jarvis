@@ -4,6 +4,19 @@
   "messages": [
     {
       "show": true,
+      "id": "gemma_feedback_followup",
+      "title": "We Value Your Feedback on Gemma!",
+      "message": "👋 Hey Beta Tester,\n\nThank you for trying out Gemma, our local AI engine! We hope you've had a chance to explore its features and capabilities.\n\nWe'd love to hear your thoughts:\n• How is Gemma performing for you?\n• Any bugs or issues you've encountered?\n• Suggestions for improvements or features you'd like to see in the next release?\n\nYour feedback is crucial in shaping Gemma's future. Please take a moment to share your experience using the Google Form linked below [click on LEARN MORE button].\n\n- With love,\nTeam Shots Studio",
+      "type": "update",
+      "priority": "high",
+      "show_once": true,
+      "valid_until": "2026-07-01T00:00:00Z",
+      "is_notification": false,
+      "version": "1.8.115",
+      "update_route": "https://forms.gle/AVj41mSvJqx7ti5X7"
+    },
+    {
+      "show": false,
       "id": "beta_hello_gemma",
       "title": "Say Hello to Gemma!",
       "message": "🎉 Say hello to Gemma - the long-awaited local AI engine is finally here!\n\nYou're one of the first beta testers, and your feedback is incredibly valuable to shape its future. Gemma now allows full on-device processing - your images never go to the cloud.\n\nThis is an early alpha release, so expect some bugs: batch processing may not always work, and the app might crash or even affect background apps. You can still try the single-image processing reliably by tapping the AI icon on the screenshot details page.\n\nI've shared a Google Form for your feedback [click on LEARN MORE button] (and again after a week). Please report any issues so we can polish everything before public launch.\n\nThank you for being a part of this journey 🙌\n\n- With love,\nTeam Shots Studio",
