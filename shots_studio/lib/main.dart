@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shots_studio/l10n/app_localizations.dart';
 import 'dart:async';
 import 'package:shots_studio/screens/screenshot_details_screen.dart';
 import 'package:shots_studio/screens/screenshot_swipe_detail_screen.dart';
@@ -112,11 +114,13 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   bool _amoledModeEnabled = false;
   String _selectedTheme = 'Adaptive Theme';
+  Locale _selectedLocale = const Locale('en'); // Default to English
 
   @override
   void initState() {
     super.initState();
     _loadThemeSettings();
+    _loadLocaleSettings();
   }
 
   Future<void> _loadThemeSettings() async {
@@ -125,6 +129,14 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       _amoledModeEnabled = amoledMode;
       _selectedTheme = selectedTheme;
+    });
+  }
+
+  Future<void> _loadLocaleSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final languageCode = prefs.getString('selected_language') ?? 'en';
+    setState(() {
+      _selectedLocale = Locale(languageCode);
     });
   }
 
@@ -141,6 +153,26 @@ class _MyAppState extends State<MyApp> {
 
         return MaterialApp(
           title: 'Shots Studio',
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('en'), // English
+            Locale('hi'), // Hindi
+            Locale('de'), // German
+            Locale('zh'), // Chinese
+            Locale('pt'), // Portuguese
+            Locale('ar'), // Arabic
+            Locale('es'), // Spanish
+            Locale('fr'), // French
+            Locale('it'), // Italian
+            Locale('ja'), // Japanese
+            Locale('ru'), // Russian
+          ],
+          locale: _selectedLocale, // Use the selected locale
           theme: ThemeUtils.createLightTheme(lightScheme),
           darkTheme: ThemeUtils.createDarkTheme(darkScheme),
           themeMode:
@@ -158,6 +190,13 @@ class _MyAppState extends State<MyApp> {
                 _selectedTheme = themeName;
               });
             },
+            onLocaleChanged: (locale) async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('selected_language', locale.languageCode);
+              setState(() {
+                _selectedLocale = locale;
+              });
+            },
           ),
         );
       },
@@ -168,8 +207,14 @@ class _MyAppState extends State<MyApp> {
 class HomeScreen extends StatefulWidget {
   final Function(bool)? onAmoledModeChanged;
   final Function(String)? onThemeChanged;
+  final Function(Locale)? onLocaleChanged;
 
-  const HomeScreen({super.key, this.onAmoledModeChanged, this.onThemeChanged});
+  const HomeScreen({
+    super.key,
+    this.onAmoledModeChanged,
+    this.onThemeChanged,
+    this.onLocaleChanged,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -1592,6 +1637,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onThemeChanged: _updateThemeSelection,
         apiKeyFieldKey: _apiKeyFieldKey,
         onResetAiProcessing: _resetAiMetaData,
+        onLocaleChanged: widget.onLocaleChanged,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {

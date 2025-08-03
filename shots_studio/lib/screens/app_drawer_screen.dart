@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shots_studio/widgets/app_drawer/index.dart';
 import 'package:shots_studio/services/analytics/analytics_service.dart';
+import 'package:shots_studio/l10n/app_localizations.dart';
 
 class AppDrawer extends StatefulWidget {
   final String? currentApiKey;
@@ -28,6 +29,7 @@ class AppDrawer extends StatefulWidget {
   final Function(String)? onThemeChanged;
   final Key? apiKeyFieldKey;
   final VoidCallback? onResetAiProcessing;
+  final Function(Locale)? onLocaleChanged;
 
   const AppDrawer({
     super.key,
@@ -55,6 +57,7 @@ class AppDrawer extends StatefulWidget {
     this.onThemeChanged,
     this.apiKeyFieldKey,
     this.onResetAiProcessing,
+    this.onLocaleChanged,
   });
 
   @override
@@ -91,8 +94,11 @@ class _AppDrawerState extends State<AppDrawer> {
       if (widget.onDevModeChanged != null) {
         widget.onDevModeChanged!(false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Developer mode disabled'),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)?.developerModeDisabled ??
+                  'Advanced settings disabled',
+            ),
             duration: Duration(seconds: 2),
           ),
         );
@@ -125,6 +131,7 @@ class _AppDrawerState extends State<AppDrawer> {
               onThemeChanged: widget.onThemeChanged,
               currentDevMode: widget.currentDevMode,
               onDevModeChanged: widget.onDevModeChanged,
+              onLocaleChanged: widget.onLocaleChanged,
             ),
             if (widget.currentDevMode == true) ...[
               AdvancedSettingsSection(

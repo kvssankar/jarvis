@@ -5,7 +5,7 @@ publish_to: 'none'
 
 # The patch version numbering is automatically incremented by the git hook. 
 # Only update major and minor versions manually. 
-version: 1.8.116+1
+version: 1.8.117+1
 
 environment:
   sdk: ^3.7.2
@@ -19,6 +19,8 @@ environment:
 dependencies:
   sentry_flutter: ^8.14.2
   flutter:
+    sdk: flutter
+  flutter_localizations:
     sdk: flutter
 
   # The following adds the Cupertino Icons font to your application.
@@ -61,6 +63,7 @@ flutter_launcher_icons:
 
 flutter:
   uses-material-design: true
+  generate: true
   
   assets:
     - assets/icon/

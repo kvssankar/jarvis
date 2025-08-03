@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../services/analytics/analytics_service.dart';
 import '../../screens/privacy_screen.dart';
+import '../../l10n/app_localizations.dart';
 
 class PrivacySection extends StatelessWidget {
   const PrivacySection({super.key});
@@ -17,7 +18,7 @@ class PrivacySection extends StatelessWidget {
             color: theme.colorScheme.primary,
           ),
           title: Text(
-            'Privacy Notice',
+            AppLocalizations.of(context)?.privacyNotice ?? 'Privacy Notice',
             style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
           ),
           subtitle: Text(

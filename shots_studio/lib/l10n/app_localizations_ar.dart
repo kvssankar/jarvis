@@ -1,0 +1,295 @@
+// ignore: unused_import
+import 'package:intl/intl.dart' as intl;
+import 'app_localizations.dart';
+
+// ignore_for_file: type=lint
+
+/// The translations for Arabic (`ar`).
+class AppLocalizationsAr extends AppLocalizations {
+  AppLocalizationsAr([String locale = 'ar']) : super(locale);
+
+  @override
+  String get appTitle => 'استوديو اللقطات';
+
+  @override
+  String get searchScreenshots => 'البحث في لقطات الشاشة';
+
+  @override
+  String analyzed(int count, int total) {
+    return 'تم تحليل $count/$total';
+  }
+
+  @override
+  String get developerModeDisabled => 'تم تعطيل الإعدادات المتقدمة';
+
+  @override
+  String get collections => 'المجموعات';
+
+  @override
+  String get screenshots => 'لقطات الشاشة';
+
+  @override
+  String get settings => 'الإعدادات';
+
+  @override
+  String get about => 'حول';
+
+  @override
+  String get privacy => 'الخصوصية';
+
+  @override
+  String get createCollection => 'إنشاء مجموعة';
+
+  @override
+  String get editCollection => 'تحرير المجموعة';
+
+  @override
+  String get deleteCollection => 'حذف المجموعة';
+
+  @override
+  String get collectionName => 'اسم المجموعة';
+
+  @override
+  String get save => 'حفظ';
+
+  @override
+  String get cancel => 'إلغاء';
+
+  @override
+  String get delete => 'حذف';
+
+  @override
+  String get confirm => 'تأكيد';
+
+  @override
+  String get yes => 'نعم';
+
+  @override
+  String get no => 'لا';
+
+  @override
+  String get ok => 'موافق';
+
+  @override
+  String get search => 'بحث';
+
+  @override
+  String get noResults => 'لم يتم العثور على نتائج';
+
+  @override
+  String get loading => 'جاري التحميل...';
+
+  @override
+  String get error => 'خطأ';
+
+  @override
+  String get retry => 'إعادة المحاولة';
+
+  @override
+  String get share => 'مشاركة';
+
+  @override
+  String get copy => 'نسخ';
+
+  @override
+  String get paste => 'لصق';
+
+  @override
+  String get selectAll => 'تحديد الكل';
+
+  @override
+  String get aiSettings => 'إعدادات الذكاء الاصطناعي';
+
+  @override
+  String get apiKey => 'مفتاح API';
+
+  @override
+  String get modelName => 'اسم النموذج';
+
+  @override
+  String get autoProcessing => 'المعالجة التلقائية';
+
+  @override
+  String get enabled => 'مفعل';
+
+  @override
+  String get disabled => 'معطل';
+
+  @override
+  String get theme => 'السمة';
+
+  @override
+  String get lightTheme => 'فاتح';
+
+  @override
+  String get darkTheme => 'داكن';
+
+  @override
+  String get systemTheme => 'النظام';
+
+  @override
+  String get language => 'اللغة';
+
+  @override
+  String get analytics => 'التحليلات';
+
+  @override
+  String get betaTesting => 'Beta Testing';
+
+  @override
+  String get advancedSettings => 'الإعدادات المتقدمة';
+
+  @override
+  String get developerMode => 'الإعدادات المتقدمة';
+
+  @override
+  String get safeDelete => 'حذف آمن';
+
+  @override
+  String get sourceCode => 'الكود المصدري';
+
+  @override
+  String get support => 'الدعم';
+
+  @override
+  String get checkForUpdates => 'البحث عن تحديثات';
+
+  @override
+  String get privacyNotice => 'إشعار الخصوصية';
+
+  @override
+  String get analyticsAndTelemetry => 'التحليلات والقياس عن بُعد';
+
+  @override
+  String get performanceMenu => 'قائمة الأداء';
+
+  @override
+  String get serverMessages => 'رسائل الخادم';
+
+  @override
+  String get maxParallelAI => 'الحد الأقصى للذكاء الاصطناعي المتوازي';
+
+  @override
+  String get enableScreenshotLimit => 'تفعيل حد لقطات الشاشة';
+
+  @override
+  String get tags => 'العلامات';
+
+  @override
+  String get aiDetails => 'تفاصيل الذكاء الاصطناعي';
+
+  @override
+  String get size => 'الحجم';
+
+  @override
+  String get addDescription => 'إضافة وصف';
+
+  @override
+  String get addTag => 'إضافة علامة';
+
+  @override
+  String get amoledMode => 'وضع AMOLED';
+
+  @override
+  String get notifications => 'الإشعارات';
+
+  @override
+  String get permissions => 'الأذونات';
+
+  @override
+  String get storage => 'التخزين';
+
+  @override
+  String get camera => 'الكاميرا';
+
+  @override
+  String get version => 'الإصدار';
+
+  @override
+  String get buildNumber => 'رقم البناء';
+
+  @override
+  String get ocrResults => 'نتائج OCR';
+
+  @override
+  String get extractedText => 'النص المستخرج';
+
+  @override
+  String get noTextFound => 'لم يتم العثور على نص في الصورة';
+
+  @override
+  String get processing => 'جاري المعالجة...';
+
+  @override
+  String get selectImage => 'اختر صورة';
+
+  @override
+  String get takePhoto => 'التقط صورة';
+
+  @override
+  String get fromGallery => 'من المعرض';
+
+  @override
+  String get imageSelected => 'تم اختيار الصورة';
+
+  @override
+  String get noImageSelected => 'لم يتم اختيار صورة';
+
+  @override
+  String get apiKeyRequired => 'مطلوب لميزات الذكاء الاصطناعي';
+
+  @override
+  String get apiKeyValid => 'مفتاح API صالح';
+
+  @override
+  String get apiKeyValidationFailed => 'فشل في التحقق من مفتاح API';
+
+  @override
+  String get apiKeyNotValidated => 'تم تعيين مفتاح API (غير محقق)';
+
+  @override
+  String get enterApiKey => 'أدخل مفتاح Gemini API';
+
+  @override
+  String get validateApiKey => 'التحقق من مفتاح API';
+
+  @override
+  String get valid => 'صالح';
+
+  @override
+  String get autoProcessingDescription =>
+      'سيتم معالجة لقطات الشاشة تلقائياً عند إضافتها';
+
+  @override
+  String get manualProcessingOnly => 'معالجة يدوية فقط';
+
+  @override
+  String get amoledModeDescription => 'مظهر داكن محسن لشاشات AMOLED';
+
+  @override
+  String get defaultDarkTheme => 'المظهر الداكن الافتراضي';
+
+  @override
+  String get getApiKey => 'احصل على مفتاح API';
+
+  @override
+  String get stopProcessing => 'إيقاف المعالجة';
+
+  @override
+  String get processWithAI => 'معالجة بالذكاء الاصطناعي';
+
+  @override
+  String get createFirstCollection => 'أنشئ مجموعتك الأولى';
+
+  @override
+  String get organizeScreenshots => 'لتنظيم لقطات الشاشة';
+
+  @override
+  String get cancelSelection => 'إلغاء التحديد';
+
+  @override
+  String get deselectAll => 'إلغاء تحديد الكل';
+
+  @override
+  String get deleteSelected => 'حذف المحدد';
+}

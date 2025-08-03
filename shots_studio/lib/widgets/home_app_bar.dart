@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shots_studio/l10n/app_localizations.dart';
 
 class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onProcessWithAI;
@@ -28,9 +29,9 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     final bool showAIButtons = !autoProcessEnabled;
 
     return AppBar(
-      title: const Text(
-        'Shots Studio',
-        style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
+      title: Text(
+        AppLocalizations.of(context)?.appTitle ?? 'Shots Studio',
+        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
       ),
       elevation: 0,
       leading: IconButton(
@@ -42,7 +43,9 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: [
         IconButton(
           icon: const Icon(Icons.search),
-          tooltip: 'Search Screenshots',
+          tooltip:
+              AppLocalizations.of(context)?.searchScreenshots ??
+              'Search Screenshots',
           onPressed: onSearchPressed,
         ),
 
@@ -60,13 +63,17 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
         if (showAIButtons && isProcessingAI)
           IconButton(
             icon: const Icon(Icons.stop_circle_outlined),
-            tooltip: 'Stop Processing',
+            tooltip:
+                AppLocalizations.of(context)?.stopProcessing ??
+                'Stop Processing',
             onPressed: onStopProcessingAI,
           )
         else if (showAIButtons && onProcessWithAI != null)
           IconButton(
             icon: const Icon(Icons.auto_awesome_outlined),
-            tooltip: 'Process with AI',
+            tooltip:
+                AppLocalizations.of(context)?.processWithAI ??
+                'Process with AI',
             onPressed: onProcessWithAI,
           ),
       ],

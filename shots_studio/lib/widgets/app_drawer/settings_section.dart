@@ -7,6 +7,7 @@ import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/utils/theme_manager.dart';
 import 'package:shots_studio/screens/ai_settings_screen.dart';
 import 'package:shots_studio/utils/ai_provider_config.dart';
+import 'package:shots_studio/l10n/app_localizations.dart';
 
 class SettingsSection extends StatefulWidget {
   final String? currentApiKey;
@@ -24,6 +25,7 @@ class SettingsSection extends StatefulWidget {
   final Function(bool)? onDevModeChanged;
   final bool? currentHardDeleteEnabled;
   final Function(bool)? onHardDeleteChanged;
+  final Function(Locale)? onLocaleChanged;
 
   const SettingsSection({
     super.key,
@@ -42,6 +44,7 @@ class SettingsSection extends StatefulWidget {
     this.onDevModeChanged,
     this.currentHardDeleteEnabled,
     this.onHardDeleteChanged,
+    this.onLocaleChanged,
   });
 
   @override
@@ -60,6 +63,7 @@ class _SettingsSectionState extends State<SettingsSection> {
   bool _devMode = false;
   bool _hardDeleteEnabled = false;
   bool _safeDeleteEnabled = true;
+  String _selectedLanguage = 'en'; // Default to English
 
   static const String _apiKeyPrefKey = 'apiKey';
   static const String _modelNamePrefKey = 'modelName';
@@ -67,6 +71,7 @@ class _SettingsSectionState extends State<SettingsSection> {
   static const String _amoledModeEnabledPrefKey = 'amoled_mode_enabled';
   static const String _devModePrefKey = 'dev_mode';
   static const String _hardDeleteEnabledPrefKey = 'hard_delete_enabled';
+  static const String _selectedLanguagePrefKey = 'selected_language';
 
   @override
   void initState() {
@@ -114,6 +119,9 @@ class _SettingsSectionState extends State<SettingsSection> {
     } else {
       _loadHardDeleteEnabledPref();
     }
+
+    // Initialize language selection
+    _loadLanguagePref();
 
     // Request focus on the API key field when it's empty
     if (widget.currentApiKey?.isEmpty ?? true) {
@@ -222,6 +230,15 @@ class _SettingsSectionState extends State<SettingsSection> {
     }
   }
 
+  void _loadLanguagePref() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _selectedLanguage = prefs.getString(_selectedLanguagePrefKey) ?? 'en';
+      });
+    }
+  }
+
   @override
   void didUpdateWidget(covariant SettingsSection oldWidget) {
     super.didUpdateWidget(oldWidget);
@@ -301,6 +318,11 @@ class _SettingsSectionState extends State<SettingsSection> {
     await prefs.setBool(_hardDeleteEnabledPrefKey, value);
   }
 
+  Future<void> _saveSelectedLanguage(String value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_selectedLanguagePrefKey, value);
+  }
+
   Future<void> _validateApiKey() async {
     if (_isValidatingApiKey) return;
 
@@ -364,13 +386,16 @@ class _SettingsSectionState extends State<SettingsSection> {
 
   String _getApiKeyHelperText() {
     if (_apiKeyController.text.isEmpty) {
-      return 'Required for AI features';
+      return AppLocalizations.of(context)?.apiKeyRequired ??
+          'Required for AI features';
     } else if (_apiKeyValid == true) {
-      return 'API key is valid';
+      return AppLocalizations.of(context)?.apiKeyValid ?? 'API key is valid';
     } else if (_apiKeyValid == false) {
-      return 'API key validation failed';
+      return AppLocalizations.of(context)?.apiKeyValidationFailed ??
+          'API key validation failed';
     } else {
-      return 'API key is set (not validated)';
+      return AppLocalizations.of(context)?.apiKeyNotValidated ??
+          'API key is set (not validated)';
     }
   }
 
@@ -422,7 +447,7 @@ class _SettingsSectionState extends State<SettingsSection> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
           child: Text(
-            'Settings',
+            AppLocalizations.of(context)?.settings ?? 'Settings',
             style: TextStyle(
               color: theme.colorScheme.onSurfaceVariant,
               fontSize: 15,
@@ -445,35 +470,41 @@ class _SettingsSectionState extends State<SettingsSection> {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          'AI Model',
-                          style: TextStyle(
-                            color: theme.colorScheme.onSecondaryContainer,
-                            fontSize: 16,
+                        Expanded(
+                          child: Text(
+                            AppLocalizations.of(context)?.modelName ??
+                                'AI Model',
+                            style: TextStyle(
+                              color: theme.colorScheme.onSecondaryContainer,
+                              fontSize: 16,
+                            ),
                           ),
                         ),
-                        const Spacer(),
-                        TextButton.icon(
-                          onPressed: _navigateToAISettings,
-                          icon: Icon(
-                            Icons.settings_outlined,
-                            size: 16,
-                            color: theme.colorScheme.primary,
-                          ),
-                          label: Text(
-                            'AI Settings',
-                            style: TextStyle(
-                              fontSize: 12,
+                        Flexible(
+                          child: TextButton.icon(
+                            onPressed: _navigateToAISettings,
+                            icon: Icon(
+                              Icons.settings_outlined,
+                              size: 16,
                               color: theme.colorScheme.primary,
                             ),
-                          ),
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
+                            label: Text(
+                              AppLocalizations.of(context)?.aiSettings ??
+                                  'AI Settings',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: theme.colorScheme.primary,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            minimumSize: Size.zero,
-                            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
                           ),
                         ),
                       ],
@@ -602,7 +633,7 @@ class _SettingsSectionState extends State<SettingsSection> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: Text(
-                      'API Key',
+                      AppLocalizations.of(context)?.apiKey ?? 'API Key',
                       style: TextStyle(
                         color: theme.colorScheme.onSecondaryContainer,
                         fontSize: 16,
@@ -610,7 +641,9 @@ class _SettingsSectionState extends State<SettingsSection> {
                     ),
                   ),
                   IconButton(
-                    tooltip: "Get an API key",
+                    tooltip:
+                        AppLocalizations.of(context)?.getApiKey ??
+                        "Get an API key",
                     icon: Icon(
                       Icons.help_outline,
                       color: theme.colorScheme.primary,
@@ -641,7 +674,9 @@ class _SettingsSectionState extends State<SettingsSection> {
                 autofocus: widget.currentApiKey?.isEmpty ?? true,
                 style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
                 decoration: InputDecoration(
-                  hintText: 'Enter Gemini API Key',
+                  hintText:
+                      AppLocalizations.of(context)?.enterApiKey ??
+                      'Enter Gemini API Key',
                   helperText: _getApiKeyHelperText(),
                   helperStyle: TextStyle(
                     color: _getApiKeyHelperColor(theme),
@@ -721,8 +756,9 @@ class _SettingsSectionState extends State<SettingsSection> {
                         _isValidatingApiKey
                             ? 'Validating...'
                             : _apiKeyValid == true
-                            ? 'Valid'
-                            : 'Validate API Key',
+                            ? AppLocalizations.of(context)?.valid ?? 'Valid'
+                            : AppLocalizations.of(context)?.validateApiKey ??
+                                'Validate API Key',
                         style: const TextStyle(fontSize: 14),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -807,13 +843,16 @@ class _SettingsSectionState extends State<SettingsSection> {
         SwitchListTile(
           secondary: Icon(Icons.auto_awesome, color: theme.colorScheme.primary),
           title: Text(
-            'Auto-Process Screenshots',
+            AppLocalizations.of(context)?.autoProcessing ??
+                'Auto-Process Screenshots',
             style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
           ),
           subtitle: Text(
             _autoProcessEnabled
-                ? 'Screenshots will be automatically processed when added'
-                : 'Manual processing only',
+                ? AppLocalizations.of(context)?.autoProcessingDescription ??
+                    'Screenshots will be automatically processed when added'
+                : AppLocalizations.of(context)?.manualProcessingOnly ??
+                    'Manual processing only',
             style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
           ),
           value: _autoProcessEnabled,
@@ -841,13 +880,15 @@ class _SettingsSectionState extends State<SettingsSection> {
             color: theme.colorScheme.primary,
           ),
           title: Text(
-            'AMOLED Mode',
+            AppLocalizations.of(context)?.amoledMode ?? 'AMOLED Mode',
             style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
           ),
           subtitle: Text(
             _amoledModeEnabled
-                ? 'Dark theme optimized for AMOLED screens'
-                : 'Default dark theme',
+                ? AppLocalizations.of(context)?.amoledModeDescription ??
+                    'Dark theme optimized for AMOLED screens'
+                : AppLocalizations.of(context)?.defaultDarkTheme ??
+                    'Default dark theme',
             style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
           ),
           value: _amoledModeEnabled,
@@ -957,13 +998,169 @@ class _SettingsSectionState extends State<SettingsSection> {
             ],
           ),
         ),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+          child: Row(
+            children: [
+              Icon(Icons.language, color: theme.colorScheme.primary),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context)?.language ?? 'Language',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSecondaryContainer,
+                        fontSize: 16,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    DropdownButton<String>(
+                      value: _selectedLanguage,
+                      dropdownColor: theme.colorScheme.secondaryContainer,
+                      icon: Icon(
+                        Icons.arrow_drop_down,
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                      style: TextStyle(
+                        color: theme.colorScheme.onSecondaryContainer,
+                      ),
+                      underline: SizedBox.shrink(),
+                      isExpanded: true,
+                      onChanged: (String? newValue) {
+                        if (newValue != null) {
+                          setState(() {
+                            _selectedLanguage = newValue;
+                          });
+                          _saveSelectedLanguage(newValue);
+
+                          // Track language change in analytics
+                          AnalyticsService().logFeatureUsed(
+                            'setting_changed_language',
+                          );
+                          AnalyticsService().logFeatureAdopted(
+                            'language_$newValue',
+                          );
+
+                          // Trigger locale change callback if provided
+                          if (widget.onLocaleChanged != null) {
+                            widget.onLocaleChanged!(Locale(newValue));
+                          }
+                        }
+                      },
+                      items: [
+                        DropdownMenuItem(
+                          value: 'en',
+                          child: Row(
+                            children: [SizedBox(width: 8), Text('English')],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'hi',
+                          child: Row(
+                            children: [
+                              SizedBox(width: 8),
+                              Text('हिंदी (Hindi)'),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'de',
+                          child: Row(
+                            children: [
+                              SizedBox(width: 8),
+                              Text('Deutsch (German)'),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'zh',
+                          child: Row(
+                            children: [
+                              SizedBox(width: 8),
+                              Text('中文 (Chinese)'),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'pt',
+                          child: Row(
+                            children: [
+                              SizedBox(width: 8),
+                              Text('Português (Portuguese)'),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'ar',
+                          child: Row(
+                            children: [
+                              SizedBox(width: 8),
+                              Text('العربية (Arabic)'),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'es',
+                          child: Row(
+                            children: [
+                              SizedBox(width: 8),
+                              Text('Español (Spanish)'),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'fr',
+                          child: Row(
+                            children: [
+                              SizedBox(width: 8),
+                              Text('Français (French)'),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'it',
+                          child: Row(
+                            children: [
+                              SizedBox(width: 8),
+                              Text('Italiano (Italian)'),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'ja',
+                          child: Row(
+                            children: [
+                              SizedBox(width: 8),
+                              Text('日本語 (Japanese)'),
+                            ],
+                          ),
+                        ),
+                        DropdownMenuItem(
+                          value: 'ru',
+                          child: Row(
+                            children: [
+                              SizedBox(width: 8),
+                              Text('Русский (Russian)'),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
         SwitchListTile(
           secondary: Icon(
             Icons.delete_forever,
             color: theme.colorScheme.primary,
           ),
           title: Text(
-            'Safe Delete',
+            AppLocalizations.of(context)?.safeDelete ?? 'Safe Delete',
             style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
           ),
           subtitle: Text(
@@ -1006,7 +1203,7 @@ class _SettingsSectionState extends State<SettingsSection> {
             color: theme.colorScheme.primary,
           ),
           title: Text(
-            'Expert Mode',
+            AppLocalizations.of(context)?.developerMode ?? 'Advanced Settings',
             style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
           ),
           subtitle: Text(

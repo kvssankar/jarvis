@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shots_studio/services/analytics/analytics_service.dart';
+import '../../l10n/app_localizations.dart';
 
 class AdvancedSettingsSection extends StatefulWidget {
   final int currentLimit;
@@ -206,7 +207,8 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Text(
-            'Advanced Settings',
+            AppLocalizations.of(context)?.performanceMenu ??
+                'Advanced Settings',
             style: TextStyle(
               color: theme.colorScheme.onSurfaceVariant,
               fontSize: 15,
@@ -217,7 +219,8 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
         SwitchListTile(
           secondary: Icon(Icons.filter_list, color: theme.colorScheme.primary),
           title: Text(
-            'Enable Screenshot Limit',
+            AppLocalizations.of(context)?.enableScreenshotLimit ??
+                'Set a limit on screenshots loaded',
             style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
           ),
           subtitle: Text(
@@ -284,7 +287,8 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
         ListTile(
           leading: Icon(Icons.sync_alt, color: theme.colorScheme.primary),
           title: Text(
-            'Max Parallel AI Processes',
+            AppLocalizations.of(context)?.maxParallelAI ??
+                'Max Parallel AI Processes',
             style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
           ),
           subtitle: TextFormField(
@@ -321,7 +325,8 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
             color: theme.colorScheme.primary,
           ),
           title: Text(
-            'Analytics & Telemetry',
+            AppLocalizations.of(context)?.analyticsAndTelemetry ??
+                'Analytics & Telemetry',
             style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
           ),
           subtitle: Text(
@@ -354,7 +359,7 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
             color: theme.colorScheme.primary,
           ),
           title: Text(
-            'Server Messages',
+            AppLocalizations.of(context)?.serverMessages ?? 'Server Messages',
             style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
           ),
           subtitle: Text(
@@ -387,7 +392,7 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
             color: theme.colorScheme.primary,
           ),
           title: Text(
-            'Beta Testing',
+            AppLocalizations.of(context)?.betaTesting ?? 'Beta Testing',
             style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
           ),
           subtitle: Text(

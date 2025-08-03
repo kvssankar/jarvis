@@ -8,6 +8,7 @@ import 'package:shots_studio/screens/full_screen_image_viewer.dart';
 import 'package:shots_studio/screens/search_screen.dart';
 import 'package:shots_studio/services/analytics/analytics_service.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
+import '../l10n/app_localizations.dart';
 import 'package:shots_studio/services/hard_delete_service.dart';
 import 'package:shots_studio/widgets/screenshots/tags/tag_input_field.dart';
 import 'package:shots_studio/widgets/screenshots/tags/tag_chip.dart';
@@ -786,7 +787,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
             widget.screenshot.fileSize! > 0) ...[
           const SizedBox(height: 4),
           Text(
-            'Size: ${_formatFileSize(widget.screenshot.fileSize!)}',
+            '${AppLocalizations.of(context)?.size ?? 'Size'}: ${_formatFileSize(widget.screenshot.fileSize!)}',
             style: TextStyle(
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -798,7 +799,9 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         TextField(
           controller: _descriptionController,
           decoration: InputDecoration(
-            hintText: 'Add a description...',
+            hintText:
+                AppLocalizations.of(context)?.addDescription ??
+                'Add a description...',
             filled: true,
             fillColor: Theme.of(context).colorScheme.secondaryContainer,
             border: OutlineInputBorder(
@@ -821,7 +824,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         ),
         const SizedBox(height: 24),
         Text(
-          'Tags',
+          AppLocalizations.of(context)?.tags ?? 'Tags',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -834,12 +837,12 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
           runSpacing: 8,
           children: [
             ..._tags.map((tag) => _buildTag(tag)),
-            _buildTag('+ Add Tag'),
+            _buildTag(AppLocalizations.of(context)?.addTag ?? '+ Add Tag'),
           ],
         ),
         const SizedBox(height: 24),
         Text(
-          'AI Details',
+          AppLocalizations.of(context)?.aiDetails ?? 'AI Details',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -913,7 +916,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         ),
         const SizedBox(height: 24),
         Text(
-          'Collections',
+          AppLocalizations.of(context)?.collections ?? 'Collections',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
