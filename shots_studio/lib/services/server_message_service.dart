@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shots_studio/services/notification_service.dart';
 
 // TODO: Add don't show again functionality for messages
 
@@ -187,6 +188,50 @@ class ServerMessageService {
       return MessageInfo.fromJson(testMessageJson);
     } catch (e) {
       return null;
+    }
+  }
+
+  /// Test method to simulate an urgent notification message
+  static Future<MessageInfo?> getTestNotificationMessage() async {
+    const testMessageJson = {
+      "show": true,
+      "id": "msg_urgent_test_2025_08_03",
+      "title": "🔥 Urgent: Test Notification",
+      "message":
+          "This is a test notification to verify background notifications are working correctly when the app is closed.",
+      "type": "warning",
+      "priority": "high",
+      "show_once": false,
+      "valid_until": "2025-12-31T23:59:59Z",
+      "is_notification": true,
+      "version": "ALL",
+      "beta_only": false,
+    };
+
+    try {
+      return MessageInfo.fromJson(testMessageJson);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Test method to force trigger a server notification immediately
+  static Future<bool> triggerTestNotification() async {
+    try {
+      final message = await getTestNotificationMessage();
+      if (message != null) {
+        final notificationService = NotificationService();
+        await notificationService.showServerMessageImmediate(
+          messageId: message.id,
+          title: message.title,
+          body: message.message,
+          isUrgent: message.priority == MessagePriority.high,
+        );
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
     }
   }
 }

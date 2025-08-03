@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shots_studio/services/analytics/analytics_service.dart';
+// import 'package:shots_studio/screens/debug_notifications_screen.dart'; // Uncomment for debugging
 import '../../l10n/app_localizations.dart';
 
 class AdvancedSettingsSection extends StatefulWidget {
@@ -451,6 +452,37 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
             ),
           ),
         ),
+        // Debug Notifications Button (only in debug mode)
+        // Temporarily commented out - uncomment for debugging notification issues
+        // if (kDebugMode)
+        //   Padding(
+        //     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),
+        //     child: SizedBox(
+        //       width: double.infinity,
+        //       child: OutlinedButton.icon(
+        //         onPressed: () {
+        //           Navigator.push(
+        //             context,
+        //             MaterialPageRoute(
+        //               builder: (context) => const DebugNotificationsScreen(),
+        //             ),
+        //           );
+        //         },
+        //         icon: Icon(Icons.bug_report, color: theme.colorScheme.secondary),
+        //         label: Text(
+        //           'Debug Notifications',
+        //           style: TextStyle(color: theme.colorScheme.secondary),
+        //         ),
+        //         style: OutlinedButton.styleFrom(
+        //           side: BorderSide(color: theme.colorScheme.secondary),
+        //           padding: const EdgeInsets.symmetric(vertical: 12.0),
+        //           shape: RoundedRectangleBorder(
+        //             borderRadius: BorderRadius.circular(8.0),
+        //           ),
+        //         ),
+        //       ),
+        //     ),
+        //   ),
       ],
     );
   }

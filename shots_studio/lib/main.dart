@@ -89,6 +89,14 @@ Future<void> _setupBackgroundServiceNotificationChannel() async {
         importance: Importance.high,
       );
 
+  const AndroidNotificationChannel urgentServerMessagesChannel =
+      AndroidNotificationChannel(
+        'server_messages_urgent',
+        'Urgent Server Messages',
+        description: 'Channel for urgent server messages',
+        importance: Importance.max,
+      );
+
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
@@ -103,6 +111,12 @@ Future<void> _setupBackgroundServiceNotificationChannel() async {
         AndroidFlutterLocalNotificationsPlugin
       >()
       ?.createNotificationChannel(serverMessagesChannel);
+
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >()
+      ?.createNotificationChannel(urgentServerMessagesChannel);
 }
 
 class MyApp extends StatefulWidget {
@@ -274,6 +288,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     _loadDataFromPrefs();
     _loadSettings();
+
+    // Initialize server message checking in background
+    if (!kIsWeb) {
+      _initializeServerMessageChecking();
+    }
+
     if (!kIsWeb) {
       _loadAndroidScreenshotsIfNeeded().then((_) {
         // Setup FileWatcher only AFTER initial loading is complete
@@ -309,6 +329,39 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Clean up file watcher
     _fileWatcherSubscription?.cancel();
     super.dispose();
+  }
+
+  /// Initialize server message checking with background service
+  Future<void> _initializeServerMessageChecking() async {
+    try {
+      final backgroundService = BackgroundProcessingService();
+
+      // Start the background service for server message checking
+      await backgroundService.startServerMessageChecking();
+
+      // Set up listeners for server message events
+      final service = FlutterBackgroundService();
+
+      service.on('server_message_checked').listen((event) {
+        if (event != null && mounted) {
+          final data = Map<String, dynamic>.from(event);
+          final messageFound = data['messageFound'] as bool? ?? false;
+
+          if (messageFound) {
+            print('Server message notification sent: ${data['title']}');
+          }
+        }
+      });
+
+      service.on('server_message_error').listen((event) {
+        if (event != null) {
+          final data = Map<String, dynamic>.from(event);
+          print('Server message check error: ${data['error']}');
+        }
+      });
+    } catch (e) {
+      print('Failed to initialize server message checking: $e');
+    }
   }
 
   /// Setup listeners for background service events
@@ -681,7 +734,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Skip update check for F-Droid and Play Store builds
     final buildSource = BuildSource.current;
     if (!buildSource.allowsUpdateCheck) {
-      print('MainApp: Update check disabled for ${buildSource.displayName} builds');
+      print(
+        'MainApp: Update check disabled for ${buildSource.displayName} builds',
+      );
       return;
     }
 
