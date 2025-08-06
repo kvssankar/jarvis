@@ -2,12 +2,14 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/services/ai_service.dart';
 import 'package:shots_studio/utils/image_conversion_utils.dart';
 import 'package:shots_studio/utils/collection_utils.dart';
 import 'package:shots_studio/utils/ai_error_utils.dart';
 import 'package:shots_studio/utils/json_utils.dart';
+import 'package:shots_studio/utils/ai_language_config.dart';
 
 class ScreenshotAnalysisService extends AIService {
   // Track network errors to prevent multiple notifications
@@ -320,7 +322,9 @@ class ScreenshotAnalysisService extends AIService {
     return sanitizedResponse;
   }
 
-  String _getAnalysisPrompt({List<Map<String, String?>>? autoAddCollections}) {
+  Future<String> _getAnalysisPrompt({
+    List<Map<String, String?>>? autoAddCollections,
+  }) async {
     String basePrompt = """
       You are a screenshot analyzer. You will be given single or multiple images.
       For each image, generate a title, short description and 3-5 relevant tags
@@ -342,6 +346,26 @@ class ScreenshotAnalysisService extends AIService {
           Description: "${collection['description'] ?? 'No description'}"
         """;
       }
+    }
+
+    // Get language instruction from shared preferences
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final selectedLanguage =
+          prefs.getString(AILanguageConfig.prefKey) ??
+          AILanguageConfig.defaultLanguageKey;
+      final languageInstruction = AILanguageConfig.getLanguageInstruction(
+        selectedLanguage,
+      );
+
+      if (languageInstruction.isNotEmpty) {
+        basePrompt += """
+        Language Instruction: $languageInstruction
+        """;
+      }
+    } catch (e) {
+      print('Error loading language preference: $e');
+      // Continue without language instruction if there's an error
     }
 
     basePrompt += """
@@ -394,8 +418,11 @@ class ScreenshotAnalysisService extends AIService {
     }
 
     // Use the provider-specific request preparation
+    final prompt = await _getAnalysisPrompt(
+      autoAddCollections: autoAddCollections,
+    );
     final requestData = prepareScreenshotAnalysisRequest(
-      prompt: _getAnalysisPrompt(autoAddCollections: autoAddCollections),
+      prompt: prompt,
       imageData: imageData,
     );
 

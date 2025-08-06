@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shots_studio/services/analytics/analytics_service.dart';
 import 'package:shots_studio/utils/ai_provider_config.dart';
+import 'package:shots_studio/utils/ai_language_config.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -27,6 +28,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
   late String _selectedModelName;
   String? _gemmaModelPath;
   bool _isLoadingGemmaModel = false;
+  String _selectedLanguage = AILanguageConfig.defaultLanguageKey;
 
   @override
   void initState() {
@@ -61,6 +63,10 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
         }
         // Load saved Gemma model path
         _gemmaModelPath = prefs.getString('gemma_model_path');
+        // Load saved AI output language
+        _selectedLanguage =
+            prefs.getString(AILanguageConfig.prefKey) ??
+            AILanguageConfig.defaultLanguageKey;
       });
     }
   }
@@ -204,6 +210,16 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
     if (prefKey != null) {
       await prefs.setBool(prefKey, enabled);
     }
+  }
+
+  Future<void> _saveLanguageSetting(String languageCode) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(AILanguageConfig.prefKey, languageCode);
+
+    // Track language change in analytics
+    AnalyticsService().logFeatureUsed(
+      'ai_output_language_changed_to_$languageCode',
+    );
   }
 
   List<String> _getAvailableModels() {
@@ -660,6 +676,132 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
     );
   }
 
+  Widget _buildLanguageSection(ThemeData theme) {
+    return Card(
+      margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      elevation: 0,
+      color: theme.colorScheme.surfaceContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.language,
+                  color: theme.colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'AI OUTPUT LANGUAGE (BETA)',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Choose the language for AI-generated descriptions. Other fields (title, tags) will remain in English for consistency.',
+              style: TextStyle(
+                fontSize: 12,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: theme.colorScheme.outline.withOpacity(0.5),
+                ),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  value: _selectedLanguage,
+                  isExpanded: true,
+                  icon: Icon(
+                    Icons.arrow_drop_down,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  onChanged: (String? newValue) async {
+                    if (newValue != null && newValue != _selectedLanguage) {
+                      setState(() {
+                        _selectedLanguage = newValue;
+                      });
+                      await _saveLanguageSetting(newValue);
+                    }
+                  },
+                  items:
+                      AILanguageConfig.getAllLanguageCodes()
+                          .map<DropdownMenuItem<String>>((String code) {
+                            return DropdownMenuItem<String>(
+                              value: code,
+                              child: Row(
+                                children: [
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      AILanguageConfig.getLanguageName(code),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: theme.colorScheme.onSurface,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          })
+                          .toList(),
+                ),
+              ),
+            ),
+            if (_selectedLanguage != AILanguageConfig.defaultLanguageKey) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(8.0),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(
+                    color: theme.colorScheme.primary.withOpacity(0.2),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: theme.colorScheme.primary,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        'Selected: ${AILanguageConfig.getLanguageName(_selectedLanguage)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -670,98 +812,110 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
       ),
-      body: Column(
-        children: [
-          // Header section
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'AI Providers',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    color: theme.colorScheme.onSurface,
-                  ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Current model info
+            Container(
+              margin: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(12.0),
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: theme.colorScheme.primary.withOpacity(0.2),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Toggle AI providers on or off. Enabled providers will show their models in the main settings dropdown.',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Current model info
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-            padding: const EdgeInsets.all(12.0),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.primaryContainer.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: theme.colorScheme.primary.withOpacity(0.2),
               ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.info_outline,
-                  color: theme.colorScheme.primary,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Current Model: $_selectedModelName',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: theme.colorScheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Current Model: $_selectedModelName',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
+                      ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
 
-          // Provider toggles
-          Expanded(
-            child: ListView(
-              children: [
-                const SizedBox(height: 8),
-                ...AIProviderConfig.getProviders().map(
-                  (provider) => _buildProviderToggle(provider, theme),
+            // AI Output Settings Section (moved to top)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                'AI Output Settings',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
                 ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildLanguageSection(theme),
 
-                // Gemma Model Section
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Text(
-                    'Local Models',
+            // AI Providers Header section
+            const SizedBox(height: 16),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'AI Providers',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: theme.colorScheme.onSurface,
                     ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                _buildGemmaModelSection(theme),
-
-                const SizedBox(height: 16),
-              ],
+                  const SizedBox(height: 8),
+                  Text(
+                    'Toggle AI providers on or off. Enabled providers will show their models in the main settings dropdown.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+
+            // Provider toggles
+            ...AIProviderConfig.getProviders().map(
+              (provider) => _buildProviderToggle(provider, theme),
+            ),
+
+            // Local Models Section
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                'Local Models',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            _buildGemmaModelSection(theme),
+
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }
