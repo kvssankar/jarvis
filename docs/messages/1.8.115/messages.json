@@ -11,7 +11,10 @@
       "valid_until": "2026-08-01T00:00:00Z",
       "is_notification": false,
       "version": "1.8.122",
-      "beta_only": false
+      "beta_only": false,
+      "action_text": "Check It Out",
+      "dismiss_text": "Not Interested",
+      "action_url": "https://example.com/language-settings"
     }
   ]
 }

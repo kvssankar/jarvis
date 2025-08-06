@@ -57,9 +57,10 @@ class ServerMessageDialog extends StatelessWidget {
             );
             Navigator.of(context).pop();
           },
-          child: const Text('Dismiss'),
+          child: Text(messageInfo.dismissText ?? 'Dismiss'),
         ),
-        if (messageInfo.type == MessageType.update)
+        if (messageInfo.type == MessageType.update ||
+            messageInfo.actionText != null)
           FilledButton(
             onPressed: () async {
               // Log analytics for action taken
@@ -72,13 +73,13 @@ class ServerMessageDialog extends StatelessWidget {
               );
               Navigator.of(context).pop();
 
-              // Handle update route if provided
-              if (messageInfo.updateRoute != null &&
-                  messageInfo.updateRoute!.isNotEmpty) {
-                await _launchUpdateRoute(messageInfo.updateRoute!);
+              // Handle action URL (primary) or update route (legacy fallback)
+              final urlToLaunch = messageInfo.actionUrl ?? messageInfo.updateRoute;
+              if (urlToLaunch != null && urlToLaunch.isNotEmpty) {
+                await _launchUrl(urlToLaunch);
               }
             },
-            child: const Text('Learn More'),
+            child: Text(messageInfo.actionText ?? 'Learn More'),
           ),
       ],
     );
@@ -106,8 +107,8 @@ class ServerMessageDialog extends StatelessWidget {
     return Icon(iconData, color: iconColor);
   }
 
-  /// Launch update route with multiple fallback strategies
-  static Future<void> _launchUpdateRoute(String url) async {
+  /// Launch URL with multiple fallback strategies
+  static Future<void> _launchUrl(String url) async {
     try {
       final uri = Uri.parse(url);
 

@@ -225,6 +225,9 @@ class ServerMessageService {
       "is_notification": false,
       "version": "ALL",
       "beta_only": false,
+      "action_text": "Try It Now",
+      "dismiss_text": "Maybe Later",
+      "action_url": "https://example.com/tagging-guide",
     };
 
     try {
@@ -249,6 +252,8 @@ class ServerMessageService {
       "is_notification": true,
       "version": "ALL",
       "beta_only": false,
+      "action_text": "View Details",
+      "dismiss_text": "Not Now",
     };
 
     try {
@@ -280,6 +285,8 @@ class ServerMessageService {
 }
 
 /// Contains information about a server message
+/// 
+/// For URLs, use actionUrl instead of updateRoute (legacy field kept for compatibility).
 class MessageInfo {
   final bool show;
   final String id;
@@ -292,9 +299,10 @@ class MessageInfo {
   final bool isNotification;
   final String? version;
   final String? actionText;
-  final String? actionUrl;
+  final String? dismissText;
+  final String? actionUrl; // Primary URL field for action button
   final MessageActionType? actionType;
-  final String? updateRoute;
+  final String? updateRoute; // Legacy field, use actionUrl instead
   final bool betaOnly;
 
   MessageInfo({
@@ -309,6 +317,7 @@ class MessageInfo {
     required this.isNotification,
     this.version,
     this.actionText,
+    this.dismissText,
     this.actionUrl,
     this.actionType,
     this.updateRoute,
@@ -331,6 +340,7 @@ class MessageInfo {
       isNotification: json['is_notification'] ?? false,
       version: json['version']?.toString(),
       actionText: json['action_text']?.toString(),
+      dismissText: json['dismiss_text']?.toString(),
       actionUrl: json['action_url']?.toString(),
       actionType: _parseActionType(json['action_type']),
       updateRoute: json['update_route']?.toString(),
