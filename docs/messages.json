@@ -4,6 +4,19 @@
   "messages": [
     {
       "show": true,
+      "id": "test_notification",
+      "title": "test server notification",
+      "message": "Hi there",
+      "type": "update",
+      "priority": "high",
+      "show_once": true,
+      "valid_until": "2026-07-01T00:00:00Z",
+      "is_notification": true,
+      "version": "1.8.122",
+      "update_route": "https://github.com/AnsahMohammad/shots-studio"
+    },
+    {
+      "show": true,
       "id": "gemma_feedback_followup",
       "title": "We Value Your Feedback on Gemma!",
       "message": "👋 Hey Beta Tester,\n\nThank you for trying out Gemma, our local AI engine! We hope you've had a chance to explore its features and capabilities.\n\nWe'd love to hear your thoughts:\n• How is Gemma performing for you?\n• Any bugs or issues you've encountered?\n• Suggestions for improvements or features you'd like to see in the next release?\n\nYour feedback is crucial in shaping Gemma's future. Please take a moment to share your experience using the Google Form linked below [click on LEARN MORE button].\n\n- With love,\nTeam Shots Studio",
