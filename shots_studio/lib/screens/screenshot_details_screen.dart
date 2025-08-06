@@ -138,7 +138,10 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   }
 
   Widget _buildTag(String label) {
-    final bool isAddButton = label == '+ Add Tag';
+    // Check for both localized and fallback versions of the add tag button
+    final String localizedAddTag =
+        AppLocalizations.of(context)?.addTag ?? '+ Add Tag';
+    final bool isAddButton = label == localizedAddTag || label == '+ Add Tag';
 
     if (isAddButton) {
       return TagInputField(onTagAdded: _addTag);
