@@ -6,6 +6,7 @@ import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/services/autoCategorization/ai_categorization_service.dart';
 import 'package:shots_studio/services/analytics/analytics_service.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
+import 'package:shots_studio/widgets/screenshots/auto-scan_dialogue.dart';
 import 'package:shots_studio/screens/manage_collection_screenshots_screen.dart';
 import 'package:shots_studio/screens/screenshot_swipe_detail_screen.dart';
 import 'package:shots_studio/screens/edit_collection_screen.dart';
@@ -38,7 +39,6 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
   late TextEditingController _descriptionController;
   late List<String> _currentScreenshotIds;
   late bool _isAutoAddEnabled;
-  bool _devMode = false;
 
   // Auto-categorization state
   final AICategorizer _aiCategorizer = AICategorizer();
@@ -52,18 +52,6 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
     );
     _currentScreenshotIds = List.from(widget.collection.screenshotIds);
     _isAutoAddEnabled = widget.collection.isAutoAddEnabled;
-
-    _loadDevMode();
-
-    if (_isAutoAddEnabled) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        // Log analytics for automatic auto-categorization trigger on screen load
-        AnalyticsService().logFeatureUsed(
-          'auto_categorization_automatic_trigger',
-        );
-        _startAutoCategorization();
-      });
-    }
   }
 
   @override
@@ -219,15 +207,15 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
     return widget.collection;
   }
 
-  Future<void> _startAutoCategorization() async {
+  Future<void> _startScanning() async {
     // Load the most current collection data from SharedPreferences
     // to ensure we have the latest scannedSet
     Collection currentCollection = await _loadCurrentCollectionFromPrefs();
 
-    // Log analytics for manual auto-categorization trigger
-    AnalyticsService().logFeatureUsed('auto_categorization_manual_trigger');
+    // Log analytics for manual scanning trigger
+    AnalyticsService().logFeatureUsed('scanning_manual_trigger');
 
-    final result = await _aiCategorizer.startAutoCategorization(
+    final result = await _aiCategorizer.startScanning(
       collection: currentCollection,
       allScreenshots: widget.allScreenshots,
       currentScreenshotIds: _currentScreenshotIds,
@@ -280,21 +268,14 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
     }
   }
 
-  void _stopAutoCategorization() {
-    AnalyticsService().logFeatureUsed('auto_categorization_manual_stop');
-    _aiCategorizer.stopAutoCategorization();
+  void _stopScanning() {
+    AnalyticsService().logFeatureUsed('scanning_manual_stop');
+    _aiCategorizer.stopScanning();
     if (mounted) {
       setState(() {
         // State will be updated through the service
       });
     }
-  }
-
-  Future<void> _loadDevMode() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _devMode = prefs.getBool('dev_mode') ?? false;
-    });
   }
 
   @override
@@ -315,11 +296,43 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         actions: [
-          if (_isAutoAddEnabled && _aiCategorizer.isRunning && _devMode)
+          if (_isAutoAddEnabled)
             IconButton(
-              icon: const Icon(Icons.stop, size: 16),
-              onPressed: _stopAutoCategorization,
-              tooltip: 'Stop Auto-categorization',
+              icon: Icon(
+                _aiCategorizer.isRunning ? Icons.stop : Icons.auto_fix_high,
+                size: 20,
+              ),
+              onPressed: () async {
+                if (_aiCategorizer.isRunning) {
+                  _stopScanning();
+                } else {
+                  // Check if dialog should be shown
+                  final prefs = await SharedPreferences.getInstance();
+                  final shouldShow =
+                      !(prefs.getBool('scan_dialog_dont_show_again') ?? false);
+
+                  if (shouldShow) {
+                    showDialog(
+                      context: context,
+                      builder:
+                          (context) => ScanConfirmationDialog(
+                            onConfirm: _startScanning,
+                            collectionName:
+                                _nameController.text.isEmpty
+                                    ? 'this collection'
+                                    : _nameController.text,
+                          ),
+                    );
+                  } else {
+                    // Directly proceed with the scan if user chose not to show dialog
+                    _startScanning();
+                  }
+                }
+              },
+              tooltip:
+                  _aiCategorizer.isRunning
+                      ? 'Stop Scanning'
+                      : 'Find Matching Screenshots',
             ),
           IconButton(
             icon: const Icon(Icons.edit_outlined),
@@ -392,7 +405,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                       Expanded(
                         child: Tooltip(
                           message:
-                              'When enabled, AI will automatically add relevant screenshots to this collection',
+                              'AI will automatically add matching screenshots to this collection',
                           child: Row(
                             children: [
                               const Flexible(
@@ -451,7 +464,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Gemini AI will automatically categorize new screenshots into this collection based on content analysis',
+                              'AI will automatically sort new screenshots into this collection',
                               style: TextStyle(
                                 fontSize: 12,
                                 color:
@@ -464,6 +477,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                         ],
                       ),
                     ),
+                  // Scanning Progress
                   if (_isAutoAddEnabled && _aiCategorizer.isRunning)
                     Container(
                       margin: const EdgeInsets.only(top: 8),
@@ -474,7 +488,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'Auto-categorizing screenshots...',
+                                'Finding matching screenshots...',
                                 style: TextStyle(
                                   fontSize: 12,
                                   color:
@@ -549,7 +563,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                   child: Padding(
                     padding: const EdgeInsets.all(32.0),
                     child: Text(
-                      'No screenshots in this collection. Tap + to add.',
+                      'No screenshots yet. Tap + to add some.',
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
