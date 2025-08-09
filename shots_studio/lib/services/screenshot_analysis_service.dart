@@ -354,7 +354,7 @@ class ScreenshotAnalysisService extends AIService {
       final selectedLanguage =
           prefs.getString(AILanguageConfig.prefKey) ??
           AILanguageConfig.defaultLanguageKey;
-      final languageInstruction = AILanguageConfig.getLanguageInstruction(
+      final languageInstruction = await AILanguageConfig.getLanguageInstruction(
         selectedLanguage,
       );
 

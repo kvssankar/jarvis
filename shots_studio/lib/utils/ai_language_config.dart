@@ -1,3 +1,5 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 /// Configuration for AI output languages
 class AILanguageConfig {
   static const String defaultLanguageKey = 'default';
@@ -5,7 +7,7 @@ class AILanguageConfig {
 
   /// Map of language codes to their display names
   static const Map<String, String> supportedLanguages = {
-    defaultLanguageKey: 'Same as Screenshot (Default)',
+    defaultLanguageKey: 'App Language (Default)',
     'en': 'English',
     'hi': 'हिंदी (Hindi)',
     'de': 'Deutsch (German)',
@@ -89,12 +91,25 @@ class AILanguageConfig {
   }
 
   /// Get the language instruction for AI prompt
-  static String getLanguageInstruction(String languageCode) {
+  static Future<String> getLanguageInstruction(String languageCode) async {
+    String actualLanguageCode = languageCode;
+
+    // If using default (App Language), get the app's selected language
     if (languageCode == defaultLanguageKey || languageCode.isEmpty) {
-      return ''; // No specific language instruction for default
+      try {
+        final SharedPreferences prefs = await SharedPreferences.getInstance();
+        actualLanguageCode = prefs.getString('selected_language') ?? 'en';
+      } catch (e) {
+        // Fallback to English if there's an error
+        actualLanguageCode = 'en';
+      }
     }
 
-    final languageName = getLanguageName(languageCode);
-    return 'Please provide the description (desc field) in $languageName language. Keep the title, tags, collections, and other fields in English for consistency.';
+    if (actualLanguageCode == 'en') {
+      return '';
+    }
+
+    final languageName = getLanguageName(actualLanguageCode);
+    return 'Please provide the title (title field) and description (desc field) in $languageName language. Keep the title, tags, collections, and other fields in English for consistency.';
   }
 }
