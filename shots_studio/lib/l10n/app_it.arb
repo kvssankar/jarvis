@@ -108,5 +108,14 @@
   "clearCorruptFilesConfirm": "Cancellare File Corrotti?",
   "clearCorruptFilesMessage": "Sei sicuro di voler rimuovere tutti i file corrotti? Questa azione non può essere annullata.",
   "corruptFilesCleared": "File corrotti cancellati",
-  "noCorruptFiles": "Nessun file corrotto trovato"
+  "noCorruptFiles": "Nessun file corrotto trovato",
+  "enableLocalAI": "🤖 Abilita Modello IA Locale",
+  "localAIBenefits": "Vantaggi dell'IA Locale:",
+  "localAIOffline": "• Funziona completamente offline - nessuna connessione internet richiesta",
+  "localAIPrivacy": "• I tuoi dati rimangono privati sul tuo dispositivo",
+  "localAINote": "Nota:",
+  "localAIBattery": "• Utilizza più batteria rispetto ai modelli cloud",
+  "localAIRAM": "• Richiede almeno 4GB di RAM disponibile",
+  "localAIPrivacyNote": "Il modello elaborerà le tue schermate localmente per una maggiore privacy.",
+  "enableLocalAIButton": "Abilita IA Locale"
 }

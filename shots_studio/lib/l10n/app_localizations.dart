@@ -709,6 +709,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No corrupt files found'**
   String get noCorruptFiles;
+
+  /// Title for enable local AI dialog
+  ///
+  /// In en, this message translates to:
+  /// **'🤖 Enable Local AI Model'**
+  String get enableLocalAI;
+
+  /// Header for local AI benefits section
+  ///
+  /// In en, this message translates to:
+  /// **'Local AI Benefits:'**
+  String get localAIBenefits;
+
+  /// Local AI benefit: offline functionality
+  ///
+  /// In en, this message translates to:
+  /// **'• Works completely offline - no internet required'**
+  String get localAIOffline;
+
+  /// Local AI benefit: privacy
+  ///
+  /// In en, this message translates to:
+  /// **'• Your data stays private on your device'**
+  String get localAIPrivacy;
+
+  /// Header for local AI notes section
+  ///
+  /// In en, this message translates to:
+  /// **'Note:'**
+  String get localAINote;
+
+  /// Local AI note: battery usage
+  ///
+  /// In en, this message translates to:
+  /// **'• Uses more battery than cloud models'**
+  String get localAIBattery;
+
+  /// Local AI note: RAM requirement
+  ///
+  /// In en, this message translates to:
+  /// **'• Requires at least 4GB of available RAM'**
+  String get localAIRAM;
+
+  /// Local AI privacy explanation
+  ///
+  /// In en, this message translates to:
+  /// **'The model will process your screenshots locally for enhanced privacy.'**
+  String get localAIPrivacyNote;
+
+  /// Button text to enable local AI
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Local AI'**
+  String get enableLocalAIButton;
 }
 
 class _AppLocalizationsDelegate

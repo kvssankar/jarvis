@@ -106,5 +106,14 @@
   "clearCorruptFilesConfirm": "¿Limpiar Archivos Corruptos?",
   "clearCorruptFilesMessage": "¿Estás seguro de que quieres eliminar todos los archivos corruptos de esta colección? Esta acción no se puede deshacer.",
   "corruptFilesCleared": "Archivos corruptos eliminados",
-  "noCorruptFiles": "No se encontraron archivos corruptos"
+  "noCorruptFiles": "No se encontraron archivos corruptos",
+  "enableLocalAI": "🤖 Habilitar Modelo de IA Local",
+  "localAIBenefits": "Beneficios de la IA Local:",
+  "localAIOffline": "• Funciona completamente sin conexión - no requiere internet",
+  "localAIPrivacy": "• Tus datos permanecen privados en tu dispositivo",
+  "localAINote": "Nota:",
+  "localAIBattery": "• Usa más batería que los modelos en la nube",
+  "localAIRAM": "• Requiere al menos 4GB de RAM disponible",
+  "localAIPrivacyNote": "El modelo procesará tus capturas de pantalla localmente para mayor privacidad.",
+  "enableLocalAIButton": "Habilitar IA Local"
 }

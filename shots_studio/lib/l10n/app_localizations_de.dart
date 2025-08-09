@@ -311,4 +311,33 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get noCorruptFiles => 'Keine beschädigten Dateien gefunden';
+
+  @override
+  String get enableLocalAI => '🤖 Lokales KI-Modell aktivieren';
+
+  @override
+  String get localAIBenefits => 'Vorteile der lokalen KI:';
+
+  @override
+  String get localAIOffline =>
+      '• Funktioniert vollständig offline - kein Internet erforderlich';
+
+  @override
+  String get localAIPrivacy => '• Ihre Daten bleiben privat auf Ihrem Gerät';
+
+  @override
+  String get localAINote => 'Hinweis:';
+
+  @override
+  String get localAIBattery => '• Verbraucht mehr Akku als Cloud-Modelle';
+
+  @override
+  String get localAIRAM => '• Benötigt mindestens 4GB verfügbaren RAM';
+
+  @override
+  String get localAIPrivacyNote =>
+      'Das Modell wird Ihre Screenshots lokal verarbeiten für verbesserte Privatsphäre.';
+
+  @override
+  String get enableLocalAIButton => 'Lokale KI aktivieren';
 }

@@ -393,5 +393,41 @@
   "noCorruptFiles": "No corrupt files found",
   "@noCorruptFiles": {
     "description": "Message shown when no corrupt files are found"
+  },
+  "enableLocalAI": "🤖 Enable Local AI Model",
+  "@enableLocalAI": {
+    "description": "Title for enable local AI dialog"
+  },
+  "localAIBenefits": "Local AI Benefits:",
+  "@localAIBenefits": {
+    "description": "Header for local AI benefits section"
+  },
+  "localAIOffline": "• Works completely offline - no internet required",
+  "@localAIOffline": {
+    "description": "Local AI benefit: offline functionality"
+  },
+  "localAIPrivacy": "• Your data stays private on your device",
+  "@localAIPrivacy": {
+    "description": "Local AI benefit: privacy"
+  },
+  "localAINote": "Note:",
+  "@localAINote": {
+    "description": "Header for local AI notes section"
+  },
+  "localAIBattery": "• Uses more battery than cloud models",
+  "@localAIBattery": {
+    "description": "Local AI note: battery usage"
+  },
+  "localAIRAM": "• Requires at least 4GB of available RAM",
+  "@localAIRAM": {
+    "description": "Local AI note: RAM requirement"
+  },
+  "localAIPrivacyNote": "The model will process your screenshots locally for enhanced privacy.",
+  "@localAIPrivacyNote": {
+    "description": "Local AI privacy explanation"
+  },
+  "enableLocalAIButton": "Enable Local AI",
+  "@enableLocalAIButton": {
+    "description": "Button text to enable local AI"
   }
 }

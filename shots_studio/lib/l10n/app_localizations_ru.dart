@@ -309,4 +309,35 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get noCorruptFiles => 'Поврежденные файлы не найдены';
+
+  @override
+  String get enableLocalAI => '🤖 Включить локальную модель ИИ';
+
+  @override
+  String get localAIBenefits => 'Преимущества локального ИИ:';
+
+  @override
+  String get localAIOffline =>
+      '• Работает полностью офлайн - интернет не требуется';
+
+  @override
+  String get localAIPrivacy =>
+      '• Ваши данные остаются приватными на вашем устройстве';
+
+  @override
+  String get localAINote => 'Примечание:';
+
+  @override
+  String get localAIBattery =>
+      '• Использует больше батареи чем облачные модели';
+
+  @override
+  String get localAIRAM => '• Требует минимум 4ГБ доступной RAM';
+
+  @override
+  String get localAIPrivacyNote =>
+      'Модель будет обрабатывать ваши скриншоты локально для повышенной приватности.';
+
+  @override
+  String get enableLocalAIButton => 'Включить локальный ИИ';
 }

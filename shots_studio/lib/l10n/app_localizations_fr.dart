@@ -309,4 +309,35 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get noCorruptFiles => 'Aucun fichier corrompu trouvé';
+
+  @override
+  String get enableLocalAI => '🤖 Activer le Modèle IA Local';
+
+  @override
+  String get localAIBenefits => 'Avantages de l\'IA Locale :';
+
+  @override
+  String get localAIOffline =>
+      '• Fonctionne complètement hors ligne - aucune connexion internet requise';
+
+  @override
+  String get localAIPrivacy =>
+      '• Vos données restent privées sur votre appareil';
+
+  @override
+  String get localAINote => 'Note :';
+
+  @override
+  String get localAIBattery =>
+      '• Utilise plus de batterie que les modèles cloud';
+
+  @override
+  String get localAIRAM => '• Nécessite au moins 4 Go de RAM disponible';
+
+  @override
+  String get localAIPrivacyNote =>
+      'Le modèle traitera vos captures d\'écran localement pour une confidentialité renforcée.';
+
+  @override
+  String get enableLocalAIButton => 'Activer l\'IA Locale';
 }

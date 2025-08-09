@@ -7,6 +7,7 @@ import 'package:shots_studio/utils/ai_language_config.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shots_studio/l10n/app_localizations.dart';
 import 'dart:io';
 
 class AISettingsScreen extends StatefulWidget {
@@ -253,47 +254,49 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
   }
 
   Future<void> _showGemmaWarningDialog(String provider) async {
+    final localizations = AppLocalizations.of(context)!;
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('⚠️ Warning: Local AI Model'),
-          content: const Column(
+          title: Text(localizations.enableLocalAI),
+          content: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                'Important Notice:',
-                style: TextStyle(fontWeight: FontWeight.bold),
+                localizations.localAIBenefits,
+                style: const TextStyle(fontWeight: FontWeight.bold),
               ),
-              SizedBox(height: 8),
-              Text('• App may crash during model initialization or inference'),
-              Text('• Requires at least 8GB of RAM to work properly'),
-              Text('• Make sure your device is capable of running this model'),
-              SizedBox(height: 12),
+              const SizedBox(height: 8),
+              Text(localizations.localAIOffline),
+              Text(localizations.localAIPrivacy),
+              const SizedBox(height: 12),
               Text(
-                'This feature may have limitations and could produce unexpected results. Use this feature at your own discretion.',
-                style: TextStyle(fontStyle: FontStyle.italic),
+                localizations.localAINote,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Text(localizations.localAIBattery),
+              Text(localizations.localAIRAM),
+              const SizedBox(height: 12),
+              Text(
+                localizations.localAIPrivacyNote,
+                style: const TextStyle(fontStyle: FontStyle.italic),
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error,
-                backgroundColor:
-                    Theme.of(context).colorScheme.tertiaryContainer,
-              ),
-              child: const Text('Cancel'),
+              child: Text(MaterialLocalizations.of(context).cancelButtonLabel),
             ),
             ElevatedButton(
               onPressed: () => Navigator.of(context).pop(true),
               style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    Theme.of(context).colorScheme.secondaryContainer,
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
               ),
-              child: const Text('I Understand'),
+              child: Text(localizations.enableLocalAIButton),
             ),
           ],
         );

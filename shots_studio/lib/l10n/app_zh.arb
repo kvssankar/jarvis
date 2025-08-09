@@ -106,5 +106,14 @@
   "clearCorruptFilesConfirm": "清理损坏文件？",
   "clearCorruptFilesMessage": "您确定要删除所有损坏的文件吗？此操作无法撤销。",
   "corruptFilesCleared": "损坏文件已清理",
-  "noCorruptFiles": "未找到损坏文件"
+  "noCorruptFiles": "未找到损坏文件",
+  "enableLocalAI": "🤖 启用本地AI模型",
+  "localAIBenefits": "本地AI的优势：",
+  "localAIOffline": "• 完全离线工作 - 无需互联网连接",
+  "localAIPrivacy": "• 您的数据在设备上保持私密",
+  "localAINote": "注意：",
+  "localAIBattery": "• 比云端模型消耗更多电池",
+  "localAIRAM": "• 需要至少4GB可用内存",
+  "localAIPrivacyNote": "模型将在本地处理您的屏幕截图以增强隐私保护。",
+  "enableLocalAIButton": "启用本地AI"
 }

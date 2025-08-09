@@ -306,4 +306,31 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get noCorruptFiles => '未找到损坏文件';
+
+  @override
+  String get enableLocalAI => '🤖 启用本地AI模型';
+
+  @override
+  String get localAIBenefits => '本地AI的优势：';
+
+  @override
+  String get localAIOffline => '• 完全离线工作 - 无需互联网连接';
+
+  @override
+  String get localAIPrivacy => '• 您的数据在设备上保持私密';
+
+  @override
+  String get localAINote => '注意：';
+
+  @override
+  String get localAIBattery => '• 比云端模型消耗更多电池';
+
+  @override
+  String get localAIRAM => '• 需要至少4GB可用内存';
+
+  @override
+  String get localAIPrivacyNote => '模型将在本地处理您的屏幕截图以增强隐私保护。';
+
+  @override
+  String get enableLocalAIButton => '启用本地AI';
 }

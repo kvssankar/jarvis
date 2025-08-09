@@ -106,5 +106,14 @@
   "clearCorruptFilesConfirm": "Beschädigte Dateien löschen?",
   "clearCorruptFilesMessage": "Sind Sie sicher, dass Sie alle beschädigten Dateien entfernen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
   "corruptFilesCleared": "Beschädigte Dateien gelöscht",
-  "noCorruptFiles": "Keine beschädigten Dateien gefunden"
+  "noCorruptFiles": "Keine beschädigten Dateien gefunden",
+  "enableLocalAI": "🤖 Lokales KI-Modell aktivieren",
+  "localAIBenefits": "Vorteile der lokalen KI:",
+  "localAIOffline": "• Funktioniert vollständig offline - kein Internet erforderlich",
+  "localAIPrivacy": "• Ihre Daten bleiben privat auf Ihrem Gerät",
+  "localAINote": "Hinweis:",
+  "localAIBattery": "• Verbraucht mehr Akku als Cloud-Modelle",
+  "localAIRAM": "• Benötigt mindestens 4GB verfügbaren RAM",
+  "localAIPrivacyNote": "Das Modell wird Ihre Screenshots lokal verarbeiten für verbesserte Privatsphäre.",
+  "enableLocalAIButton": "Lokale KI aktivieren"
 }

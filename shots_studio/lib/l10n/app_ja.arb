@@ -108,5 +108,14 @@
   "clearCorruptFilesConfirm": "破損ファイルをクリアしますか？",
   "clearCorruptFilesMessage": "すべての破損ファイルを削除してもよろしいですか？この操作は取り消すことができません。",
   "corruptFilesCleared": "破損ファイルをクリアしました",
-  "noCorruptFiles": "破損ファイルが見つかりません"
+  "noCorruptFiles": "破損ファイルが見つかりません",
+  "enableLocalAI": "🤖 ローカルAIモデルを有効にする",
+  "localAIBenefits": "ローカルAIの利点：",
+  "localAIOffline": "• 完全にオフラインで動作 - インターネット接続不要",
+  "localAIPrivacy": "• データはお使いのデバイス上でプライベートに保持されます",
+  "localAINote": "注意：",
+  "localAIBattery": "• クラウドモデルよりもバッテリーを多く消費します",
+  "localAIRAM": "• 最低4GBの利用可能なRAMが必要です",
+  "localAIPrivacyNote": "モデルはプライバシー保護のためにスクリーンショットをローカルで処理します。",
+  "enableLocalAIButton": "ローカルAIを有効にする"
 }

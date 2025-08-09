@@ -307,4 +307,31 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get noCorruptFiles => '破損ファイルが見つかりません';
+
+  @override
+  String get enableLocalAI => '🤖 ローカルAIモデルを有効にする';
+
+  @override
+  String get localAIBenefits => 'ローカルAIの利点：';
+
+  @override
+  String get localAIOffline => '• 完全にオフラインで動作 - インターネット接続不要';
+
+  @override
+  String get localAIPrivacy => '• データはお使いのデバイス上でプライベートに保持されます';
+
+  @override
+  String get localAINote => '注意：';
+
+  @override
+  String get localAIBattery => '• クラウドモデルよりもバッテリーを多く消費します';
+
+  @override
+  String get localAIRAM => '• 最低4GBの利用可能なRAMが必要です';
+
+  @override
+  String get localAIPrivacyNote => 'モデルはプライバシー保護のためにスクリーンショットをローカルで処理します。';
+
+  @override
+  String get enableLocalAIButton => 'ローカルAIを有効にする';
 }

@@ -308,4 +308,33 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get noCorruptFiles => 'No corrupt files found';
+
+  @override
+  String get enableLocalAI => '🤖 Enable Local AI Model';
+
+  @override
+  String get localAIBenefits => 'Local AI Benefits:';
+
+  @override
+  String get localAIOffline =>
+      '• Works completely offline - no internet required';
+
+  @override
+  String get localAIPrivacy => '• Your data stays private on your device';
+
+  @override
+  String get localAINote => 'Note:';
+
+  @override
+  String get localAIBattery => '• Uses more battery than cloud models';
+
+  @override
+  String get localAIRAM => '• Requires at least 4GB of available RAM';
+
+  @override
+  String get localAIPrivacyNote =>
+      'The model will process your screenshots locally for enhanced privacy.';
+
+  @override
+  String get enableLocalAIButton => 'Enable Local AI';
 }

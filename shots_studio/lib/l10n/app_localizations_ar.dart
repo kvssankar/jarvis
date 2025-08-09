@@ -308,4 +308,34 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get noCorruptFiles => 'لم يتم العثور على ملفات تالفة';
+
+  @override
+  String get enableLocalAI => '🤖 تفعيل نموذج الذكاء الاصطناعي المحلي';
+
+  @override
+  String get localAIBenefits => 'فوائد الذكاء الاصطناعي المحلي:';
+
+  @override
+  String get localAIOffline =>
+      '• يعمل بشكل كامل دون اتصال بالإنترنت - لا يتطلب إنترنت';
+
+  @override
+  String get localAIPrivacy => '• تبقى بياناتك خاصة على جهازك';
+
+  @override
+  String get localAINote => 'ملاحظة:';
+
+  @override
+  String get localAIBattery => '• يستخدم بطارية أكثر من النماذج السحابية';
+
+  @override
+  String get localAIRAM =>
+      '• يتطلب على الأقل 4 جيجابايت من ذاكرة الوصول العشوائي المتاحة';
+
+  @override
+  String get localAIPrivacyNote =>
+      'سيقوم النموذج بمعالجة لقطات الشاشة محلياً لتعزيز الخصوصية.';
+
+  @override
+  String get enableLocalAIButton => 'تفعيل الذكاء الاصطناعي المحلي';
 }
