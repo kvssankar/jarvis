@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'dart:async';
+import 'dart:typed_data';
 import 'package:flutter_gemma/flutter_gemma.dart';
 import 'package:flutter_gemma/core/model.dart';
 import 'package:flutter_gemma/pigeon.g.dart';
@@ -24,6 +26,8 @@ class GemmaService {
   bool _isLoading = false;
   bool _isGenerating = false;
   String? _currentModelPath;
+  int _generationCount = 0;
+  static const int _maxGenerationsBeforeCleanup = 2;
 
   // Initialize Gemma plugin
   void initialize() {
@@ -46,14 +50,8 @@ class GemmaService {
         throw Exception('Model file does not exist: $modelFilePath');
       }
 
-      // Close existing model if any
-      if (_inferenceModel != null) {
-        await _inferenceModel!.close();
-        _inferenceModel = null;
-      }
-
-      // Delete any existing model from device storage
-      await _modelManager!.deleteModel();
+      // Clean up existing resources before loading new model
+      await _cleanupExistingModel();
 
       // Set the model path - this tells flutter_gemma where to find the model
       await _modelManager!.setModelPath(modelFilePath);
@@ -64,11 +62,15 @@ class GemmaService {
         throw Exception('Model not properly installed at path: $modelFilePath');
       }
 
-      // Create inference model with multimodal support
+      // Get CPU/GPU preference from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final useCPU = prefs.getBool('gemma_use_cpu') ?? true; // CPU by default
+
+      // Create inference model with conservative settings to reduce memory usage
       _inferenceModel = await _gemma!.createModel(
         modelType: ModelType.gemmaIt,
-        preferredBackend: PreferredBackend.gpu, // Use GPU if available
-        maxTokens: 4096,
+        preferredBackend: useCPU ? PreferredBackend.cpu : PreferredBackend.gpu,
+        maxTokens: 2048, // Reduced from 4096 to save memory
         supportImage: true, // Enable multimodal support
         maxNumImages: 1,
       );
@@ -80,6 +82,9 @@ class GemmaService {
       await _saveModelPath(modelFilePath);
       await _saveModelLoadedState(true);
 
+      // Force garbage collection after model loading
+      _forceGarbageCollection();
+
       return true;
     } catch (e) {
       _isModelLoaded = false;
@@ -89,6 +94,34 @@ class GemmaService {
     } finally {
       _isLoading = false;
     }
+  }
+
+  Future<void> _cleanupExistingModel() async {
+    if (_session != null) {
+      try {
+        await _session!.close();
+      } catch (e) {
+        print('Error closing existing session: $e');
+      }
+      _session = null;
+    }
+
+    if (_inferenceModel != null) {
+      try {
+        await _inferenceModel!.close();
+      } catch (e) {
+        print('Error closing existing model: $e');
+      }
+      _inferenceModel = null;
+    }
+
+    try {
+      await _modelManager!.deleteModel();
+    } catch (e) {
+      print('Error deleting existing model: $e');
+    }
+
+    _forceGarbageCollection();
   }
 
   // Check if model is ready and load from preferences if needed
@@ -145,10 +178,11 @@ class GemmaService {
     }
 
     _isGenerating = true;
+    InferenceModelSession? localSession;
 
     try {
       // Create a new session for this inference
-      _session = await _inferenceModel!.createSession(
+      localSession = await _inferenceModel!.createSession(
         temperature: temperature,
         randomSeed: randomSeed,
         topK: topK,
@@ -156,8 +190,8 @@ class GemmaService {
 
       Message message;
       if (imageFile != null) {
-        // Read image bytes for multimodal input
-        final imageBytes = await imageFile.readAsBytes();
+        // Read image bytes for multimodal input - limit image size to prevent memory issues
+        final imageBytes = await _readImageWithSizeLimit(imageFile);
         message = Message.withImage(
           text: prompt,
           imageBytes: imageBytes,
@@ -168,20 +202,41 @@ class GemmaService {
         message = Message.text(text: prompt, isUser: true);
       }
 
-      await _session!.addQueryChunk(message);
+      await localSession.addQueryChunk(message);
 
       // Get response (blocking call)
-      final response = await _session!.getResponse();
+      final response = await localSession.getResponse();
 
-      // Clean up session
-      await _session!.close();
-      _session = null;
+      // Increment generation counter and check if cleanup is needed
+      _generationCount++;
 
       return response;
     } catch (e) {
+      print('Error during generation: $e');
       rethrow;
     } finally {
+      // Always clean up session in finally block
+      if (localSession != null) {
+        try {
+          await localSession.close();
+        } catch (e) {
+          print('Error closing session: $e');
+        }
+      }
+      _session = null;
       _isGenerating = false;
+
+      // Perform memory cleanup if we've hit the generation limit
+      if (_generationCount >= _maxGenerationsBeforeCleanup) {
+        print(
+          'Performing automatic memory cleanup after $_generationCount generations',
+        );
+        await performMemoryCleanup();
+        _generationCount = 0;
+      } else {
+        // Force garbage collection after each generation to free memory
+        _forceGarbageCollection();
+      }
     }
   }
 
@@ -198,10 +253,11 @@ class GemmaService {
     }
 
     _isGenerating = true;
+    InferenceModelSession? localSession;
 
     try {
       // Create a new session for streaming
-      _session = await _inferenceModel!.createSession(
+      localSession = await _inferenceModel!.createSession(
         temperature: temperature,
         randomSeed: randomSeed,
         topK: topK,
@@ -209,7 +265,7 @@ class GemmaService {
 
       Message message;
       if (imageFile != null) {
-        final imageBytes = await imageFile.readAsBytes();
+        final imageBytes = await _readImageWithSizeLimit(imageFile);
         message = Message.withImage(
           text: prompt,
           imageBytes: imageBytes,
@@ -219,12 +275,38 @@ class GemmaService {
         message = Message.text(text: prompt, isUser: true);
       }
 
-      await _session!.addQueryChunk(message);
+      await localSession.addQueryChunk(message);
 
-      // Return the streaming response
-      return _session!.getResponseAsync();
+      // Store session reference for cleanup
+      _session = localSession;
+
+      // Return the streaming response with cleanup handling
+      return localSession.getResponseAsync().transform(
+        StreamTransformer<String, String>.fromHandlers(
+          handleDone: (sink) {
+            // Clean up when stream is done
+            _cleanupAfterStreaming();
+            sink.close();
+          },
+          handleError: (error, stackTrace, sink) {
+            // Clean up on error
+            _cleanupAfterStreaming();
+            sink.addError(error, stackTrace);
+          },
+          handleData: (data, sink) {
+            sink.add(data);
+          },
+        ),
+      );
     } catch (e) {
       _isGenerating = false;
+      if (localSession != null) {
+        try {
+          await localSession.close();
+        } catch (e) {
+          print('Error closing session: $e');
+        }
+      }
       rethrow;
     }
   }
@@ -287,6 +369,21 @@ class GemmaService {
     }
   }
 
+  // Get CPU/GPU preference
+  Future<bool> getUseCPUPreference() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getBool('gemma_use_cpu') ?? true; // CPU by default
+    } catch (e) {
+      print('Error getting CPU/GPU preference: $e');
+      return true; // Default to CPU on error
+    }
+  }
+
+  // Note: If CPU/GPU preference changes, the model needs to be reloaded
+  // to apply the new backend setting. Call loadModel() again after changing
+  // the preference in SharedPreferences.
+
   // Get model name from current path
   String? get modelName {
     if (_currentModelPath != null) {
@@ -304,18 +401,124 @@ class GemmaService {
     dispose();
   }
 
+  // Helper method to read image with size limit to prevent memory issues
+  Future<Uint8List> _readImageWithSizeLimit(File imageFile) async {
+    const int maxImageSize = 10 * 1024 * 1024; // 10MB limit
+
+    final fileSize = await imageFile.length();
+    if (fileSize > maxImageSize) {
+      throw Exception(
+        'Image file too large (${fileSize} bytes). Maximum allowed: ${maxImageSize} bytes',
+      );
+    }
+
+    return await imageFile.readAsBytes();
+  }
+
+  // Helper method to force garbage collection
+  void _forceGarbageCollection() {
+    // Force garbage collection to free up memory
+    // This is a hint to the Dart VM, not a guarantee
+    try {
+      // Trigger garbage collection by creating and discarding objects
+      for (int i = 0; i < 100; i++) {
+        List.generate(1000, (index) => index);
+      }
+    } catch (e) {
+      // Ignore any errors from forcing GC
+    }
+  }
+
+  // Helper method to clean up after streaming
+  void _cleanupAfterStreaming() {
+    if (_session != null) {
+      try {
+        _session!.close();
+      } catch (e) {
+        print('Error closing session during cleanup: $e');
+      }
+      _session = null;
+    }
+    _isGenerating = false;
+
+    // Increment generation counter for streaming too
+    _generationCount++;
+
+    // Perform memory cleanup if needed
+    if (_generationCount >= _maxGenerationsBeforeCleanup) {
+      print(
+        'Performing automatic memory cleanup after $_generationCount generations (streaming)',
+      );
+      performMemoryCleanup(); // Don't await here as this is called from transform
+      _generationCount = 0;
+    } else {
+      _forceGarbageCollection();
+    }
+  }
+
+  // Method to preemptively clean up memory when needed
+  Future<void> performMemoryCleanup() async {
+    print('Performing memory cleanup...');
+
+    // Close any active sessions
+    if (_session != null) {
+      try {
+        await _session!.close();
+        _session = null;
+      } catch (e) {
+        print('Error closing session during memory cleanup: $e');
+      }
+    }
+
+    // Force multiple garbage collection cycles
+    for (int i = 0; i < 3; i++) {
+      _forceGarbageCollection();
+      await Future.delayed(const Duration(milliseconds: 100));
+    }
+
+    print('Memory cleanup completed');
+  }
+
+  // Method to check if memory cleanup is needed (call this between generations)
+  bool shouldPerformMemoryCleanup() {
+    // You can implement more sophisticated memory pressure detection here
+    // For now, just check if we have any active sessions that should be cleaned
+    return _session != null && !_isGenerating;
+  }
+
   // Dispose all resources
   void dispose() {
-    _session?.close();
-    _inferenceModel?.close();
-    _session = null;
-    _inferenceModel = null;
+    // Clean up session first
+    if (_session != null) {
+      try {
+        _session!.close();
+      } catch (e) {
+        print('Error closing session during dispose: $e');
+      }
+      _session = null;
+    }
+
+    // Clean up inference model
+    if (_inferenceModel != null) {
+      try {
+        _inferenceModel!.close();
+      } catch (e) {
+        print('Error closing inference model during dispose: $e');
+      }
+      _inferenceModel = null;
+    }
+
+    // Reset other properties
     _gemma = null;
     _modelManager = null;
     _isModelLoaded = false;
     _isLoading = false;
     _isGenerating = false;
     _currentModelPath = null;
+    _generationCount = 0;
+
+    // Force garbage collection after disposal
+    _forceGarbageCollection();
   }
 
   // Status getters

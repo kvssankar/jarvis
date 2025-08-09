@@ -353,6 +353,12 @@ class GemmaAPIProvider implements APIProvider {
         topK: 1,
       );
 
+      if (_gemmaService.shouldPerformMemoryCleanup()) {
+        Future.delayed(const Duration(milliseconds: 100), () {
+          _gemmaService.performMemoryCleanup();
+        });
+      }
+
       // print("Gemma response: $response");
 
       return {'data': response, 'statusCode': 200};

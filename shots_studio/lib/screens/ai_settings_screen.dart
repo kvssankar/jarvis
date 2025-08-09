@@ -29,6 +29,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
   String? _gemmaModelPath;
   bool _isLoadingGemmaModel = false;
   String _selectedLanguage = AILanguageConfig.defaultLanguageKey;
+  bool _gemmaUseCPU = true; // CPU by default
 
   @override
   void initState() {
@@ -67,6 +68,8 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
         _selectedLanguage =
             prefs.getString(AILanguageConfig.prefKey) ??
             AILanguageConfig.defaultLanguageKey;
+        // Load saved Gemma CPU/GPU preference (CPU by default)
+        _gemmaUseCPU = prefs.getBool('gemma_use_cpu') ?? true;
       });
     }
   }
@@ -219,6 +222,16 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
     // Track language change in analytics
     AnalyticsService().logFeatureUsed(
       'ai_output_language_changed_to_$languageCode',
+    );
+  }
+
+  Future<void> _saveGemmaCpuGpuSetting(bool useCPU) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('gemma_use_cpu', useCPU);
+
+    // Track CPU/GPU preference change in analytics
+    AnalyticsService().logFeatureUsed(
+      'gemma_backend_changed_to_${useCPU ? 'cpu' : 'gpu'}',
     );
   }
 
@@ -607,6 +620,194 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                         fontWeight: FontWeight.w500,
                         color: theme.colorScheme.onSurface,
                       ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // CPU/GPU Performance Toggle
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12.0),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.tertiaryContainer.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: theme.colorScheme.tertiary.withOpacity(0.2),
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.settings_applications,
+                          color: theme.colorScheme.tertiary,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Processing Mode',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Choose the processing mode for the local model:',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _gemmaUseCPU = true;
+                              });
+                              _saveGemmaCpuGpuSetting(true);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    _gemmaUseCPU
+                                        ? theme.colorScheme.primary
+                                        : theme.colorScheme.surface,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color:
+                                      _gemmaUseCPU
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.outline
+                                              .withOpacity(0.5),
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.battery_saver,
+                                    color:
+                                        _gemmaUseCPU
+                                            ? theme.colorScheme.onPrimary
+                                            : theme.colorScheme.onSurface,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'CPU',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color:
+                                          _gemmaUseCPU
+                                              ? theme.colorScheme.onPrimary
+                                              : theme.colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Optimized for lower resource usage.',
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      color:
+                                          _gemmaUseCPU
+                                              ? theme.colorScheme.onPrimary
+                                                  .withOpacity(0.8)
+                                              : theme
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              setState(() {
+                                _gemmaUseCPU = false;
+                              });
+                              _saveGemmaCpuGpuSetting(false);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 8,
+                                horizontal: 12,
+                              ),
+                              decoration: BoxDecoration(
+                                color:
+                                    !_gemmaUseCPU
+                                        ? theme.colorScheme.primary
+                                        : theme.colorScheme.surface,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color:
+                                      !_gemmaUseCPU
+                                          ? theme.colorScheme.primary
+                                          : theme.colorScheme.outline
+                                              .withOpacity(0.5),
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    Icons.memory,
+                                    color:
+                                        !_gemmaUseCPU
+                                            ? theme.colorScheme.onPrimary
+                                            : theme.colorScheme.onSurface,
+                                    size: 16,
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'GPU',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                      color:
+                                          !_gemmaUseCPU
+                                              ? theme.colorScheme.onPrimary
+                                              : theme.colorScheme.onSurface,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Designed for higher performance tasks.',
+                                    style: TextStyle(
+                                      fontSize: 9,
+                                      color:
+                                          !_gemmaUseCPU
+                                              ? theme.colorScheme.onPrimary
+                                                  .withOpacity(0.8)
+                                              : theme
+                                                  .colorScheme
+                                                  .onSurfaceVariant,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),

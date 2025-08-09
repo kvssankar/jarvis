@@ -349,14 +349,15 @@ class ScreenshotAnalysisService extends AIService {
   Future<String> _getAnalysisPrompt({
     List<Map<String, String?>>? autoAddCollections,
   }) async {
+    bool isGeminiModel = config.modelName.toLowerCase().contains('gemini');
+
     String basePrompt = """
       You are a screenshot analyzer. You will be given single or multiple images.
-      For each image, generate a title, short description and 3-5 relevant tags
-      with which users can search and find later with ease.
+      For each image, generate a title and short description${isGeminiModel ? ' and 3-5 relevant tags with which users can search and find later with ease' : ''}.
     """;
 
     // Add links extraction instruction for Gemini models only
-    if (config.modelName.toLowerCase().contains('gemini')) {
+    if (isGeminiModel) {
       basePrompt += """
       
       Additionally, extract any clickable information from the screenshot such as:
@@ -409,10 +410,8 @@ class ScreenshotAnalysisService extends AIService {
     basePrompt += """
       
       Respond strictly in this JSON format:
-      [{"filename": '', "title": '', "desc": '', "tags": [], "collections": [], "links": [], "other": []}, ...]
-      The "other" field can contain any additional information you find relevant.
-      The "collections" field should contain names of collections that match the image content.
-      The "links" field should contain any clickable information like phone numbers, emails, URLs, etc.
+      [{"filename": '', "title": '', "desc": ''${isGeminiModel ? ', "tags": []' : ''}${isGeminiModel ? ', "links": []' : ''}, "collections": []}, ...]
+      The "collections" field should contain names of collections that match the image content.${isGeminiModel ? '\n      The "tags" field should contain 3-5 relevant search tags.\n      The "links" field should contain any clickable information like phone numbers, emails, URLs, etc.' : ''}
     """;
 
     return basePrompt;
