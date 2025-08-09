@@ -1,9 +1,24 @@
 {
-  "version": "1.2",
-  "last_updated": "2025-07-06T12:00:00Z",
+  "version": "1.3",
+  "last_updated": "2025-08-0610T12:00:00Z",
   "messages": [
     {
       "show": true,
+      "id": "gemma_feedback_conclusion",
+      "title": "Thanks for your opinion on Gemma!",
+      "message": "👋 Hey Testers,\n\nThanks for the feedback on gemma. Looks like the app crash during the processing was due to a high token count of 4k (Which caused memory overflow).\n\n     Now I've reduced the token to 2k; the local processing runs smoothly, (had to disabled the tags/links in gemma output due to that). You can expect a release tomorrow, with Gemma included in the stable build (along with several other exciting new features). You can run it in the background and it will finish on its own. Just wanted to give you the update. Thank you so much for trying the app. See ya tomorrow!\n\nWith love,\nTeam Shots Studio",
+      "type": "update",
+      "priority": "high",
+      "show_once": true,
+      "valid_until": "2026-07-01T00:00:00Z",
+      "is_notification": false,
+      "version": "1.8.115",
+      "update_route": "https://forms.gle/AVj41mSvJqx7ti5X7",
+      "action_text": "feedback",
+      "beta_only": true
+    },
+    {
+      "show": false,
       "id": "test_notification",
       "title": "test server notification",
       "message": "Hi there",
