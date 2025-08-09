@@ -313,6 +313,30 @@ class ScreenshotAnalysisService extends AIService {
                   .toList();
         }
 
+        // Ensure links is always a list
+        if (sanitizedItem['links'] is! List) {
+          if (sanitizedItem['links'] is String) {
+            // If links is a string, split by comma or other delimiters
+            String linksString = sanitizedItem['links'].toString();
+            sanitizedItem['links'] =
+                linksString
+                    .split(RegExp(r'[,;|]'))
+                    .map((link) => link.trim())
+                    .where((link) => link.isNotEmpty)
+                    .toList();
+          } else if (sanitizedItem['links'] != null) {
+            sanitizedItem['links'] = [sanitizedItem['links'].toString()];
+          } else {
+            sanitizedItem['links'] = [];
+          }
+        } else {
+          // Ensure all items in links list are strings
+          sanitizedItem['links'] =
+              (sanitizedItem['links'] as List)
+                  .map((link) => link.toString())
+                  .toList();
+        }
+
         sanitizedResponse.add(sanitizedItem);
       } else {
         print("Warning: Invalid item found in response, skipping: $item");
@@ -330,6 +354,20 @@ class ScreenshotAnalysisService extends AIService {
       For each image, generate a title, short description and 3-5 relevant tags
       with which users can search and find later with ease.
     """;
+
+    // Add links extraction instruction for Gemini models only
+    if (config.modelName.toLowerCase().contains('gemini')) {
+      basePrompt += """
+      
+      Additionally, extract any clickable information from the screenshot such as:
+      - Phone numbers (format them properly with country codes when possible)
+      - Email addresses
+      - Website URLs/links
+      - Social media handles
+      - Any other clickable or actionable text that users might want to copy or interact with
+      Include these in a "links" field as a list of strings.
+      """;
+    }
 
     if (autoAddCollections != null && autoAddCollections.isNotEmpty) {
       basePrompt += """
@@ -371,9 +409,10 @@ class ScreenshotAnalysisService extends AIService {
     basePrompt += """
       
       Respond strictly in this JSON format:
-      [{"filename": '', "title": '', "desc": '', "tags": [], "collections": [], "other": []}, ...]
+      [{"filename": '', "title": '', "desc": '', "tags": [], "collections": [], "links": [], "other": []}, ...]
       The "other" field can contain any additional information you find relevant.
       The "collections" field should contain names of collections that match the image content.
+      The "links" field should contain any clickable information like phone numbers, emails, URLs, etc.
     """;
 
     return basePrompt;
@@ -484,10 +523,13 @@ class ScreenshotAnalysisService extends AIService {
       item['collections'] ?? [],
     );
 
+    final List<String> links = List<String>.from(item['links'] ?? []);
+
     final updatedScreenshot = screenshot.copyWith(
       title: item['title'] ?? screenshot.title,
       description: item['desc'] ?? screenshot.description,
       tags: List<String>.from(item['tags'] ?? []),
+      links: links,
       aiProcessed: true,
       aiMetadata: aiMetaData,
     );
@@ -538,10 +580,15 @@ class ScreenshotAnalysisService extends AIService {
           matchedAiItem['collections'] ?? [],
         );
 
+        final List<String> links = List<String>.from(
+          matchedAiItem['links'] ?? [],
+        );
+
         final updatedScreenshot = screenshot.copyWith(
           title: matchedAiItem['title'] ?? screenshot.title,
           description: matchedAiItem['desc'] ?? screenshot.description,
           tags: List<String>.from(matchedAiItem['tags'] ?? []),
+          links: links,
           aiProcessed: true,
           aiMetadata: aiMetaData,
         );

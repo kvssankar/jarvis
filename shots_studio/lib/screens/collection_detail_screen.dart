@@ -620,6 +620,7 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                                     addedOn: DateTime.now(),
                                     collectionIds: [],
                                     tags: [],
+                                    links: [],
                                     aiProcessed: false,
                                     isDeleted: true,
                                   ),

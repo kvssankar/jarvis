@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:io';
 import 'dart:math';
 import 'dart:async';
@@ -22,6 +23,7 @@ import 'package:shots_studio/services/ocr_service.dart';
 import 'package:shots_studio/widgets/ocr_result_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ScreenshotDetailScreen extends StatefulWidget {
   final Screenshot screenshot;
@@ -415,6 +417,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                   widget.screenshot.title = updatedScreenshot.title;
                   widget.screenshot.description = updatedScreenshot.description;
                   widget.screenshot.tags = updatedScreenshot.tags;
+                  widget.screenshot.links = updatedScreenshot.links;
                   widget.screenshot.aiProcessed = updatedScreenshot.aiProcessed;
                   widget.screenshot.aiMetadata = updatedScreenshot.aiMetadata;
 
@@ -500,10 +503,11 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
           );
 
       if (result.success) {
-        SnackbarService().showSuccess(
-          context,
-          'Screenshot processed successfully!',
-        );
+        // SnackbarService().showSuccess(
+        //   context,
+        //   'Screenshot processed successfully!',
+        // );
+        print("Screenshot processed success");
         widget.onScreenshotUpdated?.call();
       } else if (result.cancelled) {
         SnackbarService().showInfo(context, 'AI processing was cancelled.');
@@ -675,6 +679,151 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       i = suffixes.length - 1;
     }
     return '${(bytes / pow(1024, i)).toStringAsFixed(2)} ${suffixes[i]}';
+  }
+
+  /// Detect the type of link and return appropriate icon and action
+  Map<String, dynamic> _getLinkInfo(String link) {
+    final cleanLink = link.trim();
+
+    // Email detection
+    if (RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    ).hasMatch(cleanLink)) {
+      return {
+        'type': 'email',
+        'icon': Icons.email,
+        'color': Colors.red,
+        'action': () => _launchLink('mailto:$cleanLink'),
+      };
+    }
+
+    // Phone number detection (various formats)
+    if (RegExp(
+      r'^[\+]?[\d\s\-\(\)\.]{7,}$',
+    ).hasMatch(cleanLink.replaceAll(' ', ''))) {
+      return {
+        'type': 'phone',
+        'icon': Icons.phone,
+        'color': Colors.green,
+        'action': () => _launchLink('tel:$cleanLink'),
+      };
+    }
+
+    // URL detection
+    if (cleanLink.startsWith('http://') ||
+        cleanLink.startsWith('https://') ||
+        cleanLink.startsWith('www.') ||
+        RegExp(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}').hasMatch(cleanLink)) {
+      String url = cleanLink;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://$url';
+      }
+      return {
+        'type': 'url',
+        'icon': Icons.link,
+        'color': Colors.blue,
+        'action': () => _launchLink(url),
+      };
+    }
+
+    // Default fallback
+    return {
+      'type': 'text',
+      'icon': Icons.content_copy,
+      'color': Colors.grey,
+      'action': () => _copyToClipboard(cleanLink),
+    };
+  }
+
+  /// Launch a link (URL, phone, email) or copy to clipboard if it fails
+  Future<void> _launchLink(String link) async {
+    try {
+      final uri = Uri.parse(link);
+
+      bool launched = false;
+      try {
+        launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (e) {
+        print('Direct launch failed: $e');
+        launched = false;
+      }
+
+      if (launched) {
+        AnalyticsService().logFeatureUsed('link_launched');
+      } else {
+        try {
+          launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
+          if (launched) {
+            AnalyticsService().logFeatureUsed('link_launched');
+            return;
+          }
+        } catch (e) {
+          print('Platform default launch failed: $e');
+        }
+
+        await _copyToClipboard(link);
+      }
+    } catch (e) {
+      print('URL parsing failed: $e');
+      await _copyToClipboard(link);
+    }
+  }
+
+  Future<void> _copyToClipboard(String text) async {
+    await Clipboard.setData(ClipboardData(text: text));
+
+    String contentType = 'text';
+    String displayText = text;
+
+    if (text.startsWith('mailto:')) {
+      contentType = 'email address';
+      displayText = text.substring(7); // Remove 'mailto:' prefix
+    } else if (text.startsWith('tel:')) {
+      contentType = 'phone number';
+      displayText = text.substring(4); // Remove 'tel:' prefix
+    } else if (text.startsWith('http://') || text.startsWith('https://')) {
+      contentType = 'website URL';
+    }
+
+    SnackbarService().showWarning(context, 'Copied to clipboard: $displayText');
+    AnalyticsService().logFeatureUsed('link_copied_to_clipboard');
+  }
+
+  /// Build a clickable link chip
+  Widget _buildLinkChip(String link) {
+    final linkInfo = _getLinkInfo(link);
+    return GestureDetector(
+      onTap: linkInfo['action'],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.secondaryContainer,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: linkInfo['color'].withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(linkInfo['icon'], size: 16, color: linkInfo['color']),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                link,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   /// Build the image widget for the screenshot
@@ -877,24 +1026,29 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
             FocusScope.of(context).unfocus();
           },
         ),
-        const SizedBox(height: 24),
-        Text(
-          AppLocalizations.of(context)?.tags ?? 'Tags',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSecondaryContainer,
+
+        // Links section - show if there are any extracted links
+        if (widget.screenshot.links.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          // Text(
+          //   'Extracted Links',
+          //   style: TextStyle(
+          //     fontSize: 16,
+          //     fontWeight: FontWeight.w600,
+          //     color: Theme.of(context).colorScheme.onSecondaryContainer,
+          //   ),
+          // ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children:
+                widget.screenshot.links
+                    .map((link) => _buildLinkChip(link))
+                    .toList(),
           ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            ..._tags.map((tag) => _buildTag(tag)),
-            _buildTag(AppLocalizations.of(context)?.addTag ?? '+ Add Tag'),
-          ],
-        ),
+        ],
+
         const SizedBox(height: 24),
         Text(
           AppLocalizations.of(context)?.aiDetails ?? 'AI Details',
@@ -969,6 +1123,26 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
             ],
           ),
         ),
+
+        const SizedBox(height: 24),
+        Text(
+          AppLocalizations.of(context)?.tags ?? 'Tags',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSecondaryContainer,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ..._tags.map((tag) => _buildTag(tag)),
+            _buildTag(AppLocalizations.of(context)?.addTag ?? '+ Add Tag'),
+          ],
+        ),
+
         const SizedBox(height: 24),
         Text(
           AppLocalizations.of(context)?.collections ?? 'Collections',
