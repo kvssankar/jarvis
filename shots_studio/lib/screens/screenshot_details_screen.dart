@@ -106,6 +106,20 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   }
 
   @override
+  void didUpdateWidget(ScreenshotDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Check if the screenshot has changed (after deletion navigation)
+    if (oldWidget.screenshot.id != widget.screenshot.id) {
+      _tags = List.from(widget.screenshot.tags);
+      _descriptionController.text = widget.screenshot.description ?? '';
+
+      _checkExpiredReminders();
+      setState(() {});
+    }
+  }
+
+  @override
   void dispose() {
     _descriptionController.dispose();
 
@@ -772,17 +786,12 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   Future<void> _copyToClipboard(String text) async {
     await Clipboard.setData(ClipboardData(text: text));
 
-    String contentType = 'text';
     String displayText = text;
 
     if (text.startsWith('mailto:')) {
-      contentType = 'email address';
       displayText = text.substring(7); // Remove 'mailto:' prefix
     } else if (text.startsWith('tel:')) {
-      contentType = 'phone number';
       displayText = text.substring(4); // Remove 'tel:' prefix
-    } else if (text.startsWith('http://') || text.startsWith('https://')) {
-      contentType = 'website URL';
     }
 
     SnackbarService().showWarning(context, 'Copied to clipboard: $displayText');
