@@ -103,5 +103,10 @@
   "addDescription": "Aggiungi una descrizione",
   "addTag": "Aggiungi tag",
   "aiSettings": "Impostazioni AI",
-  "advancedSettings": "Impostazioni Avanzate"
+  "advancedSettings": "Impostazioni Avanzate",
+  "clearCorruptFiles": "Cancella File Corrotti",
+  "clearCorruptFilesConfirm": "Cancellare File Corrotti?",
+  "clearCorruptFilesMessage": "Sei sicuro di voler rimuovere tutti i file corrotti? Questa azione non può essere annullata.",
+  "corruptFilesCleared": "File corrotti cancellati",
+  "noCorruptFiles": "Nessun file corrotto trovato"
 }

@@ -3,6 +3,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shots_studio/widgets/app_drawer/index.dart';
 import 'package:shots_studio/services/analytics/analytics_service.dart';
 import 'package:shots_studio/l10n/app_localizations.dart';
+import 'package:shots_studio/models/screenshot_model.dart';
 
 class AppDrawer extends StatefulWidget {
   final String? currentApiKey;
@@ -30,6 +31,8 @@ class AppDrawer extends StatefulWidget {
   final Key? apiKeyFieldKey;
   final VoidCallback? onResetAiProcessing;
   final Function(Locale)? onLocaleChanged;
+  final List<Screenshot>? allScreenshots;
+  final VoidCallback? onClearCorruptFiles;
 
   const AppDrawer({
     super.key,
@@ -58,6 +61,8 @@ class AppDrawer extends StatefulWidget {
     this.apiKeyFieldKey,
     this.onResetAiProcessing,
     this.onLocaleChanged,
+    this.allScreenshots,
+    this.onClearCorruptFiles,
   });
 
   @override
@@ -148,6 +153,8 @@ class _AppDrawerState extends State<AppDrawer> {
                 currentBetaTestingEnabled: widget.currentBetaTestingEnabled,
                 onBetaTestingEnabledChanged: widget.onBetaTestingEnabledChanged,
                 onResetAiProcessing: widget.onResetAiProcessing,
+                allScreenshots: widget.allScreenshots,
+                onClearCorruptFiles: widget.onClearCorruptFiles,
               ),
               const PerformanceSection(),
             ],

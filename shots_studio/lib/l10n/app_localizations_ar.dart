@@ -292,4 +292,20 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get deleteSelected => 'حذف المحدد';
+
+  @override
+  String get clearCorruptFiles => 'مسح الملفات التالفة';
+
+  @override
+  String get clearCorruptFilesConfirm => 'مسح الملفات التالفة؟';
+
+  @override
+  String get clearCorruptFilesMessage =>
+      'هل أنت متأكد من أنك تريد إزالة جميع الملفات التالفة؟ لا يمكن التراجع عن هذا الإجراء.';
+
+  @override
+  String get corruptFilesCleared => 'تم مسح الملفات التالفة';
+
+  @override
+  String get noCorruptFiles => 'لم يتم العثور على ملفات تالفة';
 }

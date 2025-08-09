@@ -101,5 +101,10 @@
   "addDescription": "Agregar descripción",
   "addTag": "Agregar etiqueta",
   "aiSettings": "Configuración de IA",
-  "advancedSettings": "Configuración Avanzada"
+  "advancedSettings": "Configuración Avanzada",
+  "clearCorruptFiles": "Limpiar Archivos Corruptos",
+  "clearCorruptFilesConfirm": "¿Limpiar Archivos Corruptos?",
+  "clearCorruptFilesMessage": "¿Estás seguro de que quieres eliminar todos los archivos corruptos de esta colección? Esta acción no se puede deshacer.",
+  "corruptFilesCleared": "Archivos corruptos eliminados",
+  "noCorruptFiles": "No se encontraron archivos corruptos"
 }

@@ -101,5 +101,10 @@
   "addDescription": "إضافة وصف",
   "addTag": "إضافة علامة",
   "aiSettings": "إعدادات الذكاء الاصطناعي",
-  "advancedSettings": "الإعدادات المتقدمة"
+  "advancedSettings": "الإعدادات المتقدمة",
+  "clearCorruptFiles": "مسح الملفات التالفة",
+  "clearCorruptFilesConfirm": "مسح الملفات التالفة؟",
+  "clearCorruptFilesMessage": "هل أنت متأكد من أنك تريد إزالة جميع الملفات التالفة؟ لا يمكن التراجع عن هذا الإجراء.",
+  "corruptFilesCleared": "تم مسح الملفات التالفة",
+  "noCorruptFiles": "لم يتم العثور على ملفات تالفة"
 }

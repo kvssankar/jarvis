@@ -293,4 +293,20 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get deleteSelected => 'Удалить выбранные';
+
+  @override
+  String get clearCorruptFiles => 'Очистить поврежденные файлы';
+
+  @override
+  String get clearCorruptFilesConfirm => 'Очистить поврежденные файлы?';
+
+  @override
+  String get clearCorruptFilesMessage =>
+      'Вы уверены, что хотите удалить все поврежденные файлы? Это действие нельзя отменить.';
+
+  @override
+  String get corruptFilesCleared => 'Поврежденные файлы очищены';
+
+  @override
+  String get noCorruptFiles => 'Поврежденные файлы не найдены';
 }

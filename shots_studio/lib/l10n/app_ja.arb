@@ -103,5 +103,10 @@
   "addDescription": "説明を追加",
   "addTag": "タグを追加",
   "aiSettings": "AI設定",
-  "advancedSettings": "詳細設定"
+  "advancedSettings": "詳細設定",
+  "clearCorruptFiles": "破損ファイルをクリア",
+  "clearCorruptFilesConfirm": "破損ファイルをクリアしますか？",
+  "clearCorruptFilesMessage": "すべての破損ファイルを削除してもよろしいですか？この操作は取り消すことができません。",
+  "corruptFilesCleared": "破損ファイルをクリアしました",
+  "noCorruptFiles": "破損ファイルが見つかりません"
 }

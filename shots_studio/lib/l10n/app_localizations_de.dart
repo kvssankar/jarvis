@@ -295,4 +295,20 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get deleteSelected => 'Ausgewählte löschen';
+
+  @override
+  String get clearCorruptFiles => 'Beschädigte Dateien löschen';
+
+  @override
+  String get clearCorruptFilesConfirm => 'Beschädigte Dateien löschen?';
+
+  @override
+  String get clearCorruptFilesMessage =>
+      'Sind Sie sicher, dass Sie alle beschädigten Dateien entfernen möchten? Diese Aktion kann nicht rückgängig gemacht werden.';
+
+  @override
+  String get corruptFilesCleared => 'Beschädigte Dateien gelöscht';
+
+  @override
+  String get noCorruptFiles => 'Keine beschädigten Dateien gefunden';
 }

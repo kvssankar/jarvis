@@ -292,4 +292,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get deleteSelected => 'Delete selected';
+
+  @override
+  String get clearCorruptFiles => 'Clear Corrupt Files';
+
+  @override
+  String get clearCorruptFilesConfirm => 'Clear Corrupt Files?';
+
+  @override
+  String get clearCorruptFilesMessage =>
+      'Are you sure you want to remove all corrupt files from this collection? This action cannot be undone.';
+
+  @override
+  String get corruptFilesCleared => 'Corrupt files cleared';
+
+  @override
+  String get noCorruptFiles => 'No corrupt files found';
 }

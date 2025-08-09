@@ -101,5 +101,10 @@
   "addDescription": "Adicionar descrição",
   "addTag": "Adicionar tag",
   "aiSettings": "Configurações de IA",
-  "advancedSettings": "Configurações Avançadas"
+  "advancedSettings": "Configurações Avançadas",
+  "clearCorruptFiles": "Limpar Arquivos Corrompidos",
+  "clearCorruptFilesConfirm": "Limpar Arquivos Corrompidos?",
+  "clearCorruptFilesMessage": "Tem certeza de que deseja remover todos os arquivos corrompidos? Esta ação não pode ser desfeita.",
+  "corruptFilesCleared": "Arquivos corrompidos limpos",
+  "noCorruptFiles": "Nenhum arquivo corrompido encontrado"
 }

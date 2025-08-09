@@ -291,4 +291,20 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get deleteSelected => '選択項目を削除';
+
+  @override
+  String get clearCorruptFiles => '破損ファイルをクリア';
+
+  @override
+  String get clearCorruptFilesConfirm => '破損ファイルをクリアしますか？';
+
+  @override
+  String get clearCorruptFilesMessage =>
+      'すべての破損ファイルを削除してもよろしいですか？この操作は取り消すことができません。';
+
+  @override
+  String get corruptFilesCleared => '破損ファイルをクリアしました';
+
+  @override
+  String get noCorruptFiles => '破損ファイルが見つかりません';
 }

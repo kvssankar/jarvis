@@ -373,5 +373,25 @@
   "size": "Size",
   "addDescription": "Add a description",
   "addTag": "Add tag",
-  "aiSettings": "AI Settings"
+  "aiSettings": "AI Settings",
+  "clearCorruptFiles": "Clear Corrupt Files",
+  "@clearCorruptFiles": {
+    "description": "Button to clear all corrupt files"
+  },
+  "clearCorruptFilesConfirm": "Clear Corrupt Files?",
+  "@clearCorruptFilesConfirm": {
+    "description": "Title for confirm dialog to clear corrupt files"
+  },
+  "clearCorruptFilesMessage": "Are you sure you want to remove all corrupt files from this collection? This action cannot be undone.",
+  "@clearCorruptFilesMessage": {
+    "description": "Message for confirm dialog to clear corrupt files"
+  },
+  "corruptFilesCleared": "Corrupt files cleared",
+  "@corruptFilesCleared": {
+    "description": "Message shown when corrupt files are cleared"
+  },
+  "noCorruptFiles": "No corrupt files found",
+  "@noCorruptFiles": {
+    "description": "Message shown when no corrupt files are found"
+  }
 }

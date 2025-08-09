@@ -1640,6 +1640,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _clearCorruptFiles() async {
+    setState(() {
+      // The actual corruption detection and marking is handled in AdvancedSettingsSection
+      // This callback is called after the cleanup to refresh the main screen
+    });
+
+    await _saveDataToPrefs();
+
+    AnalyticsService().logFeatureUsed('corrupt_files_cleared_main');
+  }
+
   /// Show dialog for managing custom screenshot paths
   void _showCustomPathsDialog() {
     showDialog(
@@ -1703,6 +1714,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         apiKeyFieldKey: _apiKeyFieldKey,
         onResetAiProcessing: _resetAiMetaData,
         onLocaleChanged: widget.onLocaleChanged,
+        allScreenshots: _screenshots,
+        onClearCorruptFiles: _clearCorruptFiles,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {

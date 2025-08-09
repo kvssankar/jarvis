@@ -293,4 +293,20 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get deleteSelected => 'चयनित को हटाएं';
+
+  @override
+  String get clearCorruptFiles => 'दूषित फाइलें साफ़ करें';
+
+  @override
+  String get clearCorruptFilesConfirm => 'दूषित फाइलें साफ़ करें?';
+
+  @override
+  String get clearCorruptFilesMessage =>
+      'क्या आप सुनिश्चित हैं कि आप सभी दूषित फाइलों को हटाना चाहते हैं? यह क्रिया पूर्ववत नहीं की जा सकती।';
+
+  @override
+  String get corruptFilesCleared => 'दूषित फाइलें साफ़ कर दी गईं';
+
+  @override
+  String get noCorruptFiles => 'कोई दूषित फाइल नहीं मिली';
 }

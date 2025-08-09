@@ -101,5 +101,10 @@
   "addDescription": "Beschreibung hinzufügen",
   "addTag": "Tag hinzufügen",
   "aiSettings": "KI-Einstellungen",
-  "advancedSettings": "Erweiterte Einstellungen"
+  "advancedSettings": "Erweiterte Einstellungen",
+  "clearCorruptFiles": "Beschädigte Dateien löschen",
+  "clearCorruptFilesConfirm": "Beschädigte Dateien löschen?",
+  "clearCorruptFilesMessage": "Sind Sie sicher, dass Sie alle beschädigten Dateien entfernen möchten? Diese Aktion kann nicht rückgängig gemacht werden.",
+  "corruptFilesCleared": "Beschädigte Dateien gelöscht",
+  "noCorruptFiles": "Keine beschädigten Dateien gefunden"
 }

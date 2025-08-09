@@ -101,5 +101,10 @@
   "addDescription": "Ajouter une description",
   "addTag": "Ajouter une étiquette",
   "aiSettings": "Paramètres IA",
-  "advancedSettings": "Paramètres Avancés"
+  "advancedSettings": "Paramètres Avancés",
+  "clearCorruptFiles": "Nettoyer les Fichiers Corrompus",
+  "clearCorruptFilesConfirm": "Nettoyer les Fichiers Corrompus ?",
+  "clearCorruptFilesMessage": "Êtes-vous sûr de vouloir supprimer tous les fichiers corrompus de cette collection ? Cette action ne peut pas être annulée.",
+  "corruptFilesCleared": "Fichiers corrompus supprimés",
+  "noCorruptFiles": "Aucun fichier corrompu trouvé"
 }

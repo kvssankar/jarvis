@@ -101,5 +101,10 @@
   "addDescription": "添加描述",
   "addTag": "添加标签",
   "aiSettings": "AI设置",
-  "advancedSettings": "高级设置"
+  "advancedSettings": "高级设置",
+  "clearCorruptFiles": "清理损坏文件",
+  "clearCorruptFilesConfirm": "清理损坏文件？",
+  "clearCorruptFilesMessage": "您确定要删除所有损坏的文件吗？此操作无法撤销。",
+  "corruptFilesCleared": "损坏文件已清理",
+  "noCorruptFiles": "未找到损坏文件"
 }

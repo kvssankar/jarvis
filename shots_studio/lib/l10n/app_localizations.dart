@@ -679,6 +679,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Delete selected'**
   String get deleteSelected;
+
+  /// Button to clear all corrupt files
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Corrupt Files'**
+  String get clearCorruptFiles;
+
+  /// Title for confirm dialog to clear corrupt files
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Corrupt Files?'**
+  String get clearCorruptFilesConfirm;
+
+  /// Message for confirm dialog to clear corrupt files
+  ///
+  /// In en, this message translates to:
+  /// **'Are you sure you want to remove all corrupt files from this collection? This action cannot be undone.'**
+  String get clearCorruptFilesMessage;
+
+  /// Message shown when corrupt files are cleared
+  ///
+  /// In en, this message translates to:
+  /// **'Corrupt files cleared'**
+  String get corruptFilesCleared;
+
+  /// Message shown when no corrupt files are found
+  ///
+  /// In en, this message translates to:
+  /// **'No corrupt files found'**
+  String get noCorruptFiles;
 }
 
 class _AppLocalizationsDelegate

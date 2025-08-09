@@ -103,5 +103,10 @@
   "addDescription": "Добавить описание",
   "addTag": "Добавить тег",
   "aiSettings": "Настройки ИИ",
-  "advancedSettings": "Расширенные настройки"
+  "advancedSettings": "Расширенные настройки",
+  "clearCorruptFiles": "Очистить поврежденные файлы",
+  "clearCorruptFilesConfirm": "Очистить поврежденные файлы?",
+  "clearCorruptFilesMessage": "Вы уверены, что хотите удалить все поврежденные файлы? Это действие нельзя отменить.",
+  "corruptFilesCleared": "Поврежденные файлы очищены",
+  "noCorruptFiles": "Поврежденные файлы не найдены"
 }

@@ -293,4 +293,20 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get deleteSelected => 'Eliminar seleccionados';
+
+  @override
+  String get clearCorruptFiles => 'Limpiar Archivos Corruptos';
+
+  @override
+  String get clearCorruptFilesConfirm => '¿Limpiar Archivos Corruptos?';
+
+  @override
+  String get clearCorruptFilesMessage =>
+      '¿Estás seguro de que quieres eliminar todos los archivos corruptos de esta colección? Esta acción no se puede deshacer.';
+
+  @override
+  String get corruptFilesCleared => 'Archivos corruptos eliminados';
+
+  @override
+  String get noCorruptFiles => 'No se encontraron archivos corruptos';
 }

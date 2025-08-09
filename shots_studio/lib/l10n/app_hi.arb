@@ -101,5 +101,10 @@
   "addDescription": "विवरण जोड़ें",
   "addTag": "टैग जोड़ें",
   "aiSettings": "AI सेटिंग्स",
-  "advancedSettings": "उन्नत सेटिंग्स"
+  "advancedSettings": "उन्नत सेटिंग्स",
+  "clearCorruptFiles": "दूषित फाइलें साफ़ करें",
+  "clearCorruptFilesConfirm": "दूषित फाइलें साफ़ करें?",
+  "clearCorruptFilesMessage": "क्या आप सुनिश्चित हैं कि आप सभी दूषित फाइलों को हटाना चाहते हैं? यह क्रिया पूर्ववत नहीं की जा सकती।",
+  "corruptFilesCleared": "दूषित फाइलें साफ़ कर दी गईं",
+  "noCorruptFiles": "कोई दूषित फाइल नहीं मिली"
 }

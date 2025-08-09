@@ -291,4 +291,19 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get deleteSelected => '删除选中项';
+
+  @override
+  String get clearCorruptFiles => '清理损坏文件';
+
+  @override
+  String get clearCorruptFilesConfirm => '清理损坏文件？';
+
+  @override
+  String get clearCorruptFilesMessage => '您确定要删除所有损坏的文件吗？此操作无法撤销。';
+
+  @override
+  String get corruptFilesCleared => '损坏文件已清理';
+
+  @override
+  String get noCorruptFiles => '未找到损坏文件';
 }
