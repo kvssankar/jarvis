@@ -5,12 +5,14 @@ class AIProcessingContainer extends StatefulWidget {
   final bool isProcessing;
   final int processedCount;
   final int totalCount;
+  final bool isInitializing;
 
   const AIProcessingContainer({
     super.key,
     required this.isProcessing,
     required this.processedCount,
     required this.totalCount,
+    this.isInitializing = false,
   });
 
   @override
@@ -253,7 +255,9 @@ class _AIProcessingContainerState extends State<AIProcessingContainer>
                                 const SizedBox(width: 6),
                                 Expanded(
                                   child: Text(
-                                    'Analysis in Progress',
+                                    widget.isInitializing
+                                        ? 'Initializing Processing'
+                                        : 'Analysis in Progress',
                                     style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.bold,
@@ -267,7 +271,9 @@ class _AIProcessingContainerState extends State<AIProcessingContainer>
                             ),
                             const SizedBox(height: 5),
                             Text(
-                              'Images are being processed by AI.',
+                              widget.isInitializing
+                                  ? 'Preparing AI processing engine...'
+                                  : 'Images are being processed by AI.',
                               style: TextStyle(
                                 fontSize: 12,
                                 color: theme.colorScheme.onPrimaryContainer
@@ -275,7 +281,9 @@ class _AIProcessingContainerState extends State<AIProcessingContainer>
                               ),
                             ),
                             Text(
-                              'While you can still use the app, some features will be limited.',
+                              widget.isInitializing
+                                  ? 'This may take a few moments to setup.'
+                                  : 'Processing runs in background. You can close the app and return later.',
                               style: TextStyle(
                                 fontSize: 11,
                                 color: theme.colorScheme.onPrimaryContainer

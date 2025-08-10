@@ -296,11 +296,21 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
         backgroundColor: theme.colorScheme.surface,
         elevation: 0,
         actions: [
+          IconButton(
+            icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
+            onPressed: _confirmDelete,
+          ),
+          IconButton(
+            icon: const Icon(Icons.edit_outlined),
+            onPressed: _editCollection,
+            tooltip: 'Edit Collection',
+          ),
           if (_isAutoAddEnabled)
             IconButton(
               icon: Icon(
-                _aiCategorizer.isRunning ? Icons.stop : Icons.auto_fix_high,
-                size: 20,
+                _aiCategorizer.isRunning
+                    ? Icons.stop
+                    : Icons.auto_awesome_outlined,
               ),
               onPressed: () async {
                 if (_aiCategorizer.isRunning) {
@@ -334,15 +344,6 @@ class _CollectionDetailScreenState extends State<CollectionDetailScreen> {
                       ? 'Stop Scanning'
                       : 'Find Matching Screenshots',
             ),
-          IconButton(
-            icon: const Icon(Icons.edit_outlined),
-            onPressed: _editCollection,
-            tooltip: 'Edit Collection',
-          ),
-          IconButton(
-            icon: Icon(Icons.delete_outline, color: theme.colorScheme.error),
-            onPressed: _confirmDelete,
-          ),
         ],
       ),
       body: CustomScrollView(

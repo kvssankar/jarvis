@@ -241,6 +241,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final ImageLoaderService _imageLoaderService = ImageLoaderService();
   bool _isLoading = false;
   bool _isProcessingAI = false;
+  bool _isInitializingProcessing = false;
   int _aiProcessedCount = 0;
   int _aiTotalToProcess = 0;
 
@@ -464,6 +465,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
           setState(() {
             _isProcessingAI = false;
+            _isInitializingProcessing = false;
             _aiProcessedCount = 0;
             _aiTotalToProcess = 0;
           });
@@ -506,6 +508,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
           setState(() {
             _isProcessingAI = false;
+            _isInitializingProcessing = false;
             _aiProcessedCount = 0;
             _aiTotalToProcess = 0;
           });
@@ -543,6 +546,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           // Update UI state to stop processing
           setState(() {
             _isProcessingAI = false;
+            _isInitializingProcessing = false;
             _aiProcessedCount = 0;
             _aiTotalToProcess = 0;
           });
@@ -861,9 +865,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       "Main app: Starting background processing for ${unprocessedScreenshots.length} screenshots",
     );
 
-    // Update UI to show processing state
+    // Update UI to show initializing state
     setState(() {
       _isProcessingAI = true;
+      _isInitializingProcessing = true;
       _aiProcessedCount = 0;
       _aiTotalToProcess = unprocessedScreenshots.length;
     });
@@ -924,6 +929,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
       if (success) {
         print("Main app: Background processing started successfully");
+        setState(() {
+          _isInitializingProcessing = false; // No longer initializing
+        });
         SnackbarService().showInfo(
           context,
           'Processing started for ${unprocessedScreenshots.length} screenshots.',
@@ -932,6 +940,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         print("Main app: Failed to start background processing");
         setState(() {
           _isProcessingAI = false;
+          _isInitializingProcessing = false;
           _aiProcessedCount = 0;
           _aiTotalToProcess = 0;
         });
@@ -946,6 +955,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
       setState(() {
         _isProcessingAI = false;
+        _isInitializingProcessing = false;
         _aiProcessedCount = 0;
         _aiTotalToProcess = 0;
       });
@@ -965,6 +975,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       // Update UI immediately to reflect stopping state
       setState(() {
         _aiTotalToProcess = 0;
+        _isInitializingProcessing = false;
       });
 
       try {
@@ -988,6 +999,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       await _saveDataToPrefs();
       setState(() {
         _isProcessingAI = false;
+        _isInitializingProcessing = false;
       });
     }
   }
@@ -1904,6 +1916,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             isProcessing: _isProcessingAI,
                             processedCount: _aiProcessedCount,
                             totalCount: _aiTotalToProcess,
+                            isInitializing: _isInitializingProcessing,
                           ),
                           // Collections Section
                           CollectionsSection(
