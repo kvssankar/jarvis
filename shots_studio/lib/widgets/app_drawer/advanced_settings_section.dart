@@ -12,8 +12,6 @@ class AdvancedSettingsSection extends StatefulWidget {
   final Function(int) onLimitChanged;
   final int currentMaxParallel;
   final Function(int) onMaxParallelChanged;
-  final bool? currentLimitEnabled;
-  final Function(bool)? onLimitEnabledChanged;
   final bool? currentDevMode;
   final Function(bool)? onDevModeChanged;
   final bool? currentAnalyticsEnabled;
@@ -32,8 +30,6 @@ class AdvancedSettingsSection extends StatefulWidget {
     required this.onLimitChanged,
     required this.currentMaxParallel,
     required this.onMaxParallelChanged,
-    this.currentLimitEnabled,
-    this.onLimitEnabledChanged,
     this.currentDevMode,
     this.onDevModeChanged,
     this.currentAnalyticsEnabled,
@@ -53,36 +49,18 @@ class AdvancedSettingsSection extends StatefulWidget {
 }
 
 class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
-  late TextEditingController _limitController;
-  late TextEditingController _maxParallelController;
-  bool _isLimitEnabled = true;
   bool _analyticsEnabled =
       !kDebugMode; // Default to false in debug mode, true in production
   bool _serverMessagesEnabled = true;
   bool _betaTestingEnabled = false;
 
-  static const String _limitPrefKey = 'limit';
   static const String _maxParallelPrefKey = 'maxParallel';
-  static const String _limitEnabledPrefKey = 'limit_enabled';
   static const String _serverMessagesPrefKey = 'server_messages_enabled';
   static const String _betaTestingPrefKey = 'beta_testing_enabled';
 
   @override
   void initState() {
     super.initState();
-    _limitController = TextEditingController(
-      text: widget.currentLimit.toString(),
-    );
-    _maxParallelController = TextEditingController(
-      text: widget.currentMaxParallel.toString(),
-    );
-
-    // Initialize with widget value if provided, otherwise load from prefs
-    if (widget.currentLimitEnabled != null) {
-      _isLimitEnabled = widget.currentLimitEnabled!;
-    } else {
-      _loadLimitEnabledPref();
-    }
 
     // Initialize analytics consent state
     if (widget.currentAnalyticsEnabled != null) {
@@ -104,13 +82,6 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
     } else {
       _loadBetaTestingEnabledPref();
     }
-  }
-
-  Future<void> _loadLimitEnabledPref() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _isLimitEnabled = prefs.getBool(_limitEnabledPrefKey) ?? true;
-    });
   }
 
   void _loadAnalyticsEnabledPref() async {
@@ -137,22 +108,6 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
   @override
   void didUpdateWidget(covariant AdvancedSettingsSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.currentLimit != oldWidget.currentLimit) {
-      if (_limitController.text != widget.currentLimit.toString()) {
-        _limitController.text = widget.currentLimit.toString();
-        _limitController.selection = TextSelection.fromPosition(
-          TextPosition(offset: _limitController.text.length),
-        );
-      }
-    }
-    if (widget.currentMaxParallel != oldWidget.currentMaxParallel) {
-      if (_maxParallelController.text != widget.currentMaxParallel.toString()) {
-        _maxParallelController.text = widget.currentMaxParallel.toString();
-        _maxParallelController.selection = TextSelection.fromPosition(
-          TextPosition(offset: _maxParallelController.text.length),
-        );
-      }
-    }
     if (widget.currentAnalyticsEnabled != oldWidget.currentAnalyticsEnabled &&
         widget.currentAnalyticsEnabled != null) {
       _analyticsEnabled = widget.currentAnalyticsEnabled!;
@@ -169,19 +124,9 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
     }
   }
 
-  Future<void> _saveLimit(int value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_limitPrefKey, value);
-  }
-
   Future<void> _saveMaxParallel(int value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_maxParallelPrefKey, value);
-  }
-
-  Future<void> _saveLimitEnabled(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_limitEnabledPrefKey, value);
   }
 
   Future<void> _saveAnalyticsEnabled(bool value) async {
@@ -223,7 +168,7 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Text(
-            AppLocalizations.of(context)?.performanceMenu ??
+            AppLocalizations.of(context)?.advancedSettings ??
                 'Advanced Settings',
             style: TextStyle(
               color: theme.colorScheme.onSurfaceVariant,
@@ -232,107 +177,77 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
             ),
           ),
         ),
-        SwitchListTile(
-          secondary: Icon(Icons.filter_list, color: theme.colorScheme.primary),
-          title: Text(
-            AppLocalizations.of(context)?.enableScreenshotLimit ??
-                'Set a limit on screenshots loaded',
-            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
-          ),
-          subtitle: Text(
-            _isLimitEnabled
-                ? 'Limited to ${widget.currentLimit} screenshots'
-                : 'All screenshots will be loaded',
-            style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-          ),
-          value: _isLimitEnabled,
-          activeColor: theme.colorScheme.primary,
-          onChanged: (bool value) {
-            setState(() {
-              _isLimitEnabled = value;
-            });
-            _saveLimitEnabled(value);
-
-            // Track analytics for screenshot limit setting
-            AnalyticsService().logFeatureUsed(
-              'settings_screenshot_limit_${value ? 'enabled' : 'disabled'}',
-            );
-
-            if (widget.onLimitEnabledChanged != null) {
-              widget.onLimitEnabledChanged!(value);
-            }
-          },
-        ),
-        if (_isLimitEnabled)
-          ListTile(
-            leading: const SizedBox(
-              width: 24,
-            ), // Keep alignment with icon above
-            title: Text(
-              'Screenshot Limit Value',
-              style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
-            ),
-            subtitle: TextFormField(
-              controller: _limitController,
-              style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
-              decoration: InputDecoration(
-                hintText: 'e.g., 50',
-                hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                enabledBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: theme.colorScheme.outline),
-                ),
-                focusedBorder: UnderlineInputBorder(
-                  borderSide: BorderSide(color: theme.colorScheme.primary),
-                ),
-              ),
-              keyboardType: TextInputType.number,
-              onChanged: (value) {
-                final intValue = int.tryParse(value);
-                if (intValue != null) {
-                  widget.onLimitChanged(intValue);
-                  _saveLimit(intValue);
-
-                  // Track analytics for screenshot limit value change
-                  AnalyticsService().logFeatureUsed(
-                    'settings_screenshot_limit_value_changed',
-                  );
-                }
-              },
-            ),
-          ),
         ListTile(
           leading: Icon(Icons.sync_alt, color: theme.colorScheme.primary),
-          title: Text(
-            AppLocalizations.of(context)?.maxParallelAI ??
-                'Max Parallel AI Processes',
-            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
+          title: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  AppLocalizations.of(context)?.maxParallelAI ??
+                      'Max Parallel AI Processes',
+                  style: TextStyle(
+                    color: theme.colorScheme.onSecondaryContainer,
+                  ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  '${widget.currentMaxParallel}',
+                  style: TextStyle(
+                    color: theme.colorScheme.onPrimaryContainer,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
           ),
-          subtitle: TextFormField(
-            controller: _maxParallelController,
-            style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
-            decoration: InputDecoration(
-              hintText: 'e.g., 4',
-              hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-              enabledBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: theme.colorScheme.outline),
+          subtitle: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Controls the maximum number of images sent in one AI request. Default is 4.',
+                style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
               ),
-              focusedBorder: UnderlineInputBorder(
-                borderSide: BorderSide(color: theme.colorScheme.primary),
-              ),
-            ),
-            keyboardType: TextInputType.number,
-            onChanged: (value) {
-              final intValue = int.tryParse(value);
-              if (intValue != null) {
-                widget.onMaxParallelChanged(intValue);
-                _saveMaxParallel(intValue);
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Text(
+                    '1',
+                    style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                  Expanded(
+                    child: Slider(
+                      value: widget.currentMaxParallel.toDouble(),
+                      min: 1,
+                      max: 8,
+                      divisions: 7,
+                      label: widget.currentMaxParallel.toString(),
+                      activeColor: theme.colorScheme.primary,
+                      onChanged: (value) {
+                        final intValue = value.round();
+                        widget.onMaxParallelChanged(intValue);
+                        _saveMaxParallel(intValue);
 
-                // Track analytics for max parallel processes change
-                AnalyticsService().logFeatureUsed(
-                  'settings_max_parallel_changed',
-                );
-              }
-            },
+                        // Track analytics for max parallel processes change
+                        AnalyticsService().logFeatureUsed(
+                          'settings_max_parallel_changed',
+                        );
+                      },
+                    ),
+                  ),
+                  Text(
+                    '8',
+                    style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
         SwitchListTile(
@@ -528,12 +443,5 @@ class _AdvancedSettingsSectionState extends State<AdvancedSettingsSection> {
         //   ),
       ],
     );
-  }
-
-  @override
-  void dispose() {
-    _limitController.dispose();
-    _maxParallelController.dispose();
-    super.dispose();
   }
 }

@@ -261,7 +261,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String _selectedModelName = 'gemini-2.0-flash';
   int _screenshotLimit = 1200;
   int _maxParallelAI = 4;
-  bool _isScreenshotLimitEnabled = false;
   bool _devMode = false;
   bool _autoProcessEnabled = true;
   bool _analyticsEnabled =
@@ -663,7 +662,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _selectedModelName = prefs.getString('modelName') ?? 'gemini-2.0-flash';
       _screenshotLimit = prefs.getInt('limit') ?? 1200;
       _maxParallelAI = prefs.getInt('maxParallel') ?? 4;
-      _isScreenshotLimitEnabled = prefs.getBool('limit_enabled') ?? false;
       _devMode = prefs.getBool('dev_mode') ?? false;
       _autoProcessEnabled = prefs.getBool('auto_process_enabled') ?? true;
       _analyticsEnabled =
@@ -693,15 +691,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _updateScreenshotLimit(int newLimit) {
     setState(() {
       _screenshotLimit = newLimit;
-    });
-  }
-
-  void _updateScreenshotLimitEnabled(bool enabled) {
-    setState(() {
-      _isScreenshotLimitEnabled = enabled;
-    });
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.setBool('limit_enabled', enabled);
     });
   }
 
@@ -1122,7 +1111,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
       final result = await _imageLoaderService.loadAndroidScreenshots(
         existingScreenshots: _screenshots,
-        isLimitEnabled: _isScreenshotLimitEnabled,
+        isLimitEnabled: false, // Always disabled
         screenshotLimit: _screenshotLimit,
         customPaths: customPaths,
         onProgress: (current, total) {
@@ -1804,8 +1793,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onLimitChanged: _updateScreenshotLimit,
         currentMaxParallel: _maxParallelAI,
         onMaxParallelChanged: _updateMaxParallelAI,
-        currentLimitEnabled: _isScreenshotLimitEnabled,
-        onLimitEnabledChanged: _updateScreenshotLimitEnabled,
         currentDevMode: _devMode,
         onDevModeChanged: _updateDevMode,
         currentAutoProcessEnabled: _autoProcessEnabled,

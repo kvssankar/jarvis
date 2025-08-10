@@ -14,8 +14,6 @@ class AppDrawer extends StatefulWidget {
   final Function(int) onLimitChanged;
   final int currentMaxParallel;
   final Function(int) onMaxParallelChanged;
-  final bool? currentLimitEnabled;
-  final Function(bool)? onLimitEnabledChanged;
   final bool? currentDevMode;
   final Function(bool)? onDevModeChanged;
   final bool? currentAutoProcessEnabled;
@@ -44,8 +42,6 @@ class AppDrawer extends StatefulWidget {
     required this.onLimitChanged,
     required this.currentMaxParallel,
     required this.onMaxParallelChanged,
-    this.currentLimitEnabled,
-    this.onLimitEnabledChanged,
     this.currentDevMode,
     this.onDevModeChanged,
     this.currentAutoProcessEnabled,
@@ -144,8 +140,6 @@ class _AppDrawerState extends State<AppDrawer> {
                 onLimitChanged: widget.onLimitChanged,
                 currentMaxParallel: widget.currentMaxParallel,
                 onMaxParallelChanged: widget.onMaxParallelChanged,
-                currentLimitEnabled: widget.currentLimitEnabled,
-                onLimitEnabledChanged: widget.onLimitEnabledChanged,
                 currentDevMode: widget.currentDevMode,
                 onDevModeChanged: widget.onDevModeChanged,
                 currentAnalyticsEnabled: widget.currentAnalyticsEnabled,
