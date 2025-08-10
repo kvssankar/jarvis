@@ -115,5 +115,14 @@
   "localAIBattery": "• Usa más batería que los modelos en la nube",
   "localAIRAM": "• Requiere al menos 4GB de RAM disponible",
   "localAIPrivacyNote": "El modelo procesará tus capturas de pantalla localmente para mayor privacidad.",
-  "enableLocalAIButton": "Habilitar IA Local"
+  "enableLocalAIButton": "Habilitar IA Local",
+  "reminders": "Recordatorios",
+  "activeReminders": "Activos",
+  "pastReminders": "Pasados",
+  "noActiveReminders": "No hay recordatorios activos.\nEstablece recordatorios desde los detalles de la captura.",
+  "noPastReminders": "No hay recordatorios pasados.",
+  "editReminder": "Editar Recordatorio",
+  "clearReminder": "Limpiar Recordatorio",
+  "removePastReminder": "Eliminar",
+  "pastReminderRemoved": "Recordatorio pasado eliminado"
 }

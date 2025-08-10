@@ -13,6 +13,7 @@ import 'package:shots_studio/screens/app_drawer_screen.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/screens/search_screen.dart';
+import 'package:shots_studio/screens/reminders_screen.dart';
 import 'package:shots_studio/screens/privacy_screen.dart';
 import 'package:shots_studio/widgets/onboarding/api_key_guide_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -1444,6 +1445,41 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
+  void _navigateToRemindersScreen() {
+    // Log navigation analytics
+    AnalyticsService().logScreenView('reminders_screen');
+    AnalyticsService().logUserPath('home_screen', 'reminders_screen');
+    AnalyticsService().logFeatureUsed('reminders_button_pressed');
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (context) => RemindersScreen(
+              allScreenshots: _activeScreenshots,
+              allCollections: _collections,
+              onUpdateCollection: _updateCollection,
+              onDeleteScreenshot: _deleteScreenshot,
+              onScreenshotUpdated: () {
+                _saveDataToPrefs();
+                setState(() {});
+              },
+            ),
+      ),
+    );
+  }
+
+  int get _getActiveRemindersCount {
+    final now = DateTime.now();
+    return _activeScreenshots
+        .where(
+          (screenshot) =>
+              screenshot.reminderTime != null &&
+              screenshot.reminderTime!.isAfter(now) &&
+              !screenshot.isDeleted,
+        )
+        .length;
+  }
+
   /// Handle auto-categorization for a screenshot based on AI suggestions
   void _handleAutoCategorization(
     Screenshot screenshot,
@@ -1754,6 +1790,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         aiTotalToProcess: _aiTotalToProcess,
         onSearchPressed: _navigateToSearchScreen,
         onStopProcessingAI: _stopProcessingAI,
+        onRemindersPressed: _navigateToRemindersScreen,
+        activeRemindersCount: _getActiveRemindersCount,
         devMode: _devMode,
         autoProcessEnabled: _autoProcessEnabled,
       ),

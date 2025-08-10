@@ -338,4 +338,32 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get enableLocalAIButton => 'Ativar IA Local';
+
+  @override
+  String get reminders => 'Lembretes';
+
+  @override
+  String get activeReminders => 'Ativos';
+
+  @override
+  String get pastReminders => 'Passados';
+
+  @override
+  String get noActiveReminders =>
+      'Nenhum lembrete ativo.\nDefina lembretes nos detalhes da captura de tela.';
+
+  @override
+  String get noPastReminders => 'Nenhum lembrete passado.';
+
+  @override
+  String get editReminder => 'Editar Lembrete';
+
+  @override
+  String get clearReminder => 'Limpar Lembrete';
+
+  @override
+  String get removePastReminder => 'Remover';
+
+  @override
+  String get pastReminderRemoved => 'Lembrete passado removido';
 }

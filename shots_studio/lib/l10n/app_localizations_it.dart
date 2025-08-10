@@ -340,4 +340,32 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get enableLocalAIButton => 'Abilita IA Locale';
+
+  @override
+  String get reminders => 'Promemoria';
+
+  @override
+  String get activeReminders => 'Attivi';
+
+  @override
+  String get pastReminders => 'Passati';
+
+  @override
+  String get noActiveReminders =>
+      'Nessun promemoria attivo.\nImposta promemoria dai dettagli screenshot.';
+
+  @override
+  String get noPastReminders => 'Nessun promemoria passato.';
+
+  @override
+  String get editReminder => 'Modifica Promemoria';
+
+  @override
+  String get clearReminder => 'Cancella Promemoria';
+
+  @override
+  String get removePastReminder => 'Rimuovi';
+
+  @override
+  String get pastReminderRemoved => 'Promemoria passato rimosso';
 }

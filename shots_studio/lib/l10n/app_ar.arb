@@ -115,5 +115,14 @@
   "localAIBattery": "• يستخدم بطارية أكثر من النماذج السحابية",
   "localAIRAM": "• يتطلب على الأقل 4 جيجابايت من ذاكرة الوصول العشوائي المتاحة",
   "localAIPrivacyNote": "سيقوم النموذج بمعالجة لقطات الشاشة محلياً لتعزيز الخصوصية.",
-  "enableLocalAIButton": "تفعيل الذكاء الاصطناعي المحلي"
+  "enableLocalAIButton": "تفعيل الذكاء الاصطناعي المحلي",
+  "reminders": "التذكيرات",
+  "activeReminders": "نشط",
+  "pastReminders": "السابق",
+  "noActiveReminders": "لا توجد تذكيرات نشطة.\nقم بتعيين التذكيرات من تفاصيل لقطة الشاشة.",
+  "noPastReminders": "لا توجد تذكيرات سابقة.",
+  "editReminder": "تحرير التذكير",
+  "clearReminder": "مسح التذكير",
+  "removePastReminder": "إزالة",
+  "pastReminderRemoved": "تم إزالة التذكير السابق"
 }

@@ -17,6 +17,7 @@ import 'package:shots_studio/widgets/screenshots/tags/tag_chip.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_collection_dialog.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shots_studio/utils/reminder_utils.dart';
+import 'package:shots_studio/services/notification_service.dart';
 import 'package:shots_studio/services/ai_service_manager.dart';
 import 'package:shots_studio/services/ai_service.dart';
 import 'package:shots_studio/services/ocr_service.dart';
@@ -77,8 +78,10 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     ); // Track screenshot details screen access
     AnalyticsService().logScreenView('screenshot_details_screen');
 
-    // Check for expired reminders
-    _checkExpiredReminders();
+    // Check for expired reminders after the frame is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkExpiredReminders();
+    });
 
     // Load hard delete setting
     _loadHardDeleteSetting();
@@ -87,11 +90,12 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   void _checkExpiredReminders() {
     if (widget.screenshot.reminderTime != null &&
         widget.screenshot.reminderTime!.isBefore(DateTime.now())) {
-      // Clear expired reminder
+      // Clear expired reminder silently (no snackbar needed for expired reminders)
       setState(() {
         widget.screenshot.removeReminder();
       });
-      ReminderUtils.clearReminder(context, widget.screenshot);
+      // Cancel the notification without showing a snackbar
+      NotificationService().cancelNotification(widget.screenshot.id.hashCode);
       _updateScreenshotDetails();
     }
   }
@@ -1366,10 +1370,10 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                       widget.screenshot.removeReminder();
                     });
                     ReminderUtils.clearReminder(context, widget.screenshot);
-                    SnackbarService().showInfo(
-                      context,
-                      'Expired reminder has been cleared',
-                    );
+                    // SnackbarService().showInfo(
+                    //   context,
+                    //   'Expired reminder has been cleared',
+                    // );
                   } else {
                     setState(() {
                       if (result['reminderTime'] != null) {

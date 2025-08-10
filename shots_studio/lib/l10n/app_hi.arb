@@ -115,5 +115,14 @@
   "localAIBattery": "• क्लाउड मॉडल से अधिक बैटरी का उपयोग करता है",
   "localAIRAM": "• कम से कम 4GB उपलब्ध RAM की आवश्यकता है",
   "localAIPrivacyNote": "मॉडल बेहतर गोपनीयता के लिए आपके स्क्रीनशॉट को स्थानीय रूप से प्रोसेस करेगा।",
-  "enableLocalAIButton": "स्थानीय AI सक्षम करें"
+  "enableLocalAIButton": "स्थानीय AI सक्षम करें",
+  "reminders": "रिमाइंडर",
+  "activeReminders": "सक्रिय",
+  "pastReminders": "पुराने",
+  "noActiveReminders": "कोई सक्रिय रिमाइंडर नहीं।\nस्क्रीनशॉट विवरण से रिमाइंडर सेट करें।",
+  "noPastReminders": "कोई पुराने रिमाइंडर नहीं।",
+  "editReminder": "रिमाइंडर संपादित करें",
+  "clearReminder": "रिमाइंडर साफ़ करें",
+  "removePastReminder": "हटाएं",
+  "pastReminderRemoved": "पुराना रिमाइंडर हटा दिया गया"
 }

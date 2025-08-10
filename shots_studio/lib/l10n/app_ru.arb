@@ -117,5 +117,14 @@
   "localAIBattery": "• Использует больше батареи чем облачные модели",
   "localAIRAM": "• Требует минимум 4ГБ доступной RAM",
   "localAIPrivacyNote": "Модель будет обрабатывать ваши скриншоты локально для повышенной приватности.",
-  "enableLocalAIButton": "Включить локальный ИИ"
+  "enableLocalAIButton": "Включить локальный ИИ",
+  "reminders": "Напоминания",
+  "activeReminders": "Активные",
+  "pastReminders": "Прошедшие",
+  "noActiveReminders": "Нет активных напоминаний.\nУстановите напоминания в деталях скриншота.",
+  "noPastReminders": "Нет прошедших напоминаний.",
+  "editReminder": "Редактировать напоминание",
+  "clearReminder": "Очистить напоминание",
+  "removePastReminder": "Удалить",
+  "pastReminderRemoved": "Прошедшее напоминание удалено"
 }

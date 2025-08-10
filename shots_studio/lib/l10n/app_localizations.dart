@@ -763,6 +763,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Enable Local AI'**
   String get enableLocalAIButton;
+
+  /// Reminders screen title
+  ///
+  /// In en, this message translates to:
+  /// **'Reminders'**
+  String get reminders;
+
+  /// Active reminders tab title
+  ///
+  /// In en, this message translates to:
+  /// **'Active'**
+  String get activeReminders;
+
+  /// Past reminders tab title
+  ///
+  /// In en, this message translates to:
+  /// **'Past'**
+  String get pastReminders;
+
+  /// Message shown when there are no active reminders
+  ///
+  /// In en, this message translates to:
+  /// **'No active reminders.\nSet reminders from screenshot details.'**
+  String get noActiveReminders;
+
+  /// Message shown when there are no past reminders
+  ///
+  /// In en, this message translates to:
+  /// **'No past reminders.'**
+  String get noPastReminders;
+
+  /// Tooltip for edit reminder button
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Reminder'**
+  String get editReminder;
+
+  /// Tooltip for clear reminder button
+  ///
+  /// In en, this message translates to:
+  /// **'Clear Reminder'**
+  String get clearReminder;
+
+  /// Tooltip for remove past reminder button
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get removePastReminder;
+
+  /// Message shown when a past reminder is removed
+  ///
+  /// In en, this message translates to:
+  /// **'Past reminder removed'**
+  String get pastReminderRemoved;
 }
 
 class _AppLocalizationsDelegate

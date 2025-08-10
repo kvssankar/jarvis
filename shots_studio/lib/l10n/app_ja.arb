@@ -117,5 +117,14 @@
   "localAIBattery": "• クラウドモデルよりもバッテリーを多く消費します",
   "localAIRAM": "• 最低4GBの利用可能なRAMが必要です",
   "localAIPrivacyNote": "モデルはプライバシー保護のためにスクリーンショットをローカルで処理します。",
-  "enableLocalAIButton": "ローカルAIを有効にする"
+  "enableLocalAIButton": "ローカルAIを有効にする",
+  "reminders": "リマインダー",
+  "activeReminders": "アクティブ",
+  "pastReminders": "過去",
+  "noActiveReminders": "アクティブなリマインダーはありません。\nスクリーンショットの詳細からリマインダーを設定してください。",
+  "noPastReminders": "過去のリマインダーはありません。",
+  "editReminder": "リマインダーを編集",
+  "clearReminder": "リマインダーをクリア",
+  "removePastReminder": "削除",
+  "pastReminderRemoved": "過去のリマインダーが削除されました"
 }

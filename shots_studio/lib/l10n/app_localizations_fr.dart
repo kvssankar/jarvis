@@ -340,4 +340,32 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get enableLocalAIButton => 'Activer l\'IA Locale';
+
+  @override
+  String get reminders => 'Rappels';
+
+  @override
+  String get activeReminders => 'Actifs';
+
+  @override
+  String get pastReminders => 'Passés';
+
+  @override
+  String get noActiveReminders =>
+      'Aucun rappel actif.\nDéfinissez des rappels depuis les détails de la capture.';
+
+  @override
+  String get noPastReminders => 'Aucun rappel passé.';
+
+  @override
+  String get editReminder => 'Modifier le Rappel';
+
+  @override
+  String get clearReminder => 'Effacer le Rappel';
+
+  @override
+  String get removePastReminder => 'Supprimer';
+
+  @override
+  String get pastReminderRemoved => 'Rappel passé supprimé';
 }

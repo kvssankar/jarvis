@@ -337,4 +337,32 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get enableLocalAIButton => 'Enable Local AI';
+
+  @override
+  String get reminders => 'Reminders';
+
+  @override
+  String get activeReminders => 'Active';
+
+  @override
+  String get pastReminders => 'Past';
+
+  @override
+  String get noActiveReminders =>
+      'No active reminders.\nSet reminders from screenshot details.';
+
+  @override
+  String get noPastReminders => 'No past reminders.';
+
+  @override
+  String get editReminder => 'Edit Reminder';
+
+  @override
+  String get clearReminder => 'Clear Reminder';
+
+  @override
+  String get removePastReminder => 'Remove';
+
+  @override
+  String get pastReminderRemoved => 'Past reminder removed';
 }

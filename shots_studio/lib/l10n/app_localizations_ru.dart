@@ -340,4 +340,32 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get enableLocalAIButton => 'Включить локальный ИИ';
+
+  @override
+  String get reminders => 'Напоминания';
+
+  @override
+  String get activeReminders => 'Активные';
+
+  @override
+  String get pastReminders => 'Прошедшие';
+
+  @override
+  String get noActiveReminders =>
+      'Нет активных напоминаний.\nУстановите напоминания в деталях скриншота.';
+
+  @override
+  String get noPastReminders => 'Нет прошедших напоминаний.';
+
+  @override
+  String get editReminder => 'Редактировать напоминание';
+
+  @override
+  String get clearReminder => 'Очистить напоминание';
+
+  @override
+  String get removePastReminder => 'Удалить';
+
+  @override
+  String get pastReminderRemoved => 'Прошедшее напоминание удалено';
 }

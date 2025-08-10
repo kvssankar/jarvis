@@ -115,5 +115,14 @@
   "localAIBattery": "• Verbraucht mehr Akku als Cloud-Modelle",
   "localAIRAM": "• Benötigt mindestens 4GB verfügbaren RAM",
   "localAIPrivacyNote": "Das Modell wird Ihre Screenshots lokal verarbeiten für verbesserte Privatsphäre.",
-  "enableLocalAIButton": "Lokale KI aktivieren"
+  "enableLocalAIButton": "Lokale KI aktivieren",
+  "reminders": "Erinnerungen",
+  "activeReminders": "Aktiv",
+  "pastReminders": "Vergangen",
+  "noActiveReminders": "Keine aktiven Erinnerungen.\nErinnerungen in den Screenshot-Details setzen.",
+  "noPastReminders": "Keine vergangenen Erinnerungen.",
+  "editReminder": "Erinnerung bearbeiten",
+  "clearReminder": "Erinnerung löschen",
+  "removePastReminder": "Entfernen",
+  "pastReminderRemoved": "Vergangene Erinnerung entfernt"
 }

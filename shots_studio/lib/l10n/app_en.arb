@@ -429,5 +429,41 @@
   "enableLocalAIButton": "Enable Local AI",
   "@enableLocalAIButton": {
     "description": "Button text to enable local AI"
+  },
+  "reminders": "Reminders",
+  "@reminders": {
+    "description": "Reminders screen title"
+  },
+  "activeReminders": "Active",
+  "@activeReminders": {
+    "description": "Active reminders tab title"
+  },
+  "pastReminders": "Past",
+  "@pastReminders": {
+    "description": "Past reminders tab title"
+  },
+  "noActiveReminders": "No active reminders.\nSet reminders from screenshot details.",
+  "@noActiveReminders": {
+    "description": "Message shown when there are no active reminders"
+  },
+  "noPastReminders": "No past reminders.",
+  "@noPastReminders": {
+    "description": "Message shown when there are no past reminders"
+  },
+  "editReminder": "Edit Reminder",
+  "@editReminder": {
+    "description": "Tooltip for edit reminder button"
+  },
+  "clearReminder": "Clear Reminder",
+  "@clearReminder": {
+    "description": "Tooltip for clear reminder button"
+  },
+  "removePastReminder": "Remove",
+  "@removePastReminder": {
+    "description": "Tooltip for remove past reminder button"
+  },
+  "pastReminderRemoved": "Past reminder removed",
+  "@pastReminderRemoved": {
+    "description": "Message shown when a past reminder is removed"
   }
 }

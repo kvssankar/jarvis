@@ -338,4 +338,32 @@ class AppLocalizationsHi extends AppLocalizations {
 
   @override
   String get enableLocalAIButton => 'स्थानीय AI सक्षम करें';
+
+  @override
+  String get reminders => 'रिमाइंडर';
+
+  @override
+  String get activeReminders => 'सक्रिय';
+
+  @override
+  String get pastReminders => 'पुराने';
+
+  @override
+  String get noActiveReminders =>
+      'कोई सक्रिय रिमाइंडर नहीं।\nस्क्रीनशॉट विवरण से रिमाइंडर सेट करें।';
+
+  @override
+  String get noPastReminders => 'कोई पुराने रिमाइंडर नहीं।';
+
+  @override
+  String get editReminder => 'रिमाइंडर संपादित करें';
+
+  @override
+  String get clearReminder => 'रिमाइंडर साफ़ करें';
+
+  @override
+  String get removePastReminder => 'हटाएं';
+
+  @override
+  String get pastReminderRemoved => 'पुराना रिमाइंडर हटा दिया गया';
 }

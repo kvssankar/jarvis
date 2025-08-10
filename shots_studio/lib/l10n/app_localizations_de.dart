@@ -340,4 +340,32 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get enableLocalAIButton => 'Lokale KI aktivieren';
+
+  @override
+  String get reminders => 'Erinnerungen';
+
+  @override
+  String get activeReminders => 'Aktiv';
+
+  @override
+  String get pastReminders => 'Vergangen';
+
+  @override
+  String get noActiveReminders =>
+      'Keine aktiven Erinnerungen.\nErinnerungen in den Screenshot-Details setzen.';
+
+  @override
+  String get noPastReminders => 'Keine vergangenen Erinnerungen.';
+
+  @override
+  String get editReminder => 'Erinnerung bearbeiten';
+
+  @override
+  String get clearReminder => 'Erinnerung löschen';
+
+  @override
+  String get removePastReminder => 'Entfernen';
+
+  @override
+  String get pastReminderRemoved => 'Vergangene Erinnerung entfernt';
 }

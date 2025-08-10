@@ -339,4 +339,32 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get enableLocalAIButton => 'Habilitar IA Local';
+
+  @override
+  String get reminders => 'Recordatorios';
+
+  @override
+  String get activeReminders => 'Activos';
+
+  @override
+  String get pastReminders => 'Pasados';
+
+  @override
+  String get noActiveReminders =>
+      'No hay recordatorios activos.\nEstablece recordatorios desde los detalles de la captura.';
+
+  @override
+  String get noPastReminders => 'No hay recordatorios pasados.';
+
+  @override
+  String get editReminder => 'Editar Recordatorio';
+
+  @override
+  String get clearReminder => 'Limpiar Recordatorio';
+
+  @override
+  String get removePastReminder => 'Eliminar';
+
+  @override
+  String get pastReminderRemoved => 'Recordatorio pasado eliminado';
 }

@@ -333,4 +333,31 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get enableLocalAIButton => '启用本地AI';
+
+  @override
+  String get reminders => '提醒';
+
+  @override
+  String get activeReminders => '活跃';
+
+  @override
+  String get pastReminders => '过去';
+
+  @override
+  String get noActiveReminders => '没有活跃提醒。\n请从截图详情设置提醒。';
+
+  @override
+  String get noPastReminders => '没有过去的提醒。';
+
+  @override
+  String get editReminder => '编辑提醒';
+
+  @override
+  String get clearReminder => '清除提醒';
+
+  @override
+  String get removePastReminder => '移除';
+
+  @override
+  String get pastReminderRemoved => '过去的提醒已移除';
 }

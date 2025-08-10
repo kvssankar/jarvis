@@ -338,4 +338,32 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get enableLocalAIButton => 'تفعيل الذكاء الاصطناعي المحلي';
+
+  @override
+  String get reminders => 'التذكيرات';
+
+  @override
+  String get activeReminders => 'نشط';
+
+  @override
+  String get pastReminders => 'السابق';
+
+  @override
+  String get noActiveReminders =>
+      'لا توجد تذكيرات نشطة.\nقم بتعيين التذكيرات من تفاصيل لقطة الشاشة.';
+
+  @override
+  String get noPastReminders => 'لا توجد تذكيرات سابقة.';
+
+  @override
+  String get editReminder => 'تحرير التذكير';
+
+  @override
+  String get clearReminder => 'مسح التذكير';
+
+  @override
+  String get removePastReminder => 'إزالة';
+
+  @override
+  String get pastReminderRemoved => 'تم إزالة التذكير السابق';
 }

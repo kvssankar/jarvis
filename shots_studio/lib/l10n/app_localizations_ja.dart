@@ -334,4 +334,32 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get enableLocalAIButton => 'ローカルAIを有効にする';
+
+  @override
+  String get reminders => 'リマインダー';
+
+  @override
+  String get activeReminders => 'アクティブ';
+
+  @override
+  String get pastReminders => '過去';
+
+  @override
+  String get noActiveReminders =>
+      'アクティブなリマインダーはありません。\nスクリーンショットの詳細からリマインダーを設定してください。';
+
+  @override
+  String get noPastReminders => '過去のリマインダーはありません。';
+
+  @override
+  String get editReminder => 'リマインダーを編集';
+
+  @override
+  String get clearReminder => 'リマインダーをクリア';
+
+  @override
+  String get removePastReminder => '削除';
+
+  @override
+  String get pastReminderRemoved => '過去のリマインダーが削除されました';
 }

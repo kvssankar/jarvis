@@ -8,6 +8,8 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   final int aiTotalToProcess;
   final VoidCallback? onSearchPressed;
   final VoidCallback? onStopProcessingAI;
+  final VoidCallback? onRemindersPressed;
+  final int activeRemindersCount;
   final bool devMode;
   final bool autoProcessEnabled;
 
@@ -19,6 +21,8 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.aiTotalToProcess = 0,
     this.onSearchPressed,
     this.onStopProcessingAI,
+    this.onRemindersPressed,
+    this.activeRemindersCount = 0,
     this.devMode = false,
     this.autoProcessEnabled = true,
   });
@@ -48,21 +52,26 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
               'Search Screenshots',
           onPressed: onSearchPressed,
         ),
+        IconButton(
+          icon: Icon(
+            Icons.notifications_outlined,
+            color:
+                activeRemindersCount > 0
+                    ? Theme.of(context).colorScheme.primary
+                    : null,
+          ),
+          tooltip: AppLocalizations.of(context)?.reminders ?? 'Reminders',
+          onPressed: onRemindersPressed,
+        ),
 
         // Show AI processing buttons when in dev mode OR auto-processing is disabled
         if (showAIButtons && isProcessingAI)
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: Center(
-              child: Text(
-                'Analyzed $aiProcessedCount/$aiTotalToProcess',
-                style: const TextStyle(fontSize: 12),
-              ),
-            ),
-          ),
-        if (showAIButtons && isProcessingAI)
           IconButton(
             icon: const Icon(Icons.stop_circle_outlined),
+            color:
+                activeRemindersCount > 0
+                    ? Theme.of(context).colorScheme.primary
+                    : null,
             tooltip:
                 AppLocalizations.of(context)?.stopProcessing ??
                 'Stop Processing',
