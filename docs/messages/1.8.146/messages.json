@@ -1,0 +1,20 @@
+{
+  "messages": [
+    {
+      "show": true,
+      "id": "try_features_1_8_146",
+      "title": "🔥 Welcome to Shots Studio 1.8.146!",
+      "message": "You've just unlocked v1.8.146 - our most ambitious upgrade yet. 🚀\n\nIt's a whole new experience:\n🌍 Habla en 11 idiomas - Shots Studio now talks like you! Check out the app language selection in Settings.\n🤖 On-device AI - The most awaited feature is here! Try the gemma-3n-e2b model: go to AI Settings to download and load it. It's impressive…\n🔔 Notifications that do more - with images and a unified screen on the home page where you can see all active and past reminders.\n🧹 One-tap media cleanup - remove all corrupt or deleted media in one click.\n\nYou're among the first to wield these tools. Go explore, and if you love this update, support the project! 💙 \n\n With Love, \n Team Shots Studio",
+      "type": "info",
+      "priority": "high",
+      "show_once": true,
+      "valid_until": "2026-08-01T00:00:00Z",
+      "is_notification": false,
+      "version": "1.8.146",
+      "beta_only": false,
+      "action_text": "Support Now",
+      "dismiss_text": "Later",
+      "action_url": "https://github.com/sponsors/AnsahMohammad"
+    }
+  ]
+}
