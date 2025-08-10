@@ -78,6 +78,17 @@ android {
         // Disables dependency metadata when building Android App Bundles.
         includeInBundle = false
     }
+
+    // Configure APK output file names
+    applicationVariants.all {
+        outputs.all {
+            val outputImpl = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
+            val versionName = defaultConfig.versionName
+            val flavorName = productFlavors[0].name
+            val buildTypeName = buildType.name
+            outputImpl.outputFileName = "shots_studio-${flavorName}-${buildTypeName}-${versionName}.apk"
+        }
+    }
 }
 
 flutter {

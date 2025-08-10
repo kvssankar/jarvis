@@ -1,0 +1,20 @@
+{
+  "messages": [
+    {
+      "show": true,
+      "id": "hello_lingo",
+      "title": "Hola Users!",
+      "message": "This is a test message to check new framework functionality.",
+      "type": "update",
+      "priority": "high",
+      "show_once": true,
+      "valid_until": "2026-08-01T00:00:00Z",
+      "is_notification": false,
+      "version": "1.8.144",
+      "beta_only": false,
+      "action_text": "Check It Out",
+      "dismiss_text": "Not Interested",
+      "action_url": "https://github.com/AnsahMohammad/shots-studio"
+    }
+  ]
+}

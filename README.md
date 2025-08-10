@@ -8,24 +8,25 @@
   <img src="https://raw.githubusercontent.com/AnsahMohammad/shots-studio/master/shots_studio/assets/icon/icon.png" width="20%" />
 
 # Shots Studio
-A Screenshot manager to declutter your gallery
+A Screenshot Manager to Declutter Your Gallery
 </div>
 
-
-Shots Studio turns your chaotic screenshot gallery into an intelligent, organized archive. Backed by powerful AI, it makes your screenshots searchable, taggable, and easy to browse — all while giving you control.
+Shots Studio turns your chaotic screenshot folder into an **intelligent, organized archive**.  
+Now powered by **on-device AI with Gemma**, you can process screenshots **offline** — faster, private, and without internet dependency.
 
 ---
 
 ## What is Shots Studio?
 
-Drowning in screenshots you can’t find when you need them?
-**Shots Studio** solves that by bringing **AI-driven search, smart tagging, and seamless organization** to your screenshot collection.
+Drowning in screenshots you can’t find when you need them?  
+**Shots Studio** brings **AI-driven search, smart tagging, and seamless organization** to your screenshot collection.
 
 With Shots Studio, you can:
 
-* **Search** your screenshots by content — not just filename.
+* **Search** by content — not just file names.
 * Add or generate **tags** automatically using AI.
 * Group related screenshots into custom **collections**.
+* **Run AI fully offline** with the latest **Gemma** on-device model for faster, privacy-first processing.
 
 ---
 
@@ -34,7 +35,7 @@ With Shots Studio, you can:
 <div align="center">
 
 [<img src="docs/assets/get-it-on-github.png"
-    alt="Get it on F-Droid" height="80">](https://github.com/AnsahMohammad/shots-studio/releases/latest)
+    alt="Get it on GitHub" height="80">](https://github.com/AnsahMohammad/shots-studio/releases/latest)
 
 [<img src="https://f-droid.org/badge/get-it-on.png"
     alt="Get it on F-Droid" height="80">](https://f-droid.org/en/packages/com.ansah.shots_studio/)
@@ -45,91 +46,75 @@ With Shots Studio, you can:
 
 ## Key Features
 
-* **AI-Powered Search**
-  Search screenshots by the **text**, **objects**, or **topics** they contain — even if they were never manually labeled.
+* **AI-Powered Search**  
+  Find screenshots by **text**, **objects**, or **topics** they contain — even if never labeled.
 
-* **Smart Tagging**
-  Let AI suggest relevant tags or add your own to keep your gallery tidy and context-rich.
+* **Smart Tagging**  
+  Let AI suggest tags or add your own to keep things tidy.
 
-* **Organize into Collections**
-  Group related screenshots into named collections for effortless navigation.
+* **Collections**  
+  Group related screenshots for quick navigation.
 
-* **Choose Your AI**
-  Pick between **Gemini 2.0 Flash** for speed or **Gemini 2.5 Pro** for deeper analysis. You control the power.
+* **Choose Your AI**  
+  - **Gemma On-Device AI** → Private, offline, instant results.  
+  - **Gemini 2.0 Flash / Gemini 2.5 Pro** → Cloud-powered speed or deep analysis.
 
-* **Open Source**
-  Built with transparency and community in mind. Explore the code. Contribute. Make it yours.
+* **Offline AI Processing**  
+  Process screenshots **without an internet connection** using the integrated Gemma model — great for privacy and speed.
+
+* **Open Source**  
+  Transparent, community-driven, and modifiable.
 
 ---
 
 ## How It Works + Privacy
 
-Shots Studio sends your screenshot data (images or extracted text) to **Google’s Gemini API** for AI-powered processing.
+By default, Shots Studio can send your screenshot data to **Google’s Gemini API** for cloud-powered analysis.  
+For privacy-first use, switch to **Gemma on-device AI** — no data leaves your phone.
 
-We never store your data. For more about how your data is handled, check out the [Gemini API privacy policy](https://ai.google.dev/gemini-api/terms).
+More details: [Gemini API Privacy Policy](https://ai.google.dev/gemini-api/terms).
 
 ---
 
 ## Why Shots Studio?
 
-* **Declutter your gallery**
-  No more endless scrolling to find that one screenshot.
-
-* **Instant access to information**
-  Search and filter screenshots just like you would search your notes.
-
-* **Customizable AI power**
-  You decide what model to use — optimize for speed or accuracy.
-
-* **Built by the community**
-  It’s open-source and community-driven, not a black box.
+* **Declutter your gallery** — No more endless scrolling.
+* **Instant access** — Search like you search your notes.
+* **Customizable AI** — Cloud or offline, you choose.
+* **Privacy-first** — Offline AI means no data leaves your device.
+* **Community-built** — 100% open source.
 
 ---
 
 ## Getting Started
 
-Follow these steps to get Shots Studio up and running:
+1. **Choose AI Mode**  
+   - For cloud AI: Get a [Gemini API key](https://ai.google.dev/gemini-api/docs/api-key).  
+   - For offline AI: Enable **Gemma On-Device** in Settings (no API key needed).
 
-1. **Get a Gemini API key**  
-   Visit https://ai.google.dev/gemini-api/docs/api-key and sign in with your Google account to generate an API key.
+2. **Install the App**  
+   - Download from [Releases](https://github.com/AnsahMohammad/shots-studio/releases/latest) or [F-Droid](https://f-droid.org/en/packages/com.ansah.shots_studio/).
+   - Install the APK on your device.
 
-2. **Download & install the APK**  
-   - Go to the **Releases** page of this repo and download the latest `*.apk`.  
-   - On your Android device, enable “Install from unknown sources” (or “Install unknown apps”) for your browser or file manager.  
-   - Open the downloaded APK to install Shots Studio.
+3. **Grant Permissions**  
+   Allow storage access to scan and process screenshots.
 
-3. **Grant permissions**  
-   When you first launch the app, allow access to your device’s storage so Screenshots can be discovered and processed.
-
-4. **Configure your API key**  
-   - Tap the ☰ menu icon (top-left) and choose **Settings** → **API Key** (or just **API Key**).  
-   - Paste in the Gemini key you obtained in step 1 and save.
-
-5. **Process screenshots**  
-   Tap the AI ⚡️ button (top-right) to start analyzing your screenshots. The app will extract text, detect objects/topics, and suggest tags.
-
-6. **(Optional) Auto-add to collections**  
-   If you’d like AI to populate a collection automatically:  
-   - Create a new collection  
-   - Toggle **Auto-Add** on  
-   All new screenshots matching that collection’s criteria will be added automatically.
-
-That’s it! You can now search, tag and browse your screenshots with AI-powered superpowers.
+4. **Run AI Processing**  
+   Tap the AI ⚡ button to analyze screenshots and auto-tag.
 
 ---
 
-
 ## Contributing
 
-We welcome your help! Whether it’s code, bug reports, feature ideas, or documentation — we’d love your input.
-Start by checking out `CONTRIBUTING.md` or opening an issue/pull request.
+We welcome contributions — code, features, bug fixes, or docs.  
+See `CONTRIBUTING.md` or open a discussion/PR.
+
+---
 
 ## Setting Up Git Hooks
-
-This project uses Git hooks to automate certain tasks (e.g., version bumping). To enable these hooks in your local clone, please run the following command from the root of the repository after cloning:
 
 ```bash
 git config core.hooksPath scripts/git-hooks
 ```
 
-This only needs to be done once per clone.
+Run this once after cloning to enable project-specific hooks.
