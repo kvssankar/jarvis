@@ -525,6 +525,52 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       print("Main app: Received service initialization event: $event");
     });
 
+    // Listen for safety stops from background service
+    service.on('safety_stop').listen((event) {
+      print("Main app: Received safety stop event: $event");
+
+      try {
+        if (event != null && mounted) {
+          final data = Map<String, dynamic>.from(event);
+          final reason = data['reason'] as String? ?? 'unknown';
+          final message =
+              data['message'] as String? ??
+              'Processing stopped for resource safety';
+          final modelType = data['modelType'] as String? ?? '';
+
+          print("Main app: Safety stop - Reason: $reason, Model: $modelType");
+
+          // Update UI state to stop processing
+          setState(() {
+            _isProcessingAI = false;
+            _aiProcessedCount = 0;
+            _aiTotalToProcess = 0;
+          });
+
+          // Show appropriate notification based on reason
+          if (reason == 'battery_low') {
+            final batteryLevel = data['batteryLevel'] as int? ?? 0;
+            SnackbarService().showWarning(
+              context,
+              'Gemma processing stopped due to low battery ($batteryLevel%). Connect to charger to continue.',
+            );
+          } else if (reason == 'network_changed') {
+            SnackbarService().showWarning(
+              context,
+              'Gemini processing stopped - network changed from WiFi to mobile data to prevent excessive data usage.',
+            );
+          } else {
+            SnackbarService().showWarning(context, message);
+          }
+
+          // Save final data
+          _saveDataToPrefs();
+        }
+      } catch (e) {
+        print("Main app: Error handling safety stop event: $e");
+      }
+    });
+
     print("Background service listeners setup complete");
   }
 
