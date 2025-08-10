@@ -716,10 +716,10 @@ abstract class AppLocalizations {
   /// **'🤖 Enable Local AI Model'**
   String get enableLocalAI;
 
-  /// Header for local AI benefits section
+  /// Header for What this means: section
   ///
   /// In en, this message translates to:
-  /// **'Local AI Benefits:'**
+  /// **'What this means:'**
   String get localAIBenefits;
 
   /// Local AI benefit: offline functionality

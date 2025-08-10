@@ -8,6 +8,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shots_studio/l10n/app_localizations.dart';
+import 'package:shots_studio/services/gemma_download_service.dart';
 import 'dart:io';
 
 class AISettingsScreen extends StatefulWidget {
@@ -25,12 +26,14 @@ class AISettingsScreen extends StatefulWidget {
 }
 
 class _AISettingsScreenState extends State<AISettingsScreen> {
-  Map<String, bool> _providerStates = {};
+  final Map<String, bool> _providerStates = {};
   late String _selectedModelName;
   String? _gemmaModelPath;
   bool _isLoadingGemmaModel = false;
   String _selectedLanguage = AILanguageConfig.defaultLanguageKey;
   bool _gemmaUseCPU = true; // CPU by default
+
+  final GemmaDownloadService _downloadService = GemmaDownloadService();
 
   @override
   void initState() {
@@ -38,9 +41,36 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
     _selectedModelName = widget.currentModelName;
     _loadProviderSettings();
 
+    // Listen to download service updates
+    _downloadService.addListener(_onDownloadProgressUpdate);
+
+    // Check for resumable downloads
+    _downloadService.checkAndResumeDownload();
+
     // Track AI settings screen access
     AnalyticsService().logScreenView('ai_settings_screen');
     AnalyticsService().logFeatureUsed('ai_settings_accessed');
+  }
+
+  @override
+  void dispose() {
+    _downloadService.removeListener(_onDownloadProgressUpdate);
+    super.dispose();
+  }
+
+  void _onDownloadProgressUpdate() {
+    if (mounted) {
+      setState(() {
+        // Update UI when download progress changes
+        if (_downloadService.isCompleted &&
+            _downloadService.progress.filePath != null) {
+          _gemmaModelPath = _downloadService.progress.filePath;
+          _providerStates['gemma'] = true;
+          // Save provider setting
+          _saveProviderSetting('gemma', true);
+        }
+      });
+    }
   }
 
   Future<void> _loadProviderSettings() async {
@@ -83,7 +113,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
 
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
-        allowedExtensions: ['bin', 'gguf'],
+        allowedExtensions: ['bin', 'gguf', 'task'],
         dialogTitle: 'Select Gemma Model File',
       );
 
@@ -236,6 +266,190 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
     );
   }
 
+  Future<bool> _showTermsAndConditionsDialog() async {
+    final bool? accepted = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Gemma Terms and Conditions'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Before downloading the Gemma model, you must accept the terms and conditions of use.',
+                  style: TextStyle(fontSize: 14),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'By downloading and using this model, you agree to:',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                const Text('• Use the model responsibly and ethically'),
+                const Text('• Comply with applicable laws and regulations'),
+                const Text('• Not use the model for harmful purposes'),
+                const SizedBox(height: 16),
+                InkWell(
+                  onTap: () async {
+                    const url = 'https://ai.google.dev/gemma/terms';
+                    try {
+                      final uri = Uri.parse(url);
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(
+                          uri,
+                          mode: LaunchMode.externalApplication,
+                        );
+                      }
+                    } catch (e) {
+                      await Clipboard.setData(const ClipboardData(text: url));
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Link copied to clipboard!'),
+                            backgroundColor: Colors.orange,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primaryContainer.withValues(alpha: 0.3),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.open_in_new,
+                          color: Theme.of(context).colorScheme.primary,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Read Full Terms and Conditions',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.primary,
+                              decoration: TextDecoration.underline,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Decline'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor:
+                    Theme.of(context).colorScheme.secondaryContainer,
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Accept & Download'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+              ),
+            ),
+          ],
+        );
+      },
+    );
+    return accepted ?? false;
+  }
+
+  Future<String?> _selectDownloadLocation() async {
+    try {
+      // Get default downloads directory
+      Directory? downloadsDir;
+      if (Platform.isAndroid) {
+        downloadsDir = Directory('/storage/emulated/0/Download');
+        if (!await downloadsDir.exists()) {
+          downloadsDir = await getExternalStorageDirectory();
+        }
+      } else {
+        downloadsDir = await getApplicationDocumentsDirectory();
+      }
+
+      String? selectedPath = await FilePicker.platform.getDirectoryPath(
+        dialogTitle: 'Select download location',
+        initialDirectory: downloadsDir?.path,
+      );
+
+      return selectedPath;
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error selecting download location: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return null;
+    }
+  }
+
+  Future<void> _downloadGemmaModel() async {
+    // First show terms and conditions
+    final termsAccepted = await _showTermsAndConditionsDialog();
+    if (!termsAccepted) {
+      return;
+    }
+
+    // Select download location
+    final downloadLocation = await _selectDownloadLocation();
+    if (downloadLocation == null) {
+      return;
+    }
+
+    // Start download using service
+    final success = await _downloadService.startDownload(downloadLocation);
+
+    if (!success && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Download failed: ${_downloadService.progress.error?.substring(0, 50) ?? "Unknown error"}...',
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+
+  void _pauseDownload() {
+    _downloadService.pauseDownload();
+  }
+
+  void _resumeDownload() {
+    _downloadService.resumeDownload();
+  }
+
+  void _cancelDownload() {
+    _downloadService.cancelDownload();
+  }
+
   List<String> _getAvailableModels() {
     List<String> availableModels = [];
 
@@ -380,7 +594,7 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
       canToggle = _gemmaModelPath != null && _gemmaModelPath!.isNotEmpty;
       if (!canToggle) {
         forceDisabled = true;
-        disabledReason = 'Select a model file first';
+        disabledReason = 'load the model file first';
       }
     }
 
@@ -502,13 +716,158 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Recommended: Gemma 3N E2B IT INT4',
+                    'Recommended: Gemma 3N E2B IT INT4 (~3.1GB)',
                     style: TextStyle(
                       fontSize: 11,
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
+
+                  // Download progress section
+                  if (_downloadService.progress.status !=
+                      DownloadStatus.idle) ...[
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.primaryContainer.withValues(
+                          alpha: 0.3,
+                        ),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: theme.colorScheme.primary.withValues(
+                            alpha: 0.2,
+                          ),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                _downloadService.isPaused
+                                    ? 'Download Paused'
+                                    : _downloadService.isDownloading
+                                    ? 'Downloading...'
+                                    : _downloadService.isCompleted
+                                    ? 'Download Complete'
+                                    : 'Download Error',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                              const Spacer(),
+                              Text(
+                                '${(_downloadService.progress.progress * 100).toStringAsFixed(1)}%',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          LinearProgressIndicator(
+                            value: _downloadService.progress.progress,
+                            backgroundColor: theme.colorScheme.outline
+                                .withValues(alpha: 0.3),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              _downloadService.isPaused
+                                  ? Colors.orange
+                                  : theme.colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          if (_downloadService.progress.totalBytes > 0) ...[
+                            Text(
+                              '${(_downloadService.progress.downloadedBytes / (1024 * 1024)).toStringAsFixed(1)} MB / ${(_downloadService.progress.totalBytes / (1024 * 1024)).toStringAsFixed(1)} MB',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                          if (_downloadService.hasError &&
+                              _downloadService.progress.error != null) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              'Error: ${_downloadService.progress.error}',
+                              style: TextStyle(
+                                fontSize: 10,
+                                color: theme.colorScheme.error,
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              if (_downloadService.isDownloading &&
+                                  !_downloadService.isPaused) ...[
+                                Expanded(
+                                  child: OutlinedButton.icon(
+                                    onPressed: _pauseDownload,
+                                    icon: const Icon(Icons.pause, size: 16),
+                                    label: const Text('Pause'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.orange,
+                                    ),
+                                  ),
+                                ),
+                              ] else if (_downloadService.isPaused) ...[
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: _resumeDownload,
+                                    icon: const Icon(
+                                      Icons.play_arrow,
+                                      size: 16,
+                                    ),
+                                    label: const Text('Resume'),
+                                  ),
+                                ),
+                              ],
+                              if (_downloadService.isDownloading ||
+                                  _downloadService.isPaused) ...[
+                                const SizedBox(width: 8),
+                                OutlinedButton.icon(
+                                  onPressed: _cancelDownload,
+                                  icon: const Icon(Icons.close, size: 16),
+                                  label: const Text('Cancel'),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: theme.colorScheme.error,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+
+                  // Download button (show only if not currently downloading and no model loaded)
+                  if (!_downloadService.isDownloading &&
+                      _gemmaModelPath == null &&
+                      !_downloadService.isCompleted) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _downloadGemmaModel,
+                        icon: const Icon(Icons.cloud_download),
+                        label: const Text('Download Gemma Model'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: theme.colorScheme.primary,
+                          foregroundColor: theme.colorScheme.onPrimary,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+
+                  // Alternative manual download link
                   InkWell(
                     onTap: () async {
                       const url =
@@ -559,26 +918,26 @@ class _AISettingsScreenState extends State<AISettingsScreen> {
                         horizontal: 8,
                       ),
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withOpacity(0.1),
+                        color: theme.colorScheme.outline.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(4),
                         border: Border.all(
-                          color: theme.colorScheme.primary.withOpacity(0.3),
+                          color: theme.colorScheme.outline.withOpacity(0.3),
                         ),
                       ),
                       child: Row(
                         children: [
                           Icon(
                             Icons.link,
-                            color: theme.colorScheme.primary,
+                            color: theme.colorScheme.onSurfaceVariant,
                             size: 14,
                           ),
                           const SizedBox(width: 4),
                           Expanded(
                             child: Text(
-                              'kaggle.com/models/google/gemma-3n/tfLite/gemma-3n-e2b-it-int4',
+                              'Or download manually from Kaggle',
                               style: TextStyle(
                                 fontSize: 10,
-                                color: theme.colorScheme.primary,
+                                color: theme.colorScheme.onSurfaceVariant,
                                 decoration: TextDecoration.underline,
                               ),
                               overflow: TextOverflow.ellipsis,

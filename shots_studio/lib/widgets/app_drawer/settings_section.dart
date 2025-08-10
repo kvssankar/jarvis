@@ -160,12 +160,12 @@ class _SettingsSectionState extends State<SettingsSection> {
     return availableModels;
   }
 
-  void _navigateToAISettings() {
+  void _navigateToAISettings() async {
     // Track AI settings navigation
     AnalyticsService().logFeatureUsed('ai_settings_navigation');
     AnalyticsService().logScreenView('ai_settings_screen');
 
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder:
@@ -181,6 +181,13 @@ class _SettingsSectionState extends State<SettingsSection> {
             ),
       ),
     );
+
+    // Refresh the UI when returning from AI settings to reflect any provider changes
+    if (mounted) {
+      setState(() {
+        // This will trigger a rebuild and refresh the FutureBuilder for available models
+      });
+    }
   }
 
   void _loadAutoProcessEnabledPref() async {

@@ -313,7 +313,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get enableLocalAI => '🤖 Enable Local AI Model';
 
   @override
-  String get localAIBenefits => 'Local AI Benefits:';
+  String get localAIBenefits => 'What this means:';
 
   @override
   String get localAIOffline =>
