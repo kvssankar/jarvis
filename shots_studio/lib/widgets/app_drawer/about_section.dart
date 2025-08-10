@@ -122,9 +122,9 @@ class AboutSection extends StatelessWidget {
 
             Navigator.pop(context);
             _showSponsorshipDialog(context);
-            _launchURL(
-              'https://Ansahmohammad.github.io/shots-studio/donation.html',
-            );
+            // _launchURL(
+            //   'https://Ansahmohammad.github.io/shots-studio/donation.html',
+            // );
           },
         ),
         Divider(color: theme.colorScheme.outline),
