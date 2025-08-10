@@ -282,7 +282,7 @@ class _AIProcessingContainerState extends State<AIProcessingContainer>
                             ),
                             Text(
                               widget.isInitializing
-                                  ? 'This may take a few moments to setup.'
+                                  ? 'This may take a few seconds to setup.'
                                   : 'Processing runs in background. You can close the app and return later.',
                               style: TextStyle(
                                 fontSize: 11,

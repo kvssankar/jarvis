@@ -27,6 +27,7 @@ class GemmaService {
   bool _isGenerating = false;
   String? _currentModelPath;
   int _generationCount = 0;
+  int? _lastProcessingTimeMs; // Track last processing time for analytics
   static const int _maxGenerationsBeforeCleanup = 2;
 
   // Initialize Gemma plugin
@@ -179,6 +180,7 @@ class GemmaService {
 
     _isGenerating = true;
     InferenceModelSession? localSession;
+    final stopwatch = Stopwatch()..start();
 
     try {
       // Create a new session for this inference
@@ -215,6 +217,9 @@ class GemmaService {
       print('Error during generation: $e');
       rethrow;
     } finally {
+      stopwatch.stop();
+      final processingTimeMs = stopwatch.elapsedMilliseconds;
+
       // Always clean up session in finally block
       if (localSession != null) {
         try {
@@ -225,6 +230,9 @@ class GemmaService {
       }
       _session = null;
       _isGenerating = false;
+
+      // Store the last processing time for analytics
+      _lastProcessingTimeMs = processingTimeMs;
 
       // Perform memory cleanup if we've hit the generation limit
       if (_generationCount >= _maxGenerationsBeforeCleanup) {
@@ -516,6 +524,7 @@ class GemmaService {
     _isGenerating = false;
     _currentModelPath = null;
     _generationCount = 0;
+    _lastProcessingTimeMs = null; // Reset processing time
 
     // Force garbage collection after disposal
     _forceGarbageCollection();
@@ -526,4 +535,5 @@ class GemmaService {
   bool get isLoading => _isLoading;
   bool get isGenerating => _isGenerating;
   String? get currentModelPath => _currentModelPath;
+  int? get lastProcessingTimeMs => _lastProcessingTimeMs;
 }

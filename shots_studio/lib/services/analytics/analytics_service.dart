@@ -201,6 +201,27 @@ class AnalyticsService {
     await _postHogService.logCurrentUsageTime();
   }
 
+  // Gemma-specific AI processing analytics
+  Future<void> logGemmaProcessingTime({
+    required int processingTimeMs,
+    required int screenshotCount,
+    required int maxParallelAI,
+    required String modelName,
+    required String devicePlatform,
+    required String? deviceModel,
+    required bool useCPU,
+  }) async {
+    await _postHogService.logGemmaProcessingTime(
+      processingTimeMs: processingTimeMs,
+      screenshotCount: screenshotCount,
+      maxParallelAI: maxParallelAI,
+      modelName: modelName,
+      devicePlatform: devicePlatform,
+      deviceModel: deviceModel,
+      useCPU: useCPU,
+    );
+  }
+
   // Additional PostHog-specific methods (optional to use)
 
   /// Identify a user (useful for authenticated users)
@@ -238,5 +259,10 @@ class AnalyticsService {
     Map<String, dynamic>? properties,
   ]) async {
     await _postHogService.group(groupType, groupKey, properties);
+  }
+
+  /// Get device information for analytics
+  Future<Map<String, String>> getDeviceInfo() async {
+    return await _postHogService.getDeviceInfo();
   }
 }

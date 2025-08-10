@@ -361,7 +361,16 @@ class GemmaAPIProvider implements APIProvider {
 
       // print("Gemma response: $response");
 
-      return {'data': response, 'statusCode': 200};
+      // Add processing time and model info to response for analytics
+      final result = {
+        'data': response,
+        'statusCode': 200,
+        'gemma_processing_time_ms': _gemmaService.lastProcessingTimeMs,
+        'gemma_model_name': _gemmaService.modelName,
+        'gemma_use_cpu': await _gemmaService.getUseCPUPreference(),
+      };
+
+      return result;
     } catch (e) {
       return {
         'error': 'Gemma processing error: ${e.toString()}',

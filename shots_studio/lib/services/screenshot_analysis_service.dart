@@ -5,6 +5,7 @@ import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/services/ai_service.dart';
+import 'package:shots_studio/services/analytics/analytics_service.dart';
 import 'package:shots_studio/utils/image_conversion_utils.dart';
 import 'package:shots_studio/utils/collection_utils.dart';
 import 'package:shots_studio/utils/ai_error_utils.dart';
@@ -109,6 +110,14 @@ class ScreenshotAnalysisService extends AIService {
             parseAndUpdateScreenshots(unprocessedBatch, result);
             finalResults['processedCount'] =
                 (finalResults['processedCount'] as int) + batch.length;
+
+            // Log analytics for Gemma processing if this is a Gemma model
+            await _logGemmaAnalyticsIfApplicable(
+              result,
+              unprocessedBatch.length,
+              config.maxParallel,
+            );
+
             onBatchProcessed(batch, result);
           } catch (parseError) {
             // Handle parsing errors by stopping processing and showing error
@@ -674,6 +683,55 @@ class ScreenshotAnalysisService extends AIService {
     // Update state based on error handling result
     if (result.shouldTerminate) {
       _processingTerminated = true;
+    }
+  }
+
+  /// Log analytics for Gemma processing if applicable
+  Future<void> _logGemmaAnalyticsIfApplicable(
+    Map<String, dynamic> result,
+    int batchSize,
+    int maxParallelAI,
+  ) async {
+    try {
+      // Check if this is a Gemma response by looking for Gemma-specific fields
+      final bool isGemmaResponse =
+          result.containsKey('gemma_processing_time_ms') &&
+          result.containsKey('gemma_model_name') &&
+          result.containsKey('gemma_use_cpu');
+
+      if (!isGemmaResponse) {
+        // Not a Gemma response, skip analytics
+        return;
+      }
+
+      final processingTimeMs = result['gemma_processing_time_ms'] as int?;
+      final modelName = result['gemma_model_name'] as String?;
+      final useCPU = result['gemma_use_cpu'] as bool?;
+
+      if (processingTimeMs == null || modelName == null || useCPU == null) {
+        // Missing required data, skip analytics
+        return;
+      }
+
+      // Get device info from the analytics service
+      final analyticsService = AnalyticsService();
+      final deviceInfo = await analyticsService.getDeviceInfo();
+      final devicePlatform = deviceInfo['platform'] ?? 'unknown';
+      final deviceModel = deviceInfo['model'];
+
+      // Log Gemma processing time analytics
+      await analyticsService.logGemmaProcessingTime(
+        processingTimeMs: processingTimeMs,
+        screenshotCount: batchSize,
+        maxParallelAI: maxParallelAI,
+        modelName: modelName,
+        devicePlatform: devicePlatform,
+        deviceModel: deviceModel,
+        useCPU: useCPU,
+      );
+    } catch (e) {
+      // Silently fail analytics to not disrupt the main processing flow
+      print('Error logging Gemma analytics: $e');
     }
   }
 }
