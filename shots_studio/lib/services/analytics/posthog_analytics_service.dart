@@ -131,6 +131,36 @@ class PostHogAnalyticsService {
     );
   }
 
+  // Gemma-specific AI processing analytics
+  Future<void> logGemmaProcessingTime({
+    required int processingTimeMs,
+    required int screenshotCount,
+    required int maxParallelAI,
+    required String modelName,
+    required String devicePlatform,
+    required String? deviceModel,
+    required bool useCPU,
+  }) async {
+    if (!_shouldLog()) return;
+
+    await Posthog().capture(
+      eventName: 'gemma_processing_time',
+      properties: {
+        'processing_time_ms': processingTimeMs,
+        'screenshot_count': screenshotCount,
+        'max_parallel_ai': maxParallelAI,
+        'model_name': modelName,
+        'device_platform': devicePlatform,
+        'device_model': deviceModel ?? 'unknown',
+        'use_cpu': useCPU,
+        'avg_time_per_screenshot': processingTimeMs / screenshotCount,
+        'efficiency_ratio':
+            screenshotCount /
+            maxParallelAI, // How efficiently we used parallel capacity
+      },
+    );
+  }
+
   // Collection Management
   Future<void> logCollectionCreated() async {
     if (!_shouldLog()) return;
@@ -461,6 +491,18 @@ class PostHogAnalyticsService {
     }
   }
 
+  Future<void> logInstallSource(String source) async {
+    if (!_shouldLog()) return;
+
+    await Posthog().capture(
+      eventName: 'install_$source',
+      properties: {
+        'source': source,
+        'install_date': DateTime.now().toIso8601String(),
+      },
+    );
+  }
+
   // Helper method to calculate time of day
   String _getTimeOfDay() {
     final hour = DateTime.now().hour;
@@ -536,5 +578,39 @@ class PostHogAnalyticsService {
       groupKey: groupKey,
       groupProperties: objectProperties,
     );
+  }
+
+  // Helper method to get device information for analytics
+  Future<Map<String, String>> getDeviceInfo() async {
+    String platform = 'unknown';
+    String deviceModel = 'unknown';
+
+    try {
+      if (!kIsWeb) {
+        if (Platform.isAndroid) {
+          platform = 'android';
+        } else if (Platform.isIOS) {
+          platform = 'ios';
+        } else if (Platform.isLinux) {
+          platform = 'linux';
+        } else if (Platform.isWindows) {
+          platform = 'windows';
+        } else if (Platform.isMacOS) {
+          platform = 'macos';
+        }
+      } else {
+        platform = 'web';
+      }
+
+      // For now, we'll use basic device identification
+      // You can enhance this with device_info_plus package if needed
+      if (Platform.isAndroid || Platform.isIOS) {
+        deviceModel = Platform.operatingSystemVersion;
+      }
+    } catch (e) {
+      // Fallback to defaults if there's any error
+    }
+
+    return {'platform': platform, 'model': deviceModel};
   }
 }

@@ -12,14 +12,59 @@ class PrivacyContentProvider {
 
     return [
       Text(
-        "Shots Studio offers optional integration with Google Gemini, a third-party cloud-based AI service, to enhance your experience with features such as generating searchable text, suggesting tags, and organizing collections. This integration is entirely optional and only activated when you provide your own Google Gemini API key.\n\n"
-        "Important: No data is sent to Google's servers unless you explicitly configure your own API key. The app can be used partially without these AI features.\n\n"
-        "When you choose to enable these features by setting your API key, your images will be transmitted to and processed by Google's servers only for the specific AI-powered functions you request.\n",
+        "How AI Features Work in Shots Studio:\n\n"
+        "• Local AI (Gemma): Runs entirely on your device. Your images never leave your phone.\n\n"
+        "• Cloud AI (Google Gemini): Optional feature that requires your own API key. When enabled, your images are sent to Google's servers for processing.\n\n"
+        "You choose which AI option to use. The app works great with just the local AI model - no internet required!\n",
         style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+      ),
+      const SizedBox(height: 15),
+      Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primaryContainer.withOpacity(0.3),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: theme.colorScheme.primary.withOpacity(0.3)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: theme.colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  "Important Privacy Note",
+                  style: TextStyle(
+                    color: theme.colorScheme.primary,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              "If you use Google Gemini (cloud AI), your images will be processed by Google's servers. This only happens when you:",
+              style: TextStyle(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              "1. Set up your own Google Gemini API key\n2. Choose to use cloud AI features",
+              style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ],
+        ),
       ),
       const SizedBox(height: 10),
       Text(
-        "When AI features are enabled (by providing your API key), this image processing is subject to:",
+        "If you use cloud AI, your image processing follows:",
         style: TextStyle(
           color: theme.colorScheme.onSurfaceVariant,
           fontWeight: FontWeight.w500,
@@ -89,11 +134,12 @@ class PrivacyContentProvider {
       ),
       const SizedBox(height: 10),
       Text(
-        "\nShots Studio itself does not permanently store your original images for any AI features.\n\n"
-        "The app is only partially functional without AI features - you can capture, organize, and manage your screenshots without any data being sent to third-party services.\n\n"
-        "Anonymous usage analytics are collected to help improve the app experience. This includes basic feature usage patterns and performance metrics, but no personal information or image content is included.\n\n"
-        "Please ensure you review and are comfortable with Google's terms and privacy practices before enabling AI features by setting your API key. If you do not agree, you can continue using the app without these optional features.\n"
-        "P.S. Don't worry, your cat memes are safe with us. 😺",
+        "What We Don't Store:\n"
+        "• Your original images are never permanently stored by Shots Studio\n"
+        "• When using local AI (Gemma), your data never leaves your device\n\n"
+        "What We Do Collect:\n"
+        "• Anonymous usage statistics to improve the app (no personal info or images)\n"
+        "• Basic feature usage patterns and performance metrics\n\n",
         style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
       ),
     ];

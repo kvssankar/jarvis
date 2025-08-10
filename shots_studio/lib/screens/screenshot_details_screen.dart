@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'dart:io';
 import 'dart:math';
+import 'dart:async';
 import 'package:intl/intl.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
@@ -8,17 +10,21 @@ import 'package:shots_studio/screens/full_screen_image_viewer.dart';
 import 'package:shots_studio/screens/search_screen.dart';
 import 'package:shots_studio/services/analytics/analytics_service.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
+import '../l10n/app_localizations.dart';
 import 'package:shots_studio/services/hard_delete_service.dart';
 import 'package:shots_studio/widgets/screenshots/tags/tag_input_field.dart';
 import 'package:shots_studio/widgets/screenshots/tags/tag_chip.dart';
 import 'package:shots_studio/widgets/screenshots/screenshot_collection_dialog.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:shots_studio/utils/reminder_utils.dart';
+import 'package:shots_studio/services/notification_service.dart';
 import 'package:shots_studio/services/ai_service_manager.dart';
 import 'package:shots_studio/services/ai_service.dart';
 import 'package:shots_studio/services/ocr_service.dart';
 import 'package:shots_studio/widgets/ocr_result_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ScreenshotDetailScreen extends StatefulWidget {
   final Screenshot screenshot;
@@ -72,8 +78,10 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     ); // Track screenshot details screen access
     AnalyticsService().logScreenView('screenshot_details_screen');
 
-    // Check for expired reminders
-    _checkExpiredReminders();
+    // Check for expired reminders after the frame is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkExpiredReminders();
+    });
 
     // Load hard delete setting
     _loadHardDeleteSetting();
@@ -82,11 +90,12 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   void _checkExpiredReminders() {
     if (widget.screenshot.reminderTime != null &&
         widget.screenshot.reminderTime!.isBefore(DateTime.now())) {
-      // Clear expired reminder
+      // Clear expired reminder silently (no snackbar needed for expired reminders)
       setState(() {
         widget.screenshot.removeReminder();
       });
-      ReminderUtils.clearReminder(context, widget.screenshot);
+      // Cancel the notification without showing a snackbar
+      NotificationService().cancelNotification(widget.screenshot.id.hashCode);
       _updateScreenshotDetails();
     }
   }
@@ -101,8 +110,28 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   }
 
   @override
+  void didUpdateWidget(ScreenshotDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Check if the screenshot has changed (after deletion navigation)
+    if (oldWidget.screenshot.id != widget.screenshot.id) {
+      _tags = List.from(widget.screenshot.tags);
+      _descriptionController.text = widget.screenshot.description ?? '';
+
+      _checkExpiredReminders();
+      setState(() {});
+    }
+  }
+
+  @override
   void dispose() {
     _descriptionController.dispose();
+
+    // Ensure wakelock is disabled when the screen is disposed
+    WakelockPlus.disable().catchError((e) {
+      print('Failed to disable wakelock on dispose: $e');
+    });
+
     super.dispose();
   }
 
@@ -129,7 +158,10 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   }
 
   Widget _buildTag(String label) {
-    final bool isAddButton = label == '+ Add Tag';
+    // Check for both localized and fallback versions of the add tag button
+    final String localizedAddTag =
+        AppLocalizations.of(context)?.addTag ?? '+ Add Tag';
+    final bool isAddButton = label == localizedAddTag || label == '+ Add Tag';
 
     if (isAddButton) {
       return TagInputField(onTagAdded: _addTag);
@@ -265,6 +297,14 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   Future<void> _processSingleScreenshotWithAI() async {
     // Track AI reprocessing requests
     AnalyticsService().logFeatureUsed('ai_reprocessing_requested');
+
+    // Enable wakelock to prevent screen from sleeping during processing
+    try {
+      await WakelockPlus.enable();
+    } catch (e) {
+      print('Failed to enable wakelock: $e');
+    }
+
     // Check if already processed and confirmed by user
     if (widget.screenshot.aiProcessed) {
       final bool? shouldReprocess = await showDialog<bool>(
@@ -307,7 +347,14 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         },
       );
 
-      if (shouldReprocess != true) return;
+      if (shouldReprocess != true) {
+        try {
+          await WakelockPlus.disable();
+        } catch (e) {
+          print('Failed to disable wakelock: $e');
+        }
+        return;
+      }
     }
 
     // Get settings from SharedPreferences
@@ -317,6 +364,11 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
     if (prefs.getString('modelName') == 'gemma') {
       apiKey = 'gemma-v1'; // explicitly set APIKey to gemma-v1
     } else if (apiKey == null || apiKey.isEmpty) {
+      try {
+        await WakelockPlus.disable();
+      } catch (e) {
+        print('Failed to disable wakelock: $e');
+      }
       SnackbarService().showError(
         context,
         'AI API key not configured. Please check app settings.',
@@ -347,6 +399,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       apiKey: apiKey,
       modelName: modelName,
       maxParallel: 1, // Single screenshot processing
+      timeoutSeconds: 120,
       showMessage: ({
         required String message,
         Color? backgroundColor,
@@ -365,100 +418,114 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       // Initialize the AI service manager
       _aiServiceManager.initialize(config);
 
-      // Process the single screenshot (pass as single-item list)
-      final result = await _aiServiceManager.analyzeScreenshots(
-        screenshots: [widget.screenshot],
-        onBatchProcessed: (batch, response) {
-          // Update the screenshot with processed data
-          final updatedScreenshots = _aiServiceManager
-              .parseAndUpdateScreenshots(batch, response);
+      // Process the single screenshot with timeout wrapper
+      final result = await _aiServiceManager
+          .analyzeScreenshots(
+            screenshots: [widget.screenshot],
+            onBatchProcessed: (batch, response) {
+              // Update the screenshot with processed data
+              final updatedScreenshots = _aiServiceManager
+                  .parseAndUpdateScreenshots(batch, response);
 
-          if (updatedScreenshots.isNotEmpty) {
-            final updatedScreenshot = updatedScreenshots.first;
+              if (updatedScreenshots.isNotEmpty) {
+                final updatedScreenshot = updatedScreenshots.first;
 
-            setState(() {
-              // Update the screenshot properties
-              widget.screenshot.title = updatedScreenshot.title;
-              widget.screenshot.description = updatedScreenshot.description;
-              widget.screenshot.tags = updatedScreenshot.tags;
-              widget.screenshot.aiProcessed = updatedScreenshot.aiProcessed;
-              widget.screenshot.aiMetadata = updatedScreenshot.aiMetadata;
+                setState(() {
+                  // Update the screenshot properties
+                  widget.screenshot.title = updatedScreenshot.title;
+                  widget.screenshot.description = updatedScreenshot.description;
+                  widget.screenshot.tags = updatedScreenshot.tags;
+                  widget.screenshot.links = updatedScreenshot.links;
+                  widget.screenshot.aiProcessed = updatedScreenshot.aiProcessed;
+                  widget.screenshot.aiMetadata = updatedScreenshot.aiMetadata;
 
-              // Update local state
-              _tags = List.from(updatedScreenshot.tags);
-              _descriptionController.text = updatedScreenshot.description ?? '';
-            });
+                  // Update local state
+                  _tags = List.from(updatedScreenshot.tags);
+                  _descriptionController.text =
+                      updatedScreenshot.description ?? '';
+                });
 
-            // Handle auto-categorization
-            if (response['suggestedCollections'] != null) {
-              try {
-                Map<dynamic, dynamic>? suggestionsMap;
-                if (response['suggestedCollections']
-                    is Map<String, List<String>>) {
-                  suggestionsMap =
-                      response['suggestedCollections']
-                          as Map<String, List<String>>;
-                } else if (response['suggestedCollections']
-                    is Map<dynamic, dynamic>) {
-                  suggestionsMap =
-                      response['suggestedCollections'] as Map<dynamic, dynamic>;
-                }
-
-                List<String> suggestedCollections = [];
-                if (suggestionsMap != null &&
-                    suggestionsMap.containsKey(updatedScreenshot.id)) {
-                  final suggestions = suggestionsMap[updatedScreenshot.id];
-                  if (suggestions is List) {
-                    suggestedCollections = List<String>.from(
-                      suggestions.whereType<String>(),
-                    );
-                  } else if (suggestions is String) {
-                    suggestedCollections = [suggestions];
-                  }
-                }
-
-                if (suggestedCollections.isNotEmpty) {
-                  int autoAddedCount = 0;
-                  for (var collection in widget.allCollections) {
-                    if (collection.isAutoAddEnabled &&
-                        suggestedCollections.contains(collection.name) &&
-                        !updatedScreenshot.collectionIds.contains(
-                          collection.id,
-                        ) &&
-                        !collection.screenshotIds.contains(
-                          updatedScreenshot.id,
-                        )) {
-                      // Auto-add screenshot to this collection
-                      final updatedCollection = collection.addScreenshot(
-                        updatedScreenshot.id,
-                        isAutoCategorized: true,
-                      );
-                      widget.onUpdateCollection(updatedCollection);
-                      autoAddedCount++;
+                // Handle auto-categorization
+                if (response['suggestedCollections'] != null) {
+                  try {
+                    Map<dynamic, dynamic>? suggestionsMap;
+                    if (response['suggestedCollections']
+                        is Map<String, List<String>>) {
+                      suggestionsMap =
+                          response['suggestedCollections']
+                              as Map<String, List<String>>;
+                    } else if (response['suggestedCollections']
+                        is Map<dynamic, dynamic>) {
+                      suggestionsMap =
+                          response['suggestedCollections']
+                              as Map<dynamic, dynamic>;
                     }
-                  }
 
-                  if (autoAddedCount > 0) {
-                    SnackbarService().showSuccess(
-                      context,
-                      'Screenshot processed and auto-categorized into $autoAddedCount collection${autoAddedCount > 1 ? 's' : ''}',
-                    );
+                    List<String> suggestedCollections = [];
+                    if (suggestionsMap != null &&
+                        suggestionsMap.containsKey(updatedScreenshot.id)) {
+                      final suggestions = suggestionsMap[updatedScreenshot.id];
+                      if (suggestions is List) {
+                        suggestedCollections = List<String>.from(
+                          suggestions.whereType<String>(),
+                        );
+                      } else if (suggestions is String) {
+                        suggestedCollections = [suggestions];
+                      }
+                    }
+
+                    if (suggestedCollections.isNotEmpty) {
+                      int autoAddedCount = 0;
+                      for (var collection in widget.allCollections) {
+                        if (collection.isAutoAddEnabled &&
+                            suggestedCollections.contains(collection.name) &&
+                            !updatedScreenshot.collectionIds.contains(
+                              collection.id,
+                            ) &&
+                            !collection.screenshotIds.contains(
+                              updatedScreenshot.id,
+                            )) {
+                          // Auto-add screenshot to this collection
+                          final updatedCollection = collection.addScreenshot(
+                            updatedScreenshot.id,
+                            isAutoCategorized: true,
+                          );
+                          widget.onUpdateCollection(updatedCollection);
+                          autoAddedCount++;
+                        }
+                      }
+
+                      if (autoAddedCount > 0) {
+                        SnackbarService().showSuccess(
+                          context,
+                          'Screenshot processed and auto-categorized into $autoAddedCount collection${autoAddedCount > 1 ? 's' : ''}',
+                        );
+                      }
+                    }
+                  } catch (e) {
+                    print('Error handling auto-categorization: $e');
                   }
                 }
-              } catch (e) {
-                print('Error handling auto-categorization: $e');
               }
-            }
-          }
-        },
-        autoAddCollections: autoAddCollections,
-      );
+            },
+            autoAddCollections: autoAddCollections,
+          )
+          .timeout(
+            Duration(seconds: 120),
+            onTimeout: () {
+              throw TimeoutException(
+                'AI processing timed out after 120 seconds',
+                Duration(seconds: 120),
+              );
+            },
+          );
 
       if (result.success) {
-        SnackbarService().showSuccess(
-          context,
-          'Screenshot processed successfully!',
-        );
+        // SnackbarService().showSuccess(
+        //   context,
+        //   'Screenshot processed successfully!',
+        // );
+        print("Screenshot processed success");
         widget.onScreenshotUpdated?.call();
       } else if (result.cancelled) {
         SnackbarService().showInfo(context, 'AI processing was cancelled.');
@@ -468,12 +535,23 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
           result.error ?? 'Failed to process screenshot',
         );
       }
+    } on TimeoutException catch (_) {
+      SnackbarService().showError(
+        context,
+        'AI processing timed out after 120 seconds. Please try again.',
+      );
     } catch (e) {
       SnackbarService().showError(context, 'Error processing screenshot: $e');
     } finally {
       setState(() {
         _isProcessingAI = false;
       });
+
+      try {
+        await WakelockPlus.disable();
+      } catch (e) {
+        print('Failed to disable wakelock: $e');
+      }
     }
   }
 
@@ -619,6 +697,184 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       i = suffixes.length - 1;
     }
     return '${(bytes / pow(1024, i)).toStringAsFixed(2)} ${suffixes[i]}';
+  }
+
+  /// Detect the type of link and return appropriate icon and action
+  Map<String, dynamic> _getLinkInfo(String link) {
+    final cleanLink = link.trim();
+
+    // Handle links that already have prefixes
+    if (cleanLink.startsWith('mailto:')) {
+      return {
+        'type': 'email',
+        'icon': Icons.email,
+        'color': Colors.red,
+        'action': () => _launchLink(cleanLink),
+      };
+    }
+
+    if (cleanLink.startsWith('tel:')) {
+      return {
+        'type': 'phone',
+        'icon': Icons.phone,
+        'color': Colors.green,
+        'action': () => _launchLink(cleanLink),
+      };
+    }
+
+    // Email detection (raw email format)
+    if (RegExp(
+      r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+    ).hasMatch(cleanLink)) {
+      return {
+        'type': 'email',
+        'icon': Icons.email,
+        'color': Colors.red,
+        'action': () => _launchLink('mailto:$cleanLink'),
+      };
+    }
+
+    // Phone number detection (various formats)
+    if (RegExp(
+      r'^[\+]?[\d\s\-\(\)\.]{7,}$',
+    ).hasMatch(cleanLink.replaceAll(' ', ''))) {
+      return {
+        'type': 'phone',
+        'icon': Icons.phone,
+        'color': Colors.green,
+        'action': () => _launchLink('tel:$cleanLink'),
+      };
+    }
+
+    // URL detection
+    if (cleanLink.startsWith('http://') ||
+        cleanLink.startsWith('https://') ||
+        cleanLink.startsWith('www.') ||
+        RegExp(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}').hasMatch(cleanLink)) {
+      String url = cleanLink;
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        url = 'https://$url';
+      }
+      return {
+        'type': 'url',
+        'icon': Icons.link,
+        'color': Colors.blue,
+        'action': () => _launchLink(url),
+      };
+    }
+
+    // Default fallback
+    return {
+      'type': 'text',
+      'icon': Icons.content_copy,
+      'color': Colors.grey,
+      'action': () => _copyToClipboard(cleanLink),
+    };
+  }
+
+  /// Launch a link (URL, phone, email) or copy to clipboard if it fails
+  Future<void> _launchLink(String link) async {
+    try {
+      final uri = Uri.parse(link);
+
+      bool launched = false;
+      try {
+        launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (e) {
+        print('Direct launch failed: $e');
+        launched = false;
+      }
+
+      if (launched) {
+        AnalyticsService().logFeatureUsed('link_launched');
+      } else {
+        try {
+          launched = await launchUrl(uri, mode: LaunchMode.platformDefault);
+          if (launched) {
+            AnalyticsService().logFeatureUsed('link_launched');
+            return;
+          }
+        } catch (e) {
+          print('Platform default launch failed: $e');
+        }
+
+        await _copyToClipboard(link);
+      }
+    } catch (e) {
+      print('URL parsing failed: $e');
+      await _copyToClipboard(link);
+    }
+  }
+
+  Future<void> _copyToClipboard(String text) async {
+    await Clipboard.setData(ClipboardData(text: text));
+
+    String displayText = text;
+
+    if (text.startsWith('mailto:')) {
+      displayText = text.substring(7); // Remove 'mailto:' prefix
+    } else if (text.startsWith('tel:')) {
+      displayText = text.substring(4); // Remove 'tel:' prefix
+    }
+
+    SnackbarService().showWarning(context, 'Copied to clipboard: $displayText');
+    AnalyticsService().logFeatureUsed('link_copied_to_clipboard');
+  }
+
+  /// Build a clickable link chip
+  Widget _buildLinkChip(String link) {
+    final linkInfo = _getLinkInfo(link);
+    final displayText = _getDisplayText(link);
+
+    return GestureDetector(
+      onTap: linkInfo['action'],
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.secondaryContainer,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: linkInfo['color'].withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(linkInfo['icon'], size: 16, color: linkInfo['color']),
+            const SizedBox(width: 6),
+            Flexible(
+              child: Text(
+                displayText,
+                style: TextStyle(
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Get clean display text for links by removing prefixes
+  String _getDisplayText(String link) {
+    final cleanLink = link.trim();
+
+    if (cleanLink.startsWith('mailto:')) {
+      return cleanLink.substring(7); // Remove 'mailto:' prefix
+    } else if (cleanLink.startsWith('tel:')) {
+      return cleanLink.substring(4); // Remove 'tel:' prefix
+    } else if (cleanLink.startsWith('http://')) {
+      return cleanLink.substring(7); // Remove 'http://' prefix for display
+    } else if (cleanLink.startsWith('https://')) {
+      return cleanLink.substring(8); // Remove 'https://' prefix for display
+    }
+
+    return cleanLink;
   }
 
   /// Build the image widget for the screenshot
@@ -786,7 +1042,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
             widget.screenshot.fileSize! > 0) ...[
           const SizedBox(height: 4),
           Text(
-            'Size: ${_formatFileSize(widget.screenshot.fileSize!)}',
+            '${AppLocalizations.of(context)?.size ?? 'Size'}: ${_formatFileSize(widget.screenshot.fileSize!)}',
             style: TextStyle(
               fontSize: 14,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -798,7 +1054,9 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         TextField(
           controller: _descriptionController,
           decoration: InputDecoration(
-            hintText: 'Add a description...',
+            hintText:
+                AppLocalizations.of(context)?.addDescription ??
+                'Add a description...',
             filled: true,
             fillColor: Theme.of(context).colorScheme.secondaryContainer,
             border: OutlineInputBorder(
@@ -819,27 +1077,32 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
             FocusScope.of(context).unfocus();
           },
         ),
-        const SizedBox(height: 24),
-        Text(
-          'Tags',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Theme.of(context).colorScheme.onSecondaryContainer,
+
+        // Links section - show if there are any extracted links
+        if (widget.screenshot.links.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          // Text(
+          //   'Extracted Links',
+          //   style: TextStyle(
+          //     fontSize: 16,
+          //     fontWeight: FontWeight.w600,
+          //     color: Theme.of(context).colorScheme.onSecondaryContainer,
+          //   ),
+          // ),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children:
+                widget.screenshot.links
+                    .map((link) => _buildLinkChip(link))
+                    .toList(),
           ),
-        ),
-        const SizedBox(height: 8),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            ..._tags.map((tag) => _buildTag(tag)),
-            _buildTag('+ Add Tag'),
-          ],
-        ),
+        ],
+
         const SizedBox(height: 24),
         Text(
-          'AI Details',
+          AppLocalizations.of(context)?.aiDetails ?? 'AI Details',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -911,9 +1174,29 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
             ],
           ),
         ),
+
         const SizedBox(height: 24),
         Text(
-          'Collections',
+          AppLocalizations.of(context)?.tags ?? 'Tags',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Theme.of(context).colorScheme.onSecondaryContainer,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: [
+            ..._tags.map((tag) => _buildTag(tag)),
+            _buildTag(AppLocalizations.of(context)?.addTag ?? '+ Add Tag'),
+          ],
+        ),
+
+        const SizedBox(height: 24),
+        Text(
+          AppLocalizations.of(context)?.collections ?? 'Collections',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
@@ -1087,10 +1370,10 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
                       widget.screenshot.removeReminder();
                     });
                     ReminderUtils.clearReminder(context, widget.screenshot);
-                    SnackbarService().showInfo(
-                      context,
-                      'Expired reminder has been cleared',
-                    );
+                    // SnackbarService().showInfo(
+                    //   context,
+                    //   'Expired reminder has been cleared',
+                    // );
                   } else {
                     setState(() {
                       if (result['reminderTime'] != null) {
@@ -1270,6 +1553,13 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       return;
     }
 
+    // Enable wakelock to prevent screen from sleeping during processing
+    try {
+      await WakelockPlus.enable();
+    } catch (e) {
+      print('Failed to enable wakelock: $e');
+    }
+
     setState(() {
       _isProcessingOCR = true;
     });
@@ -1304,6 +1594,13 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
       setState(() {
         _isProcessingOCR = false;
       });
+
+      // Disable wakelock when processing is complete
+      try {
+        await WakelockPlus.disable();
+      } catch (e) {
+        print('Failed to disable wakelock: $e');
+      }
     }
   }
 }

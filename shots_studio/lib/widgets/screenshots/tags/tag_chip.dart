@@ -20,7 +20,7 @@ class TagChip extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.secondaryContainer,
+          color: Theme.of(context).colorScheme.tertiaryContainer,
           borderRadius: BorderRadius.circular(20),
         ),
         child: Row(
@@ -29,7 +29,7 @@ class TagChip extends StatelessWidget {
             Text(
               label,
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onSecondaryContainer,
+                color: Theme.of(context).colorScheme.onTertiaryContainer,
               ),
             ),
             if (onDelete != null) ...[
@@ -39,7 +39,7 @@ class TagChip extends StatelessWidget {
                 child: Icon(
                   Icons.close,
                   size: 16,
-                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                  color: Theme.of(context).colorScheme.onTertiaryContainer,
                 ),
               ),
             ],

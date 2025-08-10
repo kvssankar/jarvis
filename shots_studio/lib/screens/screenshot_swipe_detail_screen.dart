@@ -143,25 +143,27 @@ class _ScreenshotSwipeDetailScreenState
       );
     }
 
-    return PageView.builder(
-      controller: _pageController,
-      onPageChanged: _onPageChanged,
-      itemCount: widget.screenshots.length,
-      itemBuilder: (context, index) {
-        return ScreenshotDetailScreen(
-          screenshot: widget.screenshots[index],
-          allCollections: widget.allCollections,
-          allScreenshots: widget.allScreenshots,
-          contextualScreenshots: widget.screenshots,
-          onUpdateCollection: widget.onUpdateCollection,
-          onDeleteScreenshot: _onScreenshotDeleted,
-          onScreenshotUpdated: widget.onScreenshotUpdated,
-          currentIndex: index,
-          totalCount: widget.screenshots.length,
-          onNavigateAfterDelete: _onNavigateAfterDelete,
-          onNavigateToIndex: _navigateToIndex,
-        );
-      },
+    return Scaffold(
+      body: PageView.builder(
+        controller: _pageController,
+        onPageChanged: _onPageChanged,
+        itemCount: widget.screenshots.length,
+        itemBuilder: (context, index) {
+          return ScreenshotDetailScreen(
+            screenshot: widget.screenshots[index],
+            allCollections: widget.allCollections,
+            allScreenshots: widget.allScreenshots,
+            contextualScreenshots: widget.screenshots,
+            onUpdateCollection: widget.onUpdateCollection,
+            onDeleteScreenshot: _onScreenshotDeleted,
+            onScreenshotUpdated: widget.onScreenshotUpdated,
+            currentIndex: index,
+            totalCount: widget.screenshots.length,
+            onNavigateAfterDelete: _onNavigateAfterDelete,
+            onNavigateToIndex: _navigateToIndex,
+          );
+        },
+      ),
     );
   }
 }

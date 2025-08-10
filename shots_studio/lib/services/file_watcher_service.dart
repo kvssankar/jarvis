@@ -7,8 +7,6 @@ import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/services/custom_path_service.dart';
 import 'package:uuid/uuid.dart';
 
-// TODO: There's a bug that causes the app unusable when the watcher is running
-
 class FileWatcherService {
   static final FileWatcherService _instance = FileWatcherService._internal();
   factory FileWatcherService() => _instance;
@@ -177,9 +175,18 @@ class FileWatcherService {
     print('FileWatcher: Initial scan of ${directory.path}');
 
     try {
-      final entities = directory.listSync();
+      // Use async listSync to avoid blocking UI
+      final List<FileSystemEntity> entities;
+      try {
+        entities = await directory.list().toList();
+      } catch (e) {
+        print('FileWatcher: Error listing directory ${directory.path}: $e');
+        return;
+      }
+
       final files = entities.whereType<File>();
-      final imageFiles = files.where((file) => _isImageFile(file.path));
+      final imageFiles =
+          files.where((file) => _isImageFile(file.path)).toList();
 
       print(
         'FileWatcher: Found ${imageFiles.length} image files in ${directory.path}',
@@ -187,42 +194,59 @@ class FileWatcherService {
 
       final newScreenshots = <Screenshot>[];
 
-      for (final file in imageFiles) {
-        // Skip trashed files (same logic as ImageLoaderService)
-        if (_isTrashedFile(file.path)) {
-          print(
-            'FileWatcher: Skipping trashed file during initial scan: ${file.path}',
-          );
-          _processedFiles.add(
-            file.path,
-          ); // Mark as processed to avoid future checks
-          continue;
+      // Process files in batches to avoid blocking UI for too long
+      const batchSize = 10;
+      for (int i = 0; i < imageFiles.length; i += batchSize) {
+        final batch = imageFiles.skip(i).take(batchSize);
+
+        for (final file in batch) {
+          // Skip trashed files (same logic as ImageLoaderService)
+          if (_isTrashedFile(file.path)) {
+            print(
+              'FileWatcher: Skipping trashed file during initial scan: ${file.path}',
+            );
+            _processedFiles.add(
+              file.path,
+            ); // Mark as processed to avoid future checks
+            continue;
+          }
+
+          // Only process files that exist, have content, and aren't already processed
+          if (!_processedFiles.contains(file.path)) {
+            try {
+              if (await file.exists()) {
+                final fileSize = await file.length();
+                if (fileSize > 0) {
+                  print(
+                    'FileWatcher: Initial scan found new unprocessed image: ${file.path}',
+                  );
+
+                  // Use centralized factory method for screenshot creation
+                  final screenshot = await Screenshot.fromFilePath(
+                    id: _uuid.v4(),
+                    filePath: file.path,
+                    knownFileSize: fileSize,
+                  );
+
+                  newScreenshots.add(screenshot);
+                  _processedFiles.add(file.path);
+                } else {
+                  // Still mark empty files as processed to avoid future attempts
+                  _processedFiles.add(file.path);
+                }
+              }
+            } catch (e) {
+              print('FileWatcher: Error processing file ${file.path}: $e');
+              _processedFiles.add(
+                file.path,
+              ); // Mark as processed to avoid retry
+            }
+          }
         }
 
-        // Only process files that exist, have content, and aren't already processed
-        if (await file.exists() && !_processedFiles.contains(file.path)) {
-          final fileSize = await file.length();
-          if (fileSize > 0) {
-            print(
-              'FileWatcher: Initial scan found new unprocessed image: ${file.path}',
-            );
-
-            // Use centralized factory method for screenshot creation
-            final screenshot = await Screenshot.fromFilePath(
-              id: _uuid.v4(),
-              filePath: file.path,
-              knownFileSize: fileSize,
-            );
-
-            newScreenshots.add(screenshot);
-            _processedFiles.add(file.path);
-          } else {
-            // Still mark empty files as processed to avoid future attempts
-            _processedFiles.add(file.path);
-          }
-        } else if (_processedFiles.contains(file.path)) {
-          // File already processed, just skip
-          continue;
+        // Yield control back to the UI thread between batches
+        if (i + batchSize < imageFiles.length) {
+          await Future.delayed(const Duration(milliseconds: 1));
         }
       }
 
@@ -317,40 +341,69 @@ class FileWatcherService {
       for (final path in screenshotPaths) {
         final directory = Directory(path);
         if (await directory.exists()) {
-          final entities = directory.listSync();
-          final files = entities.whereType<File>();
-          final imageFiles = files.where((file) => _isImageFile(file.path));
+          // Use async listing to avoid blocking UI
+          final List<FileSystemEntity> entities;
+          try {
+            entities = await directory.list().toList();
+          } catch (e) {
+            print('FileWatcher: Error listing directory $path: $e');
+            continue;
+          }
 
-          for (final file in imageFiles) {
-            // Skip trashed files (same logic as ImageLoaderService)
-            if (_isTrashedFile(file.path)) {
-              print(
-                'FileWatcher: Skipping trashed file during manual scan: ${file.path}',
-              );
-              _processedFiles.add(
-                file.path,
-              ); // Mark as processed to avoid future checks
-              continue;
+          final files = entities.whereType<File>();
+          final imageFiles =
+              files.where((file) => _isImageFile(file.path)).toList();
+
+          // Process files in batches to avoid blocking UI
+          const batchSize = 10;
+          for (int i = 0; i < imageFiles.length; i += batchSize) {
+            final batch = imageFiles.skip(i).take(batchSize);
+
+            for (final file in batch) {
+              // Skip trashed files (same logic as ImageLoaderService)
+              if (_isTrashedFile(file.path)) {
+                print(
+                  'FileWatcher: Skipping trashed file during manual scan: ${file.path}',
+                );
+                _processedFiles.add(
+                  file.path,
+                ); // Mark as processed to avoid future checks
+                continue;
+              }
+
+              // Only process files we haven't seen before
+              if (!_processedFiles.contains(file.path)) {
+                try {
+                  if (await file.exists()) {
+                    final fileSize = await file.length();
+                    if (fileSize > 0) {
+                      print(
+                        'FileWatcher: Manual scan found new unprocessed image: ${file.path}',
+                      );
+
+                      // Use centralized factory method for screenshot creation
+                      final screenshot = await Screenshot.fromFilePath(
+                        id: _uuid.v4(),
+                        filePath: file.path,
+                        knownFileSize: fileSize,
+                      );
+
+                      newScreenshots.add(screenshot);
+                      _processedFiles.add(file.path);
+                    }
+                  }
+                } catch (e) {
+                  print('FileWatcher: Error processing file ${file.path}: $e');
+                  _processedFiles.add(
+                    file.path,
+                  ); // Mark as processed to avoid retry
+                }
+              }
             }
 
-            // Only process files we haven't seen before
-            if (!_processedFiles.contains(file.path)) {
-              final fileSize = await file.length();
-              if (fileSize > 0) {
-                print(
-                  'FileWatcher: Manual scan found new unprocessed image: ${file.path}',
-                );
-
-                // Use centralized factory method for screenshot creation
-                final screenshot = await Screenshot.fromFilePath(
-                  id: _uuid.v4(),
-                  filePath: file.path,
-                  knownFileSize: fileSize,
-                );
-
-                newScreenshots.add(screenshot);
-                _processedFiles.add(file.path);
-              }
+            // Yield control back to the UI thread between batches
+            if (i + batchSize < imageFiles.length) {
+              await Future.delayed(const Duration(milliseconds: 1));
             }
           }
         }
@@ -409,7 +462,8 @@ class FileWatcherService {
 
       if (exists) {
         try {
-          final entities = dir.listSync();
+          // Use async listing to avoid blocking UI
+          final entities = await dir.list().toList();
           final files = entities.whereType<File>();
           final imageFiles = files.where((file) => _isImageFile(file.path));
           print(
@@ -446,7 +500,8 @@ class FileWatcherService {
       final dir = Directory(path);
       if (await dir.exists()) {
         try {
-          final entities = dir.listSync();
+          // Use async listing to avoid blocking UI
+          final entities = await dir.list().toList();
           final files = entities.whereType<File>();
           final imageFiles = files.where((file) => _isImageFile(file.path));
 

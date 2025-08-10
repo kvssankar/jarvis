@@ -8,6 +8,7 @@ import 'package:shots_studio/services/ai_service_manager.dart';
 import 'package:shots_studio/services/ai_service.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/services/analytics/analytics_service.dart';
+import 'package:shots_studio/utils/ai_provider_config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AICategorizer {
@@ -20,7 +21,7 @@ class AICategorizer {
   int get processedCount => _processedCount;
   int get totalCount => _totalCount;
 
-  Future<AICategorizeResult> startAutoCategorization({
+  Future<AICategorizeResult> startScanning({
     required Collection collection,
     required List<Screenshot> allScreenshots,
     required List<String> currentScreenshotIds,
@@ -30,12 +31,9 @@ class AICategorizer {
     required Function(int processed, int total) onProgressUpdate,
     Function()? onCompleted,
   }) async {
-    // Prevent multiple auto-categorization attempts
+    // Prevent multiple scanning attempts
     if (_isRunning) {
-      return AICategorizeResult(
-        success: false,
-        error: 'Auto-categorization is already running',
-      );
+      return AICategorizeResult(success: false, error: 'Already scanning');
     }
 
     final prefs = await SharedPreferences.getInstance();
@@ -43,13 +41,15 @@ class AICategorizer {
     if (apiKey == null || apiKey.isEmpty) {
       SnackbarService().showError(
         context,
-        'API key not set. Please configure it in settings.',
+        'API key missing. Please add it in settings.',
       );
       return AICategorizeResult(success: false, error: 'API key not set');
     }
 
     final String modelName = prefs.getString('modelName') ?? 'gemini-2.0-flash';
-    final int maxParallel = (prefs.getInt('max_parallel_ai') ?? 4) * 6;
+    final int maxParallel = AIProviderConfig.getMaxCategorizationLimitForModel(
+      modelName,
+    );
 
     // Keep track of the current collection state as it gets updated
     Collection currentCollection = collection;
@@ -72,13 +72,20 @@ class AICategorizer {
 
     onProgressUpdate(_processedCount, _totalCount);
 
-    // Log analytics for auto-categorization start
-    AnalyticsService().logFeatureUsed('auto_categorization_started');
+    // Log analytics for scanning start
+    AnalyticsService().logFeatureUsed('scanning_started');
 
-    // If no candidate screenshots, silently return success without any snackbar
+    // If no candidate screenshots, show helpful message and return
     if (candidateScreenshots.isEmpty) {
       _isRunning = false;
       onCompleted?.call(); // Notify completion for empty case too
+
+      // Show informative snackbar to explain why nothing happened
+      SnackbarService().showInfo(
+        context,
+        'All screenshots have been checked already.',
+      );
+
       return AICategorizeResult(success: true, addedScreenshotIds: []);
     }
 
@@ -141,7 +148,7 @@ class AICategorizer {
                       }
                     }
 
-                    // Log analytics for auto-categorized screenshots
+                    // Log analytics for scanned screenshots
                     AnalyticsService().logScreenshotsAutoCategorized(
                       batchMatchingIds.length,
                     );
@@ -163,8 +170,8 @@ class AICategorizer {
       onCompleted?.call(); // Notify completion immediately
 
       if (result.cancelled) {
-        SnackbarService().showInfo(context, 'Auto-categorization cancelled.');
-        AnalyticsService().logFeatureUsed('auto_categorization_cancelled');
+        SnackbarService().showInfo(context, 'Scan cancelled.');
+        AnalyticsService().logFeatureUsed('scanning_cancelled');
         return AICategorizeResult(
           success: false,
           cancelled: true,
@@ -175,24 +182,24 @@ class AICategorizer {
       if (result.success) {
         final List<String> totalMatchingScreenshotIds = result.data ?? [];
 
-        // Log final analytics for total auto-categorized screenshots
+        // Log final analytics for total scanned screenshots
         if (totalMatchingScreenshotIds.isNotEmpty) {
           AnalyticsService().logScreenshotsAutoCategorized(
             totalMatchingScreenshotIds.length,
           );
-          AnalyticsService().logFeatureUsed('auto_categorization_completed');
+          AnalyticsService().logFeatureUsed('scanning_completed');
         }
 
         // Show final summary
         if (totalMatchingScreenshotIds.isNotEmpty) {
           SnackbarService().showInfo(
             context,
-            'Auto-categorization completed. Total: ${totalMatchingScreenshotIds.length} screenshots added.',
+            'Scan complete. Added ${totalMatchingScreenshotIds.length} screenshots.',
           );
         } else {
           SnackbarService().showInfo(
             context,
-            'Auto-categorization completed. No matching screenshots found.',
+            'Scan complete. No matches found.',
           );
         }
 
@@ -201,27 +208,21 @@ class AICategorizer {
           addedScreenshotIds: totalMatchingScreenshotIds,
         );
       } else {
-        SnackbarService().showError(
-          context,
-          result.error ?? 'Auto-categorization failed',
-        );
-        AnalyticsService().logFeatureUsed('auto_categorization_failed');
+        SnackbarService().showError(context, result.error ?? 'Scan failed');
+        AnalyticsService().logFeatureUsed('scanning_failed');
         return AICategorizeResult(
           success: false,
-          error: result.error ?? 'Auto-categorization failed',
+          error: result.error ?? 'Scan failed',
         );
       }
     } catch (e) {
       _isRunning = false;
       onCompleted?.call(); // Notify completion on error too
-      AnalyticsService().logFeatureUsed('auto_categorization_error');
-      SnackbarService().showError(
-        context,
-        'Error during auto-categorization: ${e.toString()}',
-      );
+      AnalyticsService().logFeatureUsed('scanning_error');
+      SnackbarService().showError(context, 'Scan error: ${e.toString()}');
       return AICategorizeResult(
         success: false,
-        error: 'Error during auto-categorization: ${e.toString()}',
+        error: 'Scan error: ${e.toString()}',
       );
     } finally {
       _isRunning = false;
@@ -231,7 +232,7 @@ class AICategorizer {
     }
   }
 
-  void stopAutoCategorization() {
+  void stopScanning() {
     _aiServiceManager.cancelAllOperations();
     _isRunning = false;
     _processedCount = 0;

@@ -6,6 +6,7 @@ import 'package:shots_studio/widgets/screenshots/screenshot_card.dart';
 import 'package:shots_studio/services/analytics/analytics_service.dart';
 import 'package:shots_studio/utils/responsive_utils.dart';
 import 'package:shots_studio/services/hard_delete_service.dart';
+import 'package:shots_studio/l10n/app_localizations.dart';
 
 class ScreenshotsSection extends StatefulWidget {
   final List<Screenshot> screenshots;
@@ -178,7 +179,7 @@ class _ScreenshotsSectionState extends State<ScreenshotsSection> {
           actions: <Widget>[
             TextButton(
               child: Text(
-                'Cancel',
+                AppLocalizations.of(context)?.cancel ?? 'Cancel',
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSecondaryContainer,
                 ),
@@ -187,7 +188,7 @@ class _ScreenshotsSectionState extends State<ScreenshotsSection> {
             ),
             TextButton(
               child: Text(
-                'Delete',
+                AppLocalizations.of(context)?.delete ?? 'Delete',
                 style: TextStyle(color: Theme.of(context).colorScheme.error),
               ),
               onPressed: () => Navigator.of(context).pop(true),
@@ -313,7 +314,9 @@ class _ScreenshotsSectionState extends State<ScreenshotsSection> {
                           IconButton(
                             icon: const Icon(Icons.close),
                             onPressed: _exitSelectionMode,
-                            tooltip: 'Cancel selection',
+                            tooltip:
+                                AppLocalizations.of(context)?.cancelSelection ??
+                                'Cancel selection',
                           ),
                           const SizedBox(width: 8),
                           Text(
@@ -338,7 +341,10 @@ class _ScreenshotsSectionState extends State<ScreenshotsSection> {
                                   'screenshot_deselect_all',
                                 );
                               },
-                              child: const Text('Deselect All'),
+                              child: Text(
+                                AppLocalizations.of(context)?.deselectAll ??
+                                    'Deselect All',
+                              ),
                             )
                           else
                             TextButton(
@@ -352,7 +358,10 @@ class _ScreenshotsSectionState extends State<ScreenshotsSection> {
                                   'screenshot_select_all',
                                 );
                               },
-                              child: const Text('Select All'),
+                              child: Text(
+                                AppLocalizations.of(context)?.selectAll ??
+                                    'Select All',
+                              ),
                             ),
                           const SizedBox(width: 8),
                           IconButton(
@@ -364,22 +373,28 @@ class _ScreenshotsSectionState extends State<ScreenshotsSection> {
                                 _selectedScreenshotIds.isNotEmpty
                                     ? _bulkDeleteSelected
                                     : null,
-                            tooltip: 'Delete selected',
+                            tooltip:
+                                AppLocalizations.of(context)?.deleteSelected ??
+                                'Delete selected',
                           ),
                         ],
                       ),
                     ],
                   )
                   : Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'Screenshots',
-                        style: TextStyle(
-                          fontSize: 28,
-                          fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Text(
+                          AppLocalizations.of(context)?.screenshots ??
+                              'Screenshots',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
+                      const SizedBox(width: 8),
                       Text(
                         'Total : ${widget.screenshots.length}',
                         style: TextStyle(

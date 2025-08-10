@@ -161,9 +161,34 @@ class PrivacyScreen extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              "Anonymous usage analytics help us improve the app experience. This feature is completely optional and can be disabled at any time in the Advanced Settings.",
+                              "Anonymous usage analytics help us improve the app experience. This feature is completely optional and can be disabled at any time in the Advanced Settings. For more details, you can inspect the source code of our analytics implementation here: ",
                               style: TextStyle(
                                 color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () async {
+                                const url =
+                                    'https://github.com/AnsahMohammad/shots-studio/blob/main/shots_studio/lib/services/analytics/posthog_analytics_service.dart';
+                                final Uri uri = Uri.parse(url);
+                                if (await canLaunchUrl(uri)) {
+                                  await launchUrl(
+                                    uri,
+                                    mode: LaunchMode.externalApplication,
+                                  );
+                                } else {
+                                  SnackbarService().showError(
+                                    context,
+                                    'Could not launch $url',
+                                  );
+                                }
+                              },
+                              child: Text(
+                                'Analytics Source Code',
+                                style: TextStyle(
+                                  color: theme.colorScheme.primary,
+                                  decoration: TextDecoration.underline,
+                                ),
                               ),
                             ),
                           ],

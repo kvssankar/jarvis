@@ -66,8 +66,27 @@ Before you start contributing, please:
 
 6. **Run the app**:
    ```bash
-   flutter run
+   # F-Droid flavor (recommended for development)
+   flutter run --flavor fdroid --dart-define=BUILD_SOURCE=fdroid
+   
+   # Or run specific flavors
+   flutter run --flavor github --dart-define=BUILD_SOURCE=github
+   flutter run --flavor playstore --dart-define=BUILD_SOURCE=playstore
    ```
+
+### Build Flavors
+
+This project supports different build flavors for different distribution sources. See [`docs/BUILD_FLAVORS.md`](docs/BUILD_FLAVORS.md) for detailed information.
+
+**Quick Reference:**
+- **F-Droid (recommended)**: `flutter run --flavor fdroid --dart-define=BUILD_SOURCE=fdroid`
+- **GitHub**: `flutter run --flavor github --dart-define=BUILD_SOURCE=github`
+- **Play Store**: `flutter run --flavor playstore --dart-define=BUILD_SOURCE=playstore`
+
+The build source affects:
+- Update checking behavior (enabled for GitHub, disabled for F-Droid/Play Store)
+- Analytics tracking
+- About section display in the app
 
 ### Project Structure
 
@@ -258,8 +277,18 @@ flutter clean && flutter pub get
 # Run with verbose logging
 flutter run -v
 
-# Build APK for testing
-flutter build apk --debug
+# Build APK for testing (F-Droid flavor)
+flutter build apk --debug --flavor fdroid --dart-define=BUILD_SOURCE=fdroid
+
+# Build specific flavors
+flutter build apk --release --flavor fdroid --dart-define=BUILD_SOURCE=fdroid
+flutter build apk --release --flavor github --dart-define=BUILD_SOURCE=github
+flutter build apk --release --flavor playstore --dart-define=BUILD_SOURCE=playstore
+
+# Use the convenience build script
+chmod +x build_flavors.sh
+./build_flavors.sh fdroid debug      # F-Droid debug build
+./build_flavors.sh github release    # GitHub release build
 
 # Check for dependency updates
 flutter pub outdated

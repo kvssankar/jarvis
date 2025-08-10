@@ -6,6 +6,7 @@ import 'package:shots_studio/screens/collection_detail_screen.dart';
 import 'package:shots_studio/screens/all_collections_screen.dart';
 import 'package:shots_studio/widgets/collections/collection_card.dart';
 import 'package:shots_studio/widgets/collections/add_collection_button.dart';
+import 'package:shots_studio/l10n/app_localizations.dart';
 
 class CollectionsSection extends StatelessWidget {
   final List<Collection> collections;
@@ -57,9 +58,12 @@ class CollectionsSection extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'Collections',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              Text(
+                AppLocalizations.of(context)?.collections ?? 'Collections',
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               IconButton(
                 icon: const Icon(Icons.arrow_forward_ios),
@@ -145,7 +149,8 @@ class CollectionsSection extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Create your first collection to',
+              AppLocalizations.of(context)?.createFirstCollection ??
+                  'Create your first collection to',
               style: TextStyle(
                 fontSize: 18,
                 color: Theme.of(context).colorScheme.onSecondaryContainer,
@@ -153,7 +158,8 @@ class CollectionsSection extends StatelessWidget {
             ),
             SizedBox(height: 4),
             Text(
-              'organize your screenshots',
+              AppLocalizations.of(context)?.organizeScreenshots ??
+                  'organize your screenshots',
               style: TextStyle(
                 fontSize: 18,
                 color: Theme.of(context).colorScheme.onSecondaryContainer,

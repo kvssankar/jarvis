@@ -193,8 +193,33 @@ class AnalyticsService {
     await _postHogService.logInstallInfo();
   }
 
+  Future<void> logInstallSource(String source) async {
+    await _postHogService.logInstallSource(source);
+  }
+
   Future<void> logCurrentUsageTime() async {
     await _postHogService.logCurrentUsageTime();
+  }
+
+  // Gemma-specific AI processing analytics
+  Future<void> logGemmaProcessingTime({
+    required int processingTimeMs,
+    required int screenshotCount,
+    required int maxParallelAI,
+    required String modelName,
+    required String devicePlatform,
+    required String? deviceModel,
+    required bool useCPU,
+  }) async {
+    await _postHogService.logGemmaProcessingTime(
+      processingTimeMs: processingTimeMs,
+      screenshotCount: screenshotCount,
+      maxParallelAI: maxParallelAI,
+      modelName: modelName,
+      devicePlatform: devicePlatform,
+      deviceModel: deviceModel,
+      useCPU: useCPU,
+    );
   }
 
   // Additional PostHog-specific methods (optional to use)
@@ -234,5 +259,10 @@ class AnalyticsService {
     Map<String, dynamic>? properties,
   ]) async {
     await _postHogService.group(groupType, groupKey, properties);
+  }
+
+  /// Get device information for analytics
+  Future<Map<String, String>> getDeviceInfo() async {
+    return await _postHogService.getDeviceInfo();
   }
 }

@@ -2,12 +2,15 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/services/ai_service.dart';
+import 'package:shots_studio/services/analytics/analytics_service.dart';
 import 'package:shots_studio/utils/image_conversion_utils.dart';
 import 'package:shots_studio/utils/collection_utils.dart';
 import 'package:shots_studio/utils/ai_error_utils.dart';
 import 'package:shots_studio/utils/json_utils.dart';
+import 'package:shots_studio/utils/ai_language_config.dart';
 
 class ScreenshotAnalysisService extends AIService {
   // Track network errors to prevent multiple notifications
@@ -107,6 +110,14 @@ class ScreenshotAnalysisService extends AIService {
             parseAndUpdateScreenshots(unprocessedBatch, result);
             finalResults['processedCount'] =
                 (finalResults['processedCount'] as int) + batch.length;
+
+            // Log analytics for Gemma processing if this is a Gemma model
+            await _logGemmaAnalyticsIfApplicable(
+              result,
+              unprocessedBatch.length,
+              config.maxParallel,
+            );
+
             onBatchProcessed(batch, result);
           } catch (parseError) {
             // Handle parsing errors by stopping processing and showing error
@@ -311,6 +322,33 @@ class ScreenshotAnalysisService extends AIService {
                   .toList();
         }
 
+        // Ensure links is always a list
+        if (sanitizedItem['links'] is! List) {
+          if (sanitizedItem['links'] is String) {
+            // If links is a string, split by comma or other delimiters
+            String linksString = sanitizedItem['links'].toString();
+            sanitizedItem['links'] =
+                linksString
+                    .split(RegExp(r'[,;|]'))
+                    .map((link) => link.trim())
+                    .where((link) => link.isNotEmpty)
+                    .map((link) => _normalizeLinkFormat(link))
+                    .toList();
+          } else if (sanitizedItem['links'] != null) {
+            sanitizedItem['links'] = [
+              _normalizeLinkFormat(sanitizedItem['links'].toString()),
+            ];
+          } else {
+            sanitizedItem['links'] = [];
+          }
+        } else {
+          // Ensure all items in links list are strings and normalized
+          sanitizedItem['links'] =
+              (sanitizedItem['links'] as List)
+                  .map((link) => _normalizeLinkFormat(link.toString()))
+                  .toList();
+        }
+
         sanitizedResponse.add(sanitizedItem);
       } else {
         print("Warning: Invalid item found in response, skipping: $item");
@@ -320,11 +358,56 @@ class ScreenshotAnalysisService extends AIService {
     return sanitizedResponse;
   }
 
-  String _getAnalysisPrompt({List<Map<String, String?>>? autoAddCollections}) {
+  /// Normalize link format to ensure consistency
+  String _normalizeLinkFormat(String link) {
+    final cleanLink = link.trim();
+
+    // For phone numbers, ensure they have tel: prefix for consistency
+    if (RegExp(
+          r'^[\+]?[\d\s\-\(\)\.]{7,}$',
+        ).hasMatch(cleanLink.replaceAll(' ', '')) &&
+        !cleanLink.startsWith('tel:')) {
+      return 'tel:$cleanLink';
+    }
+
+    // For emails, ensure they have mailto: prefix for consistency
+    if (RegExp(
+          r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+        ).hasMatch(cleanLink) &&
+        !cleanLink.startsWith('mailto:')) {
+      return 'mailto:$cleanLink';
+    }
+
+    // For URLs, ensure they have proper protocol
+    if ((RegExp(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}').hasMatch(cleanLink) ||
+            cleanLink.startsWith('www.')) &&
+        !cleanLink.startsWith('http://') &&
+        !cleanLink.startsWith('https://')) {
+      return 'https://$cleanLink';
+    }
+
+    // Return as-is if already properly formatted or doesn't match known patterns
+    return cleanLink;
+  }
+
+  Future<String> _getAnalysisPrompt({
+    List<Map<String, String?>>? autoAddCollections,
+  }) async {
+    bool isGeminiModel = config.modelName.toLowerCase().contains('gemini');
+
     String basePrompt = """
       You are a screenshot analyzer. You will be given single or multiple images.
-      For each image, generate a title, short description and 3-5 relevant tags
-      with which users can search and find later with ease.
+      For each image, generate a title and short description ${isGeminiModel ? 'and 3-5 relevant tags' : '1-3 relevant tags'} with which users can search and find later with ease.
+    """;
+
+    basePrompt += """
+
+      Additionally, extract any clickable information from the screenshot such as:
+      - Phone numbers (format them properly with country codes when possible)
+      - Email addresses
+      - Website URLs/links
+      - Any other clickable or actionable text that users might want to copy or interact with
+      Include these in a "links" field as a list of strings. eg : ["tel:+1234567890", "mailto:example@example.com"]
     """;
 
     if (autoAddCollections != null && autoAddCollections.isNotEmpty) {
@@ -344,12 +427,31 @@ class ScreenshotAnalysisService extends AIService {
       }
     }
 
+    // Get language instruction from shared preferences
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final selectedLanguage =
+          prefs.getString(AILanguageConfig.prefKey) ??
+          AILanguageConfig.defaultLanguageKey;
+      final languageInstruction = await AILanguageConfig.getLanguageInstruction(
+        selectedLanguage,
+      );
+
+      if (languageInstruction.isNotEmpty) {
+        basePrompt += """
+        Language Instruction: $languageInstruction
+        """;
+      }
+    } catch (e) {
+      print('Error loading language preference: $e');
+      // Continue without language instruction if there's an error
+    }
+
     basePrompt += """
       
       Respond strictly in this JSON format:
-      [{"filename": '', "title": '', "desc": '', "tags": [], "collections": [], "other": []}, ...]
-      The "other" field can contain any additional information you find relevant.
-      The "collections" field should contain names of collections that match the image content.
+      [{"filename": '', "title": '', "desc": '', "tags": [], "links": [], "collections": []}, ...]
+      The "collections" field should contain names of collections that match the image content. The "tags" field should contain relevant search tags. The "links" field should contain any clickable information like phone numbers, emails, URLs, etc.
     """;
 
     return basePrompt;
@@ -394,8 +496,11 @@ class ScreenshotAnalysisService extends AIService {
     }
 
     // Use the provider-specific request preparation
+    final prompt = await _getAnalysisPrompt(
+      autoAddCollections: autoAddCollections,
+    );
     final requestData = prepareScreenshotAnalysisRequest(
-      prompt: _getAnalysisPrompt(autoAddCollections: autoAddCollections),
+      prompt: prompt,
       imageData: imageData,
     );
 
@@ -457,10 +562,13 @@ class ScreenshotAnalysisService extends AIService {
       item['collections'] ?? [],
     );
 
+    final List<String> links = List<String>.from(item['links'] ?? []);
+
     final updatedScreenshot = screenshot.copyWith(
       title: item['title'] ?? screenshot.title,
       description: item['desc'] ?? screenshot.description,
       tags: List<String>.from(item['tags'] ?? []),
+      links: links,
       aiProcessed: true,
       aiMetadata: aiMetaData,
     );
@@ -511,10 +619,15 @@ class ScreenshotAnalysisService extends AIService {
           matchedAiItem['collections'] ?? [],
         );
 
+        final List<String> links = List<String>.from(
+          matchedAiItem['links'] ?? [],
+        );
+
         final updatedScreenshot = screenshot.copyWith(
           title: matchedAiItem['title'] ?? screenshot.title,
           description: matchedAiItem['desc'] ?? screenshot.description,
           tags: List<String>.from(matchedAiItem['tags'] ?? []),
+          links: links,
           aiProcessed: true,
           aiMetadata: aiMetaData,
         );
@@ -570,6 +683,55 @@ class ScreenshotAnalysisService extends AIService {
     // Update state based on error handling result
     if (result.shouldTerminate) {
       _processingTerminated = true;
+    }
+  }
+
+  /// Log analytics for Gemma processing if applicable
+  Future<void> _logGemmaAnalyticsIfApplicable(
+    Map<String, dynamic> result,
+    int batchSize,
+    int maxParallelAI,
+  ) async {
+    try {
+      // Check if this is a Gemma response by looking for Gemma-specific fields
+      final bool isGemmaResponse =
+          result.containsKey('gemma_processing_time_ms') &&
+          result.containsKey('gemma_model_name') &&
+          result.containsKey('gemma_use_cpu');
+
+      if (!isGemmaResponse) {
+        // Not a Gemma response, skip analytics
+        return;
+      }
+
+      final processingTimeMs = result['gemma_processing_time_ms'] as int?;
+      final modelName = result['gemma_model_name'] as String?;
+      final useCPU = result['gemma_use_cpu'] as bool?;
+
+      if (processingTimeMs == null || modelName == null || useCPU == null) {
+        // Missing required data, skip analytics
+        return;
+      }
+
+      // Get device info from the analytics service
+      final analyticsService = AnalyticsService();
+      final deviceInfo = await analyticsService.getDeviceInfo();
+      final devicePlatform = deviceInfo['platform'] ?? 'unknown';
+      final deviceModel = deviceInfo['model'];
+
+      // Log Gemma processing time analytics
+      await analyticsService.logGemmaProcessingTime(
+        processingTimeMs: processingTimeMs,
+        screenshotCount: batchSize,
+        maxParallelAI: maxParallelAI,
+        modelName: modelName,
+        devicePlatform: devicePlatform,
+        deviceModel: deviceModel,
+        useCPU: useCPU,
+      );
+    } catch (e) {
+      // Silently fail analytics to not disrupt the main processing flow
+      print('Error logging Gemma analytics: $e');
     }
   }
 }

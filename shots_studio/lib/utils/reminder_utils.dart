@@ -67,11 +67,14 @@ class ReminderUtils {
               ? customMessage!
               : 'Reminder for screenshot: ${screenshot.title ?? 'Untitled'}';
 
-      NotificationService().scheduleNotification(
+      // Schedule notification with screenshot image
+      NotificationService().scheduleNotificationWithImage(
         id: screenshot.id.hashCode,
         title: 'Screenshot Reminder',
         body: reminderMessage,
         scheduledTime: selectedReminderTime,
+        imagePath: screenshot.path, // Pass the image path for mobile
+        imageBytes: screenshot.bytes, // Pass the image bytes for web
       );
 
       SnackbarService().showSuccess(
@@ -104,5 +107,13 @@ class ReminderUtils {
       body: 'This is a scheduled test notification (10 seconds)',
       scheduledTime: scheduledTime,
     );
+  }
+
+  static Future<void> debugNotifications() async {
+    await NotificationService().debugScheduledNotifications();
+  }
+
+  static Future<void> testNotificationInMinute() async {
+    await NotificationService().testScheduleNotificationInMinute();
   }
 }

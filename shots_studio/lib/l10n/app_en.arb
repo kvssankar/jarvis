@@ -1,0 +1,469 @@
+{
+  "@@locale": "en",
+  "appTitle": "Shots Studio",
+  "@appTitle": {
+    "description": "The application title"
+  },
+  "searchScreenshots": "Search Screenshots",
+  "@searchScreenshots": {
+    "description": "Tooltip for search button"
+  },
+  "analyzed": "Analyzed {count}/{total}",
+  "@analyzed": {
+    "description": "Shows progress of AI analysis",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "5"
+      },
+      "total": {
+        "type": "int", 
+        "example": "10"
+      }
+    }
+  },
+  "developerModeDisabled": "Advanced settings disabled",
+  "@developerModeDisabled": {
+    "description": "Message shown when developer mode is disabled"
+  },
+  "collections": "Collections",
+  "@collections": {
+    "description": "Collections section title"
+  },
+  "screenshots": "Screenshots",
+  "@screenshots": {
+    "description": "Screenshots section title"
+  },
+  "settings": "Settings",
+  "@settings": {
+    "description": "Settings menu item"
+  },
+  "about": "About",
+  "@about": {
+    "description": "About menu item"
+  },
+  "privacy": "Privacy",
+  "@privacy": {
+    "description": "Privacy menu item"
+  },
+  "createCollection": "Create Collection",
+  "@createCollection": {
+    "description": "Button text to create a new collection"
+  },
+  "editCollection": "Edit Collection",
+  "@editCollection": {
+    "description": "Button text to edit collection"
+  },
+  "deleteCollection": "Delete Collection",
+  "@deleteCollection": {
+    "description": "Button text to delete collection"
+  },
+  "collectionName": "Collection Name",
+  "@collectionName": {
+    "description": "Label for collection name input field"
+  },
+  "save": "Save",
+  "@save": {
+    "description": "Save button text"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button text"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Delete button text"
+  },
+  "confirm": "Confirm",
+  "@confirm": {
+    "description": "Confirm button text"
+  },
+  "yes": "Yes",
+  "@yes": {
+    "description": "Yes button text"
+  },
+  "no": "No",
+  "@no": {
+    "description": "No button text"
+  },
+  "ok": "OK",
+  "@ok": {
+    "description": "OK button text"
+  },
+  "search": "Search",
+  "@search": {
+    "description": "Search button text"
+  },
+  "noResults": "No results found",
+  "@noResults": {
+    "description": "Message when search returns no results"
+  },
+  "loading": "Loading...",
+  "@loading": {
+    "description": "Loading message"
+  },
+  "error": "Error",
+  "@error": {
+    "description": "Error message"
+  },
+  "retry": "Retry",
+  "@retry": {
+    "description": "Retry button text"
+  },
+  "share": "Share",
+  "@share": {
+    "description": "Share button text"
+  },
+  "copy": "Copy",
+  "@copy": {
+    "description": "Copy button text"
+  },
+  "paste": "Paste",
+  "@paste": {
+    "description": "Paste button text"
+  },
+  "selectAll": "Select All",
+  "@selectAll": {
+    "description": "Select all button text"
+  },
+  "aiSettings": "AI Settings",
+  "@aiSettings": {
+    "description": "AI Settings menu item"
+  },
+  "apiKey": "API Key",
+  "@apiKey": {
+    "description": "API Key label"
+  },
+  "modelName": "Model Name",
+  "@modelName": {
+    "description": "Model name label"
+  },
+  "autoProcessing": "Auto Processing",
+  "@autoProcessing": {
+    "description": "Auto processing setting"
+  },
+  "enabled": "Enabled",
+  "@enabled": {
+    "description": "Enabled status"
+  },
+  "disabled": "Disabled",
+  "@disabled": {
+    "description": "Disabled status"
+  },
+  "theme": "Theme",
+  "@theme": {
+    "description": "Theme setting"
+  },
+  "lightTheme": "Light",
+  "@lightTheme": {
+    "description": "Light theme option"
+  },
+  "darkTheme": "Dark",
+  "@darkTheme": {
+    "description": "Dark theme option"
+  },
+  "systemTheme": "System",
+  "@systemTheme": {
+    "description": "System theme option"
+  },
+  "language": "Language",
+  "@language": {
+    "description": "Language setting"
+  },
+  "analytics": "Analytics",
+  "@analytics": {
+    "description": "Analytics setting"
+  },
+  "betaTesting": "Beta Testing",
+  "@betaTesting": {
+    "description": "Beta testing setting"
+  },
+    "advancedSettings": "Advanced Settings",
+  "developerMode": "Advanced Settings",
+  "language": "Language",
+  "safeDelete": "Safe Delete",
+  "sourceCode": "Source Code",
+  "support": "Support",
+  "about": "About",
+  "checkForUpdates": "Check for Updates",
+  "privacyNotice": "Privacy Notice",
+  "analyticsAndTelemetry": "Analytics and Telemetry",
+  "betaTesting": "Beta Testing",
+  "performanceMenu": "Performance Menu",
+  "serverMessages": "Server Messages",
+  "maxParallelAI": "Max Parallel AI",
+  "enableScreenshotLimit": "Enable Screenshot Limit",
+  "tags": "Tags",
+  "aiDetails": "AI Details",
+  "collections": "Collections",
+  "size": "Size",
+  "addDescription": "Add a description",
+  "addTag": "Add tag",
+  "@developerMode": {
+    "description": "Advanced settings mode setting"
+  },
+  "amoledMode": "AMOLED Mode",
+  "@amoledMode": {
+    "description": "AMOLED mode setting"
+  },
+  "notifications": "Notifications",
+  "@notifications": {
+    "description": "Notifications setting"
+  },
+  "permissions": "Permissions",
+  "@permissions": {
+    "description": "Permissions setting"
+  },
+  "storage": "Storage",
+  "@storage": {
+    "description": "Storage setting"
+  },
+  "camera": "Camera",
+  "@camera": {
+    "description": "Camera permission"
+  },
+  "version": "Version",
+  "@version": {
+    "description": "App version label"
+  },
+  "buildNumber": "Build Number",
+  "@buildNumber": {
+    "description": "Build number label"
+  },
+  "ocrResults": "OCR Results",
+  "@ocrResults": {
+    "description": "OCR results dialog title"
+  },
+  "extractedText": "Extracted Text",
+  "@extractedText": {
+    "description": "Label for extracted text from OCR"
+  },
+  "noTextFound": "No text found in image",
+  "@noTextFound": {
+    "description": "Message when OCR finds no text"
+  },
+  "processing": "Processing...",
+  "@processing": {
+    "description": "Processing message"
+  },
+  "selectImage": "Select Image",
+  "@selectImage": {
+    "description": "Select image button text"
+  },
+  "takePhoto": "Take Photo",
+  "@takePhoto": {
+    "description": "Take photo button text"
+  },
+  "fromGallery": "From Gallery",
+  "@fromGallery": {
+    "description": "From gallery button text"
+  },
+  "imageSelected": "Image selected",
+  "@imageSelected": {
+    "description": "Message when image is selected"
+  },
+  "noImageSelected": "No image selected",
+  "@noImageSelected": {
+    "description": "Message when no image is selected"
+  },
+  "apiKeyRequired": "Required for AI features",
+  "@apiKeyRequired": {
+    "description": "Message when API key is required"
+  },
+  "apiKeyValid": "API key is valid",
+  "@apiKeyValid": {
+    "description": "Message when API key is valid"
+  },
+  "apiKeyValidationFailed": "API key validation failed",
+  "@apiKeyValidationFailed": {
+    "description": "Message when API key validation fails"
+  },
+  "apiKeyNotValidated": "API key is set (not validated)",
+  "@apiKeyNotValidated": {
+    "description": "Message when API key is set but not validated"
+  },
+  "enterApiKey": "Enter Gemini API Key",
+  "@enterApiKey": {
+    "description": "Placeholder text for API key field"
+  },
+  "validateApiKey": "Validate API Key",
+  "@validateApiKey": {
+    "description": "Button text to validate API key"
+  },
+  "valid": "Valid",
+  "@valid": {
+    "description": "Valid status text"
+  },
+  "autoProcessingDescription": "Screenshots will be automatically processed when added",
+  "@autoProcessingDescription": {
+    "description": "Description for auto processing when enabled"
+  },
+  "manualProcessingOnly": "Manual processing only",
+  "@manualProcessingOnly": {
+    "description": "Description for auto processing when disabled"
+  },
+  "amoledModeDescription": "Dark theme optimized for AMOLED screens",
+  "@amoledModeDescription": {
+    "description": "Description for AMOLED mode when enabled"
+  },
+  "defaultDarkTheme": "Default dark theme",
+  "@defaultDarkTheme": {
+    "description": "Description for AMOLED mode when disabled"
+  },
+  "getApiKey": "Get an API key",
+  "@getApiKey": {
+    "description": "Tooltip for API key help button"
+  },
+  "stopProcessing": "Stop Processing",
+  "@stopProcessing": {
+    "description": "Tooltip for stop processing button"
+  },
+  "processWithAI": "Process with AI", 
+  "@processWithAI": {
+    "description": "Tooltip for process with AI button"
+  },
+  "createFirstCollection": "Create your first collection to",
+  "@createFirstCollection": {
+    "description": "First part of empty collections message"
+  },
+  "organizeScreenshots": "organize your screenshots",
+  "@organizeScreenshots": {
+    "description": "Second part of empty collections message"
+  },
+  "cancel": "Cancel",
+  "@cancel": {
+    "description": "Cancel button text"
+  },
+  "delete": "Delete",
+  "@delete": {
+    "description": "Delete button text"
+  },
+  "cancelSelection": "Cancel selection",
+  "@cancelSelection": {
+    "description": "Tooltip for cancel selection button"
+  },
+  "deselectAll": "Deselect All",
+  "@deselectAll": {
+    "description": "Deselect all button text"
+  },
+  "selectAll": "Select All",
+  "@selectAll": {
+    "description": "Select all button text"
+  },
+  "deleteSelected": "Delete selected",
+  "@deleteSelected": {
+    "description": "Tooltip for delete selected button"
+  },
+  "language": "Language",
+  "safeDelete": "Safe Delete",
+  "sourceCode": "Source Code",
+  "support": "Support",
+  "about": "About",
+  "checkForUpdates": "Check for Updates",
+  "privacyNotice": "Privacy Notice",
+  "analyticsAndTelemetry": "Analytics and Telemetry",
+  "betaTesting": "Beta Testing",
+  "performanceMenu": "Performance Menu",
+  "serverMessages": "Server Messages",
+  "maxParallelAI": "Max Parallel AI",
+  "enableScreenshotLimit": "Enable Screenshot Limit",
+  "tags": "Tags",
+  "aiDetails": "AI Details",
+  "collections": "Collections",
+  "size": "Size",
+  "addDescription": "Add a description",
+  "addTag": "Add tag",
+  "aiSettings": "AI Settings",
+  "clearCorruptFiles": "Clear Corrupt Files",
+  "@clearCorruptFiles": {
+    "description": "Button to clear all corrupt files"
+  },
+  "clearCorruptFilesConfirm": "Clear Corrupt Files?",
+  "@clearCorruptFilesConfirm": {
+    "description": "Title for confirm dialog to clear corrupt files"
+  },
+  "clearCorruptFilesMessage": "Are you sure you want to remove all corrupt files from this collection? This action cannot be undone.",
+  "@clearCorruptFilesMessage": {
+    "description": "Message for confirm dialog to clear corrupt files"
+  },
+  "corruptFilesCleared": "Corrupt files cleared",
+  "@corruptFilesCleared": {
+    "description": "Message shown when corrupt files are cleared"
+  },
+  "noCorruptFiles": "No corrupt files found",
+  "@noCorruptFiles": {
+    "description": "Message shown when no corrupt files are found"
+  },
+  "enableLocalAI": "🤖 Enable Local AI Model",
+  "@enableLocalAI": {
+    "description": "Title for enable local AI dialog"
+  },
+  "localAIBenefits": "What this means:",
+  "@localAIBenefits": {
+    "description": "Header for What this means: section"
+  },
+  "localAIOffline": "• Works completely offline - no internet required",
+  "@localAIOffline": {
+    "description": "Local AI benefit: offline functionality"
+  },
+  "localAIPrivacy": "• Your data stays private on your device",
+  "@localAIPrivacy": {
+    "description": "Local AI benefit: privacy"
+  },
+  "localAINote": "Note:",
+  "@localAINote": {
+    "description": "Header for local AI notes section"
+  },
+  "localAIBattery": "• Uses more battery than cloud models",
+  "@localAIBattery": {
+    "description": "Local AI note: battery usage"
+  },
+  "localAIRAM": "• Requires at least 4GB of available RAM",
+  "@localAIRAM": {
+    "description": "Local AI note: RAM requirement"
+  },
+  "localAIPrivacyNote": "The model will process your screenshots locally for enhanced privacy.",
+  "@localAIPrivacyNote": {
+    "description": "Local AI privacy explanation"
+  },
+  "enableLocalAIButton": "Enable Local AI",
+  "@enableLocalAIButton": {
+    "description": "Button text to enable local AI"
+  },
+  "reminders": "Reminders",
+  "@reminders": {
+    "description": "Reminders screen title"
+  },
+  "activeReminders": "Active",
+  "@activeReminders": {
+    "description": "Active reminders tab title"
+  },
+  "pastReminders": "Past",
+  "@pastReminders": {
+    "description": "Past reminders tab title"
+  },
+  "noActiveReminders": "No active reminders.\nSet reminders from screenshot details.",
+  "@noActiveReminders": {
+    "description": "Message shown when there are no active reminders"
+  },
+  "noPastReminders": "No past reminders.",
+  "@noPastReminders": {
+    "description": "Message shown when there are no past reminders"
+  },
+  "editReminder": "Edit Reminder",
+  "@editReminder": {
+    "description": "Tooltip for edit reminder button"
+  },
+  "clearReminder": "Clear Reminder",
+  "@clearReminder": {
+    "description": "Tooltip for clear reminder button"
+  },
+  "removePastReminder": "Remove",
+  "@removePastReminder": {
+    "description": "Tooltip for remove past reminder button"
+  },
+  "pastReminderRemoved": "Past reminder removed",
+  "@pastReminderRemoved": {
+    "description": "Message shown when a past reminder is removed"
+  }
+}

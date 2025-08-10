@@ -22,6 +22,7 @@ class FullScreenImageViewer extends StatefulWidget {
 class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
   late PageController _pageController;
   late int _currentIndex;
+  bool _isDisposed = false;
 
   @override
   void initState() {
@@ -36,11 +37,14 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
 
   @override
   void dispose() {
+    _isDisposed = true;
     _pageController.dispose();
     super.dispose();
   }
 
   void _onPageChanged(int index) {
+    if (_isDisposed || !mounted) return;
+
     setState(() {
       _currentIndex = index;
     });
@@ -169,6 +173,10 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
       _currentIndex = 0;
     }
 
+    if (_isDisposed || !mounted) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
     final currentScreenshot = widget.screenshots[_currentIndex];
 
     return PopScope(
@@ -213,24 +221,22 @@ class _FullScreenImageViewerState extends State<FullScreenImageViewer> {
         ),
         body:
             widget.screenshots.length == 1
-                ? Center(
-                  child: InteractiveViewer(
-                    panEnabled: true,
-                    minScale: 0.5,
-                    maxScale: 4.0,
-                    child: _buildImageContent(currentScreenshot),
-                  ),
+                ? InteractiveViewer(
+                  panEnabled: true,
+                  minScale: 0.5,
+                  maxScale: 4.0,
+                  child: Center(child: _buildImageContent(currentScreenshot)),
                 )
                 : PageView.builder(
                   controller: _pageController,
                   onPageChanged: _onPageChanged,
                   itemCount: widget.screenshots.length,
                   itemBuilder: (context, index) {
-                    return Center(
-                      child: InteractiveViewer(
-                        panEnabled: true,
-                        minScale: 0.5,
-                        maxScale: 4.0,
+                    return InteractiveViewer(
+                      panEnabled: true,
+                      minScale: 0.5,
+                      maxScale: 4.0,
+                      child: Center(
                         child: _buildImageContent(widget.screenshots[index]),
                       ),
                     );

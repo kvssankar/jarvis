@@ -21,6 +21,10 @@ android {
         jvmTarget = JavaVersion.VERSION_1_8.toString() // Modified this line
     }
 
+    buildFeatures {
+        buildConfig = true
+    }
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.ansah.shots_studio"
@@ -31,6 +35,25 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+    }
+
+    flavorDimensions += "source"
+    productFlavors {
+        create("fdroid") {
+            dimension = "source"
+            buildConfigField("String", "BUILD_SOURCE", "\"fdroid\"")
+            manifestPlaceholders["appNameSuffix"] = ""
+        }
+        create("github") {
+            dimension = "source"
+            buildConfigField("String", "BUILD_SOURCE", "\"github\"")
+            manifestPlaceholders["appNameSuffix"] = ""
+        }
+        create("playstore") {
+            dimension = "source"
+            buildConfigField("String", "BUILD_SOURCE", "\"playstore\"")
+            manifestPlaceholders["appNameSuffix"] = ""
+        }
     }
 
     buildTypes {
@@ -54,17 +77,6 @@ android {
         includeInApk = false
         // Disables dependency metadata when building Android App Bundles.
         includeInBundle = false
-    }
-
-    applicationVariants.all {
-        val variant = this
-        variant.outputs
-            .map { it as com.android.build.gradle.internal.api.BaseVariantOutputImpl }
-            .forEach { output ->
-                val outputFileName = "shots_studio-${variant.buildType.name}-${variant.versionName}.apk"
-                output.outputFileName = outputFileName
-                println("Setting APK output name to: $outputFileName")
-            }
     }
 }
 

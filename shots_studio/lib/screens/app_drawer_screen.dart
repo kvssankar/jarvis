@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shots_studio/widgets/app_drawer/index.dart';
 import 'package:shots_studio/services/analytics/analytics_service.dart';
+import 'package:shots_studio/l10n/app_localizations.dart';
+import 'package:shots_studio/models/screenshot_model.dart';
 
 class AppDrawer extends StatefulWidget {
   final String? currentApiKey;
@@ -12,8 +14,6 @@ class AppDrawer extends StatefulWidget {
   final Function(int) onLimitChanged;
   final int currentMaxParallel;
   final Function(int) onMaxParallelChanged;
-  final bool? currentLimitEnabled;
-  final Function(bool)? onLimitEnabledChanged;
   final bool? currentDevMode;
   final Function(bool)? onDevModeChanged;
   final bool? currentAutoProcessEnabled;
@@ -28,6 +28,9 @@ class AppDrawer extends StatefulWidget {
   final Function(String)? onThemeChanged;
   final Key? apiKeyFieldKey;
   final VoidCallback? onResetAiProcessing;
+  final Function(Locale)? onLocaleChanged;
+  final List<Screenshot>? allScreenshots;
+  final VoidCallback? onClearCorruptFiles;
 
   const AppDrawer({
     super.key,
@@ -39,8 +42,6 @@ class AppDrawer extends StatefulWidget {
     required this.onLimitChanged,
     required this.currentMaxParallel,
     required this.onMaxParallelChanged,
-    this.currentLimitEnabled,
-    this.onLimitEnabledChanged,
     this.currentDevMode,
     this.onDevModeChanged,
     this.currentAutoProcessEnabled,
@@ -55,6 +56,9 @@ class AppDrawer extends StatefulWidget {
     this.onThemeChanged,
     this.apiKeyFieldKey,
     this.onResetAiProcessing,
+    this.onLocaleChanged,
+    this.allScreenshots,
+    this.onClearCorruptFiles,
   });
 
   @override
@@ -91,8 +95,11 @@ class _AppDrawerState extends State<AppDrawer> {
       if (widget.onDevModeChanged != null) {
         widget.onDevModeChanged!(false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Developer mode disabled'),
+          SnackBar(
+            content: Text(
+              AppLocalizations.of(context)?.developerModeDisabled ??
+                  'Advanced settings disabled',
+            ),
             duration: Duration(seconds: 2),
           ),
         );
@@ -125,6 +132,7 @@ class _AppDrawerState extends State<AppDrawer> {
               onThemeChanged: widget.onThemeChanged,
               currentDevMode: widget.currentDevMode,
               onDevModeChanged: widget.onDevModeChanged,
+              onLocaleChanged: widget.onLocaleChanged,
             ),
             if (widget.currentDevMode == true) ...[
               AdvancedSettingsSection(
@@ -132,8 +140,6 @@ class _AppDrawerState extends State<AppDrawer> {
                 onLimitChanged: widget.onLimitChanged,
                 currentMaxParallel: widget.currentMaxParallel,
                 onMaxParallelChanged: widget.onMaxParallelChanged,
-                currentLimitEnabled: widget.currentLimitEnabled,
-                onLimitEnabledChanged: widget.onLimitEnabledChanged,
                 currentDevMode: widget.currentDevMode,
                 onDevModeChanged: widget.onDevModeChanged,
                 currentAnalyticsEnabled: widget.currentAnalyticsEnabled,
@@ -141,6 +147,8 @@ class _AppDrawerState extends State<AppDrawer> {
                 currentBetaTestingEnabled: widget.currentBetaTestingEnabled,
                 onBetaTestingEnabledChanged: widget.onBetaTestingEnabledChanged,
                 onResetAiProcessing: widget.onResetAiProcessing,
+                allScreenshots: widget.allScreenshots,
+                onClearCorruptFiles: widget.onClearCorruptFiles,
               ),
               const PerformanceSection(),
             ],

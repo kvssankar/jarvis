@@ -10,6 +10,7 @@ class Screenshot {
   String? title;
   String? description;
   List<String> tags;
+  List<String> links; // Clickable information like phone numbers, URLs, etc.
   List<String> collectionIds;
   bool aiProcessed;
   DateTime addedOn;
@@ -26,6 +27,7 @@ class Screenshot {
     this.title,
     this.description,
     required this.tags,
+    List<String>? links,
     List<String>? collectionIds,
     required this.aiProcessed,
     required this.addedOn,
@@ -34,7 +36,8 @@ class Screenshot {
     this.isDeleted = false,
     this.reminderTime,
     this.reminderText,
-  }) : collectionIds = collectionIds ?? [];
+  }) : links = links ?? [],
+       collectionIds = collectionIds ?? [];
 
   void addToCollections(List<String> collections) {
     collectionIds.addAll(
@@ -67,6 +70,7 @@ class Screenshot {
       'title': title,
       'description': description,
       'tags': tags,
+      'links': links,
       'collectionIds': collectionIds,
       'aiProcessed': aiProcessed,
       'addedOn': addedOn.toIso8601String(),
@@ -88,6 +92,10 @@ class Screenshot {
       title: json['title'] as String?,
       description: json['description'] as String?,
       tags: List<String>.from(json['tags'] as List<dynamic>),
+      links:
+          json['links'] != null
+              ? List<String>.from(json['links'] as List<dynamic>)
+              : [],
       collectionIds:
           List<String>.from(
             json['collectionIds'] as List<dynamic>,
@@ -166,6 +174,7 @@ class Screenshot {
     String? title,
     String? description,
     List<String>? tags,
+    List<String>? links,
     bool? aiProcessed,
     AiMetaData? aiMetadata,
     List<String>? collectionIds,
@@ -180,6 +189,7 @@ class Screenshot {
       title: title ?? this.title,
       description: description ?? this.description,
       tags: tags ?? this.tags,
+      links: links ?? this.links,
       collectionIds: collectionIds ?? this.collectionIds,
       aiProcessed: aiProcessed ?? this.aiProcessed,
       addedOn: addedOn,

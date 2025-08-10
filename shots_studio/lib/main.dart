@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart' show kIsWeb, kDebugMode;
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shots_studio/l10n/app_localizations.dart';
 import 'dart:async';
 import 'package:shots_studio/screens/screenshot_details_screen.dart';
 import 'package:shots_studio/screens/screenshot_swipe_detail_screen.dart';
@@ -11,6 +13,7 @@ import 'package:shots_studio/screens/app_drawer_screen.dart';
 import 'package:shots_studio/models/screenshot_model.dart';
 import 'package:shots_studio/models/collection_model.dart';
 import 'package:shots_studio/screens/search_screen.dart';
+import 'package:shots_studio/screens/reminders_screen.dart';
 import 'package:shots_studio/screens/privacy_screen.dart';
 import 'package:shots_studio/widgets/onboarding/api_key_guide_dialog.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -34,6 +37,7 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shots_studio/services/image_loader_service.dart';
 import 'package:shots_studio/services/custom_path_service.dart';
 import 'package:shots_studio/widgets/custom_paths_dialog.dart';
+import 'package:shots_studio/utils/build_source.dart';
 
 void main() async {
   await SentryFlutter.init(
@@ -86,6 +90,14 @@ Future<void> _setupBackgroundServiceNotificationChannel() async {
         importance: Importance.high,
       );
 
+  const AndroidNotificationChannel urgentServerMessagesChannel =
+      AndroidNotificationChannel(
+        'server_messages_urgent',
+        'Urgent Server Messages',
+        description: 'Channel for urgent server messages',
+        importance: Importance.max,
+      );
+
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
@@ -100,6 +112,12 @@ Future<void> _setupBackgroundServiceNotificationChannel() async {
         AndroidFlutterLocalNotificationsPlugin
       >()
       ?.createNotificationChannel(serverMessagesChannel);
+
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >()
+      ?.createNotificationChannel(urgentServerMessagesChannel);
 }
 
 class MyApp extends StatefulWidget {
@@ -112,11 +130,13 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   bool _amoledModeEnabled = false;
   String _selectedTheme = 'Adaptive Theme';
+  Locale _selectedLocale = const Locale('en'); // Default to English
 
   @override
   void initState() {
     super.initState();
     _loadThemeSettings();
+    _loadLocaleSettings();
   }
 
   Future<void> _loadThemeSettings() async {
@@ -125,6 +145,14 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       _amoledModeEnabled = amoledMode;
       _selectedTheme = selectedTheme;
+    });
+  }
+
+  Future<void> _loadLocaleSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    final languageCode = prefs.getString('selected_language') ?? 'en';
+    setState(() {
+      _selectedLocale = Locale(languageCode);
     });
   }
 
@@ -141,6 +169,26 @@ class _MyAppState extends State<MyApp> {
 
         return MaterialApp(
           title: 'Shots Studio',
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('en'), // English
+            Locale('hi'), // Hindi
+            Locale('de'), // German
+            Locale('zh'), // Chinese
+            Locale('pt'), // Portuguese
+            Locale('ar'), // Arabic
+            Locale('es'), // Spanish
+            Locale('fr'), // French
+            Locale('it'), // Italian
+            Locale('ja'), // Japanese
+            Locale('ru'), // Russian
+          ],
+          locale: _selectedLocale, // Use the selected locale
           theme: ThemeUtils.createLightTheme(lightScheme),
           darkTheme: ThemeUtils.createDarkTheme(darkScheme),
           themeMode:
@@ -158,6 +206,13 @@ class _MyAppState extends State<MyApp> {
                 _selectedTheme = themeName;
               });
             },
+            onLocaleChanged: (locale) async {
+              final prefs = await SharedPreferences.getInstance();
+              await prefs.setString('selected_language', locale.languageCode);
+              setState(() {
+                _selectedLocale = locale;
+              });
+            },
           ),
         );
       },
@@ -168,8 +223,14 @@ class _MyAppState extends State<MyApp> {
 class HomeScreen extends StatefulWidget {
   final Function(bool)? onAmoledModeChanged;
   final Function(String)? onThemeChanged;
+  final Function(Locale)? onLocaleChanged;
 
-  const HomeScreen({super.key, this.onAmoledModeChanged, this.onThemeChanged});
+  const HomeScreen({
+    super.key,
+    this.onAmoledModeChanged,
+    this.onThemeChanged,
+    this.onLocaleChanged,
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -181,6 +242,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   final ImageLoaderService _imageLoaderService = ImageLoaderService();
   bool _isLoading = false;
   bool _isProcessingAI = false;
+  bool _isInitializingProcessing = false;
   int _aiProcessedCount = 0;
   int _aiTotalToProcess = 0;
 
@@ -199,7 +261,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   String _selectedModelName = 'gemini-2.0-flash';
   int _screenshotLimit = 1200;
   int _maxParallelAI = 4;
-  bool _isScreenshotLimitEnabled = false;
   bool _devMode = false;
   bool _autoProcessEnabled = true;
   bool _analyticsEnabled =
@@ -228,6 +289,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     _loadDataFromPrefs();
     _loadSettings();
+
+    // Initialize server message checking in background
+    if (!kIsWeb) {
+      _initializeServerMessageChecking();
+    }
+
     if (!kIsWeb) {
       _loadAndroidScreenshotsIfNeeded().then((_) {
         // Setup FileWatcher only AFTER initial loading is complete
@@ -243,6 +310,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (privacyAccepted && context.mounted) {
         // Log install info when onboarding is completed
         AnalyticsService().logInstallInfo();
+        // Log install source analytics
+        AnalyticsService().logInstallSource(BuildSource.current.value);
 
         // API key guide will only show after privacy is accepted
         await showApiKeyGuideIfNeeded(context, _apiKey, _updateApiKey);
@@ -261,6 +330,39 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Clean up file watcher
     _fileWatcherSubscription?.cancel();
     super.dispose();
+  }
+
+  /// Initialize server message checking with background service
+  Future<void> _initializeServerMessageChecking() async {
+    try {
+      final backgroundService = BackgroundProcessingService();
+
+      // Start the background service for server message checking
+      await backgroundService.startServerMessageChecking();
+
+      // Set up listeners for server message events
+      final service = FlutterBackgroundService();
+
+      service.on('server_message_checked').listen((event) {
+        if (event != null && mounted) {
+          final data = Map<String, dynamic>.from(event);
+          final messageFound = data['messageFound'] as bool? ?? false;
+
+          if (messageFound) {
+            print('Server message notification sent: ${data['title']}');
+          }
+        }
+      });
+
+      service.on('server_message_error').listen((event) {
+        if (event != null) {
+          final data = Map<String, dynamic>.from(event);
+          print('Server message check error: ${data['error']}');
+        }
+      });
+    } catch (e) {
+      print('Failed to initialize server message checking: $e');
+    }
   }
 
   /// Setup listeners for background service events
@@ -363,6 +465,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
           setState(() {
             _isProcessingAI = false;
+            _isInitializingProcessing = false;
             _aiProcessedCount = 0;
             _aiTotalToProcess = 0;
           });
@@ -405,6 +508,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
           setState(() {
             _isProcessingAI = false;
+            _isInitializingProcessing = false;
             _aiProcessedCount = 0;
             _aiTotalToProcess = 0;
           });
@@ -424,6 +528,53 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       print("Main app: Received service initialization event: $event");
     });
 
+    // Listen for safety stops from background service
+    service.on('safety_stop').listen((event) {
+      print("Main app: Received safety stop event: $event");
+
+      try {
+        if (event != null && mounted) {
+          final data = Map<String, dynamic>.from(event);
+          final reason = data['reason'] as String? ?? 'unknown';
+          final message =
+              data['message'] as String? ??
+              'Processing stopped for resource safety';
+          final modelType = data['modelType'] as String? ?? '';
+
+          print("Main app: Safety stop - Reason: $reason, Model: $modelType");
+
+          // Update UI state to stop processing
+          setState(() {
+            _isProcessingAI = false;
+            _isInitializingProcessing = false;
+            _aiProcessedCount = 0;
+            _aiTotalToProcess = 0;
+          });
+
+          // Show appropriate notification based on reason
+          if (reason == 'battery_low') {
+            final batteryLevel = data['batteryLevel'] as int? ?? 0;
+            SnackbarService().showWarning(
+              context,
+              'Gemma processing stopped due to low battery ($batteryLevel%). Connect to charger to continue.',
+            );
+          } else if (reason == 'network_changed') {
+            SnackbarService().showWarning(
+              context,
+              'Gemini processing stopped - network changed from WiFi to mobile data to prevent excessive data usage.',
+            );
+          } else {
+            SnackbarService().showWarning(context, message);
+          }
+
+          // Save final data
+          _saveDataToPrefs();
+        }
+      } catch (e) {
+        print("Main app: Error handling safety stop event: $e");
+      }
+    });
+
     print("Background service listeners setup complete");
   }
 
@@ -438,8 +589,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Manage file watcher based on app lifecycle
     if (!kIsWeb) {
       if (state == AppLifecycleState.resumed) {
-        // Start file watching when app comes to foreground
-        _fileWatcher.startWatching();
+        // Start file watching when app comes to foreground (async to avoid blocking UI)
+        _startFileWatchingAsync();
       } else if (state == AppLifecycleState.paused) {
         // Stop file watching when app goes to background to save resources
         _fileWatcher.stopWatching();
@@ -511,7 +662,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _selectedModelName = prefs.getString('modelName') ?? 'gemini-2.0-flash';
       _screenshotLimit = prefs.getInt('limit') ?? 1200;
       _maxParallelAI = prefs.getInt('maxParallel') ?? 4;
-      _isScreenshotLimitEnabled = prefs.getBool('limit_enabled') ?? false;
       _devMode = prefs.getBool('dev_mode') ?? false;
       _autoProcessEnabled = prefs.getBool('auto_process_enabled') ?? true;
       _analyticsEnabled =
@@ -541,15 +691,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _updateScreenshotLimit(int newLimit) {
     setState(() {
       _screenshotLimit = newLimit;
-    });
-  }
-
-  void _updateScreenshotLimitEnabled(bool enabled) {
-    setState(() {
-      _isScreenshotLimitEnabled = enabled;
-    });
-    SharedPreferences.getInstance().then((prefs) {
-      prefs.setBool('limit_enabled', enabled);
     });
   }
 
@@ -630,6 +771,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   /// Check for app updates from GitHub releases
   Future<void> _checkForUpdates() async {
+    // Skip update check for F-Droid and Play Store builds
+    final buildSource = BuildSource.current;
+    if (!buildSource.allowsUpdateCheck) {
+      print(
+        'MainApp: Update check disabled for ${buildSource.displayName} builds',
+      );
+      return;
+    }
+
     try {
       final updateInfo = await UpdateCheckerService.checkForUpdates();
 
@@ -705,9 +855,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       "Main app: Starting background processing for ${unprocessedScreenshots.length} screenshots",
     );
 
-    // Update UI to show processing state
+    // Update UI to show initializing state
     setState(() {
       _isProcessingAI = true;
+      _isInitializingProcessing = true;
       _aiProcessedCount = 0;
       _aiTotalToProcess = unprocessedScreenshots.length;
     });
@@ -768,6 +919,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
       if (success) {
         print("Main app: Background processing started successfully");
+        setState(() {
+          _isInitializingProcessing = false; // No longer initializing
+        });
         SnackbarService().showInfo(
           context,
           'Processing started for ${unprocessedScreenshots.length} screenshots.',
@@ -776,6 +930,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         print("Main app: Failed to start background processing");
         setState(() {
           _isProcessingAI = false;
+          _isInitializingProcessing = false;
           _aiProcessedCount = 0;
           _aiTotalToProcess = 0;
         });
@@ -790,6 +945,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
       setState(() {
         _isProcessingAI = false;
+        _isInitializingProcessing = false;
         _aiProcessedCount = 0;
         _aiTotalToProcess = 0;
       });
@@ -809,6 +965,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       // Update UI immediately to reflect stopping state
       setState(() {
         _aiTotalToProcess = 0;
+        _isInitializingProcessing = false;
       });
 
       try {
@@ -832,6 +989,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       await _saveDataToPrefs();
       setState(() {
         _isProcessingAI = false;
+        _isInitializingProcessing = false;
       });
     }
   }
@@ -953,7 +1111,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
       final result = await _imageLoaderService.loadAndroidScreenshots(
         existingScreenshots: _screenshots,
-        isLimitEnabled: _isScreenshotLimitEnabled,
+        isLimitEnabled: false, // Always disabled
         screenshotLimit: _screenshotLimit,
         customPaths: customPaths,
         onProgress: (current, total) {
@@ -1276,6 +1434,41 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
+  void _navigateToRemindersScreen() {
+    // Log navigation analytics
+    AnalyticsService().logScreenView('reminders_screen');
+    AnalyticsService().logUserPath('home_screen', 'reminders_screen');
+    AnalyticsService().logFeatureUsed('reminders_button_pressed');
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (context) => RemindersScreen(
+              allScreenshots: _activeScreenshots,
+              allCollections: _collections,
+              onUpdateCollection: _updateCollection,
+              onDeleteScreenshot: _deleteScreenshot,
+              onScreenshotUpdated: () {
+                _saveDataToPrefs();
+                setState(() {});
+              },
+            ),
+      ),
+    );
+  }
+
+  int get _getActiveRemindersCount {
+    final now = DateTime.now();
+    return _activeScreenshots
+        .where(
+          (screenshot) =>
+              screenshot.reminderTime != null &&
+              screenshot.reminderTime!.isAfter(now) &&
+              !screenshot.isDeleted,
+        )
+        .length;
+  }
+
   /// Handle auto-categorization for a screenshot based on AI suggestions
   void _handleAutoCategorization(
     Screenshot screenshot,
@@ -1456,10 +1649,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       },
     );
 
-    // Start watching for files
-    print("FileWatcher: Starting file watching...");
-    _fileWatcher.startWatching();
-    print("FileWatcher: Setup complete");
+    print("FileWatcher: Starting file watching asynchronously...");
+    _startFileWatchingAsync();
+    print("FileWatcher: Setup complete (async initialization in progress)");
+  }
+
+  Future<void> _startFileWatchingAsync() async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      await _fileWatcher.startWatching();
+
+      print("FileWatcher: Async initialization completed successfully");
+    } catch (e) {
+      print("FileWatcher: Error during async initialization: $e");
+    }
   }
 
   /// Reset AI processing status for all screenshots
@@ -1530,6 +1734,17 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _clearCorruptFiles() async {
+    setState(() {
+      // The actual corruption detection and marking is handled in AdvancedSettingsSection
+      // This callback is called after the cleanup to refresh the main screen
+    });
+
+    await _saveDataToPrefs();
+
+    AnalyticsService().logFeatureUsed('corrupt_files_cleared_main');
+  }
+
   /// Show dialog for managing custom screenshot paths
   void _showCustomPathsDialog() {
     showDialog(
@@ -1564,6 +1779,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         aiTotalToProcess: _aiTotalToProcess,
         onSearchPressed: _navigateToSearchScreen,
         onStopProcessingAI: _stopProcessingAI,
+        onRemindersPressed: _navigateToRemindersScreen,
+        activeRemindersCount: _getActiveRemindersCount,
         devMode: _devMode,
         autoProcessEnabled: _autoProcessEnabled,
       ),
@@ -1576,8 +1793,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onLimitChanged: _updateScreenshotLimit,
         currentMaxParallel: _maxParallelAI,
         onMaxParallelChanged: _updateMaxParallelAI,
-        currentLimitEnabled: _isScreenshotLimitEnabled,
-        onLimitEnabledChanged: _updateScreenshotLimitEnabled,
         currentDevMode: _devMode,
         onDevModeChanged: _updateDevMode,
         currentAutoProcessEnabled: _autoProcessEnabled,
@@ -1592,6 +1807,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         onThemeChanged: _updateThemeSelection,
         apiKeyFieldKey: _apiKeyFieldKey,
         onResetAiProcessing: _resetAiMetaData,
+        onLocaleChanged: widget.onLocaleChanged,
+        allScreenshots: _screenshots,
+        onClearCorruptFiles: _clearCorruptFiles,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -1723,6 +1941,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                             isProcessing: _isProcessingAI,
                             processedCount: _aiProcessedCount,
                             totalCount: _aiTotalToProcess,
+                            isInitializing: _isInitializingProcessing,
                           ),
                           // Collections Section
                           CollectionsSection(

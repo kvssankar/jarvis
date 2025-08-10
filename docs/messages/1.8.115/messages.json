@@ -1,0 +1,20 @@
+{
+  "messages": [
+    {
+      "show": true,
+      "id": "hola_there",
+      "title": "Hola Usero!",
+      "message": "We now support multiple languages! You can change the language in the settings.",
+      "type": "update",
+      "priority": "high",
+      "show_once": true,
+      "valid_until": "2026-08-01T00:00:00Z",
+      "is_notification": false,
+      "version": "1.8.122",
+      "beta_only": false,
+      "action_text": "Check It Out",
+      "dismiss_text": "Not Interested",
+      "action_url": "https://example.com/language-settings"
+    }
+  ]
+}

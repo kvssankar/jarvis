@@ -7,7 +7,7 @@ class SponsorshipService {
     SponsorshipOption(
       id: 'github',
       title: 'GitHub Sponsors',
-      subtitle: 'Monthly sponsorship through GitHub platform',
+      subtitle: 'Monthly/One-time sponsorship via GitHub.',
       url: 'https://github.com/sponsors/AnsahMohammad',
       icon: Icons.favorite_rounded,
       iconColor: Colors.redAccent,
@@ -42,18 +42,18 @@ class SponsorshipService {
       badgeColor: Color(0xFF8B5CF6), // Purple
     ),
 
-    // Razorpay
-    SponsorshipOption(
-      id: 'razorpay',
-      title: 'Razorpay',
-      subtitle: 'Quick and secure payment via cards/UPI/more',
-      url: 'https://rzp.io/l/YOUR_LINK', // Replace with your Razorpay link
-      icon: Icons.wallet_rounded,
-      iconColor: Color(0xFF2563EB), // Blue
-      enabled: false, // Enable when you add your Razorpay link
-      badge: 'Flexible',
-      badgeColor: Color(0xFF6366F1), // Indigo
-    ),
+    // // Razorpay
+    // SponsorshipOption(
+    //   id: 'razorpay',
+    //   title: 'Razorpay',
+    //   subtitle: 'Quick and secure payment via cards/UPI/more',
+    //   url: 'https://rzp.io/l/YOUR_LINK', // Replace with your Razorpay link
+    //   icon: Icons.wallet_rounded,
+    //   iconColor: Color(0xFF2563EB), // Blue
+    //   enabled: false, // Enable when you add your Razorpay link
+    //   badge: 'Flexible',
+    //   badgeColor: Color(0xFF6366F1), // Indigo
+    // ),
   ];
 
   /// Get all sponsorship options

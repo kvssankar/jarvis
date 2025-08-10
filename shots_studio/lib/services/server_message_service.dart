@@ -2,12 +2,13 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shots_studio/services/notification_service.dart';
 
 // TODO: Add don't show again functionality for messages
 
 class ServerMessageService {
-  static const String messagesUrl =
-      'https://ansahmohammad.github.io/shots-studio/messages.json';
+  static const String baseMessagesUrl =
+      'https://ansahmohammad.github.io/shots-studio/messages';
 
   // Add cooldown for server requests to avoid spamming
   static DateTime? _lastRequestTime;
@@ -34,7 +35,7 @@ class ServerMessageService {
       final currentVersion = packageInfo.version;
 
       // Fetch messages from GitHub Pages
-      final messages = await _getServerMessages();
+      final messages = await _getServerMessages(currentVersion);
       _lastRequestTime = DateTime.now();
 
       if (messages == null || messages.isEmpty) {
@@ -51,9 +52,52 @@ class ServerMessageService {
   }
 
   /// Fetches messages from GitHub Pages
-  static Future<List<dynamic>?> _getServerMessages() async {
+  static Future<List<dynamic>?> _getServerMessages(String version) async {
     try {
+      // Construct version-specific messages URL
+      final messagesUrl = '$baseMessagesUrl/$version/messages.json';
       final uri = Uri.parse(messagesUrl);
+
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'shots_studio_app',
+              'Content-Type': 'application/json',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+
+        // Expect an object with a "messages" array
+        if (data is Map<String, dynamic> && data.containsKey('messages')) {
+          return data['messages'] as List<dynamic>;
+        } else if (data is List) {
+          // Fallback: direct array format
+          return data;
+        }
+
+        return null;
+      } else if (response.statusCode == 404) {
+        // If version-specific messages don't exist, try fallback to general messages.json
+        return await _getFallbackMessages();
+      } else {
+        return null;
+      }
+    } catch (e) {
+      // If version-specific request fails, try fallback
+      return await _getFallbackMessages();
+    }
+  }
+
+  /// Fallback method to get general messages when version-specific messages don't exist
+  static Future<List<dynamic>?> _getFallbackMessages() async {
+    try {
+      final fallbackUrl = '$baseMessagesUrl.json';
+      final uri = Uri.parse(fallbackUrl);
 
       final response = await http
           .get(
@@ -181,6 +225,9 @@ class ServerMessageService {
       "is_notification": false,
       "version": "ALL",
       "beta_only": false,
+      "action_text": "Try It Now",
+      "dismiss_text": "Maybe Later",
+      "action_url": "https://example.com/tagging-guide",
     };
 
     try {
@@ -189,9 +236,57 @@ class ServerMessageService {
       return null;
     }
   }
+
+  /// Test method to simulate an urgent notification message
+  static Future<MessageInfo?> getTestNotificationMessage() async {
+    const testMessageJson = {
+      "show": true,
+      "id": "msg_urgent_test_2025_08_03",
+      "title": "🔥 Urgent: Test Notification",
+      "message":
+          "This is a test notification to verify background notifications are working correctly when the app is closed.",
+      "type": "warning",
+      "priority": "high",
+      "show_once": false,
+      "valid_until": "2025-12-31T23:59:59Z",
+      "is_notification": true,
+      "version": "ALL",
+      "beta_only": false,
+      "action_text": "View Details",
+      "dismiss_text": "Not Now",
+    };
+
+    try {
+      return MessageInfo.fromJson(testMessageJson);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Test method to force trigger a server notification immediately
+  static Future<bool> triggerTestNotification() async {
+    try {
+      final message = await getTestNotificationMessage();
+      if (message != null) {
+        final notificationService = NotificationService();
+        await notificationService.showServerMessageImmediate(
+          messageId: message.id,
+          title: message.title,
+          body: message.message,
+          isUrgent: message.priority == MessagePriority.high,
+        );
+        return true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
 }
 
 /// Contains information about a server message
+/// 
+/// For URLs, use actionUrl instead of updateRoute (legacy field kept for compatibility).
 class MessageInfo {
   final bool show;
   final String id;
@@ -204,9 +299,10 @@ class MessageInfo {
   final bool isNotification;
   final String? version;
   final String? actionText;
-  final String? actionUrl;
+  final String? dismissText;
+  final String? actionUrl; // Primary URL field for action button
   final MessageActionType? actionType;
-  final String? updateRoute;
+  final String? updateRoute; // Legacy field, use actionUrl instead
   final bool betaOnly;
 
   MessageInfo({
@@ -221,6 +317,7 @@ class MessageInfo {
     required this.isNotification,
     this.version,
     this.actionText,
+    this.dismissText,
     this.actionUrl,
     this.actionType,
     this.updateRoute,
@@ -243,6 +340,7 @@ class MessageInfo {
       isNotification: json['is_notification'] ?? false,
       version: json['version']?.toString(),
       actionText: json['action_text']?.toString(),
+      dismissText: json['dismiss_text']?.toString(),
       actionUrl: json['action_url']?.toString(),
       actionType: _parseActionType(json['action_type']),
       updateRoute: json['update_route']?.toString(),

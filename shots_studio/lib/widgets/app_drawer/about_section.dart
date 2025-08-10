@@ -5,6 +5,8 @@ import '../../services/analytics/analytics_service.dart';
 import '../../services/update_checker_service.dart';
 import '../sponsorship/sponsorship_dialog.dart';
 import '../update_dialog.dart';
+import '../../l10n/app_localizations.dart';
+import '../../utils/build_source.dart';
 
 class AboutSection extends StatelessWidget {
   final String appVersion;
@@ -87,7 +89,7 @@ class AboutSection extends StatelessWidget {
         ListTile(
           leading: Icon(Icons.code, color: theme.colorScheme.primary),
           title: Text(
-            'Source Code',
+            AppLocalizations.of(context)?.sourceCode ?? 'Source Code',
             style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
           ),
           subtitle: Text(
@@ -105,7 +107,10 @@ class AboutSection extends StatelessWidget {
         ),
         ListTile(
           leading: Icon(Icons.favorite, color: Colors.redAccent),
-          title: Text('Support', style: TextStyle(color: Colors.greenAccent)),
+          title: Text(
+            AppLocalizations.of(context)?.support ?? 'Support',
+            style: TextStyle(color: Colors.greenAccent),
+          ),
           subtitle: Text(
             'Sponsor the project',
             style: TextStyle(color: Colors.greenAccent),
@@ -117,20 +122,20 @@ class AboutSection extends StatelessWidget {
 
             Navigator.pop(context);
             _showSponsorshipDialog(context);
-            _launchURL(
-              'https://Ansahmohammad.github.io/shots-studio/donation.html',
-            );
+            // _launchURL(
+            //   'https://Ansahmohammad.github.io/shots-studio/donation.html',
+            // );
           },
         ),
         Divider(color: theme.colorScheme.outline),
         ListTile(
           leading: Icon(Icons.info_outline, color: theme.colorScheme.primary),
           title: Text(
-            'About',
+            AppLocalizations.of(context)?.about ?? 'About',
             style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
           ),
           subtitle: Text(
-            'Version $appVersion',
+            'Version $appVersion (${BuildSource.current.displayName})',
             style: TextStyle(color: theme.colorScheme.onSurfaceVariant),
           ),
           onTap: () {
@@ -151,7 +156,8 @@ class AboutSection extends StatelessWidget {
         ListTile(
           leading: Icon(Icons.system_update, color: theme.colorScheme.primary),
           title: Text(
-            'Check for Updates',
+            AppLocalizations.of(context)?.checkForUpdates ??
+                'Check for Updates',
             style: TextStyle(color: theme.colorScheme.onSecondaryContainer),
           ),
           subtitle: Text(

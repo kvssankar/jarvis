@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shots_studio/l10n/app_localizations.dart';
 
 class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback? onProcessWithAI;
@@ -7,6 +8,8 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
   final int aiTotalToProcess;
   final VoidCallback? onSearchPressed;
   final VoidCallback? onStopProcessingAI;
+  final VoidCallback? onRemindersPressed;
+  final int activeRemindersCount;
   final bool devMode;
   final bool autoProcessEnabled;
 
@@ -18,6 +21,8 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.aiTotalToProcess = 0,
     this.onSearchPressed,
     this.onStopProcessingAI,
+    this.onRemindersPressed,
+    this.activeRemindersCount = 0,
     this.devMode = false,
     this.autoProcessEnabled = true,
   });
@@ -28,9 +33,9 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     final bool showAIButtons = !autoProcessEnabled;
 
     return AppBar(
-      title: const Text(
-        'Shots Studio',
-        style: TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
+      title: Text(
+        AppLocalizations.of(context)?.appTitle ?? 'Shots Studio',
+        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w500),
       ),
       elevation: 0,
       leading: IconButton(
@@ -42,31 +47,43 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: [
         IconButton(
           icon: const Icon(Icons.search),
-          tooltip: 'Search Screenshots',
+          tooltip:
+              AppLocalizations.of(context)?.searchScreenshots ??
+              'Search Screenshots',
           onPressed: onSearchPressed,
         ),
-
-        // Show AI processing buttons when in dev mode OR auto-processing is disabled
-        if (showAIButtons && isProcessingAI)
-          Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: Center(
-              child: Text(
-                'Analyzed $aiProcessedCount/$aiTotalToProcess',
-                style: const TextStyle(fontSize: 12),
-              ),
-            ),
+        IconButton(
+          icon: Icon(
+            Icons.notifications_outlined,
+            color:
+                activeRemindersCount > 0
+                    ? Theme.of(context).colorScheme.primary
+                    : null,
           ),
-        if (showAIButtons && isProcessingAI)
+          tooltip: AppLocalizations.of(context)?.reminders ?? 'Reminders',
+          onPressed: onRemindersPressed,
+        ),
+
+        // Show stop button whenever AI is processing (regardless of auto-processing setting)
+        if (isProcessingAI)
           IconButton(
             icon: const Icon(Icons.stop_circle_outlined),
-            tooltip: 'Stop Processing',
+            color:
+                activeRemindersCount > 0
+                    ? Theme.of(context).colorScheme.primary
+                    : null,
+            tooltip:
+                AppLocalizations.of(context)?.stopProcessing ??
+                'Stop Processing',
             onPressed: onStopProcessingAI,
           )
+        // Show AI process button only when auto-processing is disabled and not currently processing
         else if (showAIButtons && onProcessWithAI != null)
           IconButton(
             icon: const Icon(Icons.auto_awesome_outlined),
-            tooltip: 'Process with AI',
+            tooltip:
+                AppLocalizations.of(context)?.processWithAI ??
+                'Process with AI',
             onPressed: onProcessWithAI,
           ),
       ],

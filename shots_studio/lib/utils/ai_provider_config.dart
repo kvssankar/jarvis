@@ -8,9 +8,16 @@ class AIProviderConfig {
 
   // Model-specific maxParallel limits
   static const Map<String, int> modelMaxParallelLimits = {
-    'gemini-2.0-flash': 4,
-    'gemini-2.5-pro': 4,
+    'gemini-2.0-flash': 16,
+    'gemini-2.5-pro': 16,
     'gemma': 1,
+  };
+
+  // Model-specific max categorization limits (for batch processing text analysis)
+  static const Map<String, int> modelMaxCategorizationLimits = {
+    'gemini-2.0-flash': 50,
+    'gemini-2.5-pro': 50,
+    'gemma': 10,
   };
 
   // Preference keys for provider settings
@@ -47,6 +54,12 @@ class AIProviderConfig {
   // Get the model-specific maxParallel limit
   static int getMaxParallelLimitForModel(String model) {
     return modelMaxParallelLimits[model] ?? 4; // Default to 4 if not found
+  }
+
+  // Get the model-specific max categorization limit
+  static int getMaxCategorizationLimitForModel(String model) {
+    return modelMaxCategorizationLimits[model] ??
+        20; // Default to 20 if not found
   }
 
   // Get the effective maxParallel value (minimum of model limit and global preference)
