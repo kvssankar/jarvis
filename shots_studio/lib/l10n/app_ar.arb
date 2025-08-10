@@ -124,5 +124,15 @@
   "editReminder": "تحرير التذكير",
   "clearReminder": "مسح التذكير",
   "removePastReminder": "إزالة",
-  "pastReminderRemoved": "تم إزالة التذكير السابق"
+  "pastReminderRemoved": "تم إزالة التذكير السابق",
+  "supportTheProject": "دعم المشروع",
+  "supportShotsStudio": "دعم Shots Studio",
+  "supportDescription": "دعمكم يساعد في الحفاظ على هذا المشروع حياً ويمكننا من إضافة ميزات جديدة رائعة",
+  "availableNow": "متاح الآن",
+  "comingSoon": "قريباً",
+  "everyContributionMatters": "كل مساهمة مهمة",
+  "supportFooterDescription": "شكراً لكم على التفكير في دعم هذا المشروع. مساهمتكم تساعدنا في الحفاظ على Shots Studio وتحسينه. للترتيبات الخاصة أو التحويلات المصرفية الدولية، يرجى التواصل عبر GitHub.",
+  "contactOnGitHub": "التواصل عبر GitHub",
+  "noSponsorshipOptions": "لا توجد خيارات رعاية متاحة حالياً.",
+  "close": "إغلاق"
 }

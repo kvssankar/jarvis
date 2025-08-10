@@ -365,4 +365,37 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get pastReminderRemoved => 'Past reminder removed';
+
+  @override
+  String get supportTheProject => 'Support the project';
+
+  @override
+  String get supportShotsStudio => 'Support Shots Studio';
+
+  @override
+  String get supportDescription =>
+      'Your support helps keep this project alive and enables us to add amazing new features';
+
+  @override
+  String get availableNow => 'Available now';
+
+  @override
+  String get comingSoon => 'Coming soon';
+
+  @override
+  String get everyContributionMatters => 'Every contribution matters';
+
+  @override
+  String get supportFooterDescription =>
+      'Thank you for considering supporting this project. Your contribution helps us maintain and improve Shots Studio. For special arrangements or international wire transfers, please reach out via GitHub.';
+
+  @override
+  String get contactOnGitHub => 'Contact on GitHub';
+
+  @override
+  String get noSponsorshipOptions =>
+      'No sponsorship options are currently available.';
+
+  @override
+  String get close => 'Close';
 }

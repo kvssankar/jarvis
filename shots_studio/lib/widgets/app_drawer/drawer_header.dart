@@ -3,6 +3,7 @@ import 'dart:math';
 import '../../services/sponsorship_service.dart';
 import '../../services/analytics/analytics_service.dart';
 import '../sponsorship/sponsorship_dialog.dart';
+import '../../l10n/app_localizations.dart';
 
 class AppDrawerHeader extends StatefulWidget {
   const AppDrawerHeader({super.key});
@@ -20,16 +21,28 @@ class _AppDrawerHeaderState extends State<AppDrawerHeader>
   late Animation<double> _pulseAnimation;
   late Animation<double> _textAnimation;
 
-  final List<String> _giftTexts = ['Support Us', 'Gift \$1', 'Gift \$5'];
   int _currentTextIndex = 0;
   bool _showSupportButton = false;
+
+  String _getCurrentGiftText(BuildContext context) {
+    switch (_currentTextIndex) {
+      case 0:
+        return AppLocalizations.of(context)?.supportTheProject ?? 'Support Us';
+      case 1:
+        return 'Gift \$1';
+      case 2:
+        return 'Gift \$5';
+      default:
+        return AppLocalizations.of(context)?.supportTheProject ?? 'Support Us';
+    }
+  }
 
   @override
   void initState() {
     super.initState();
 
-    // Random 2/10 (20%) chance to show support button
-    _showSupportButton = Random().nextInt(10) < 2;
+    // Random 4/10 (40%) chance to show support button
+    _showSupportButton = Random().nextInt(10) < 4;
 
     // Log analytics for support button visibility
     if (_showSupportButton) {
@@ -72,7 +85,8 @@ class _AppDrawerHeaderState extends State<AppDrawerHeader>
     _textController.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         setState(() {
-          _currentTextIndex = (_currentTextIndex + 1) % _giftTexts.length;
+          _currentTextIndex =
+              (_currentTextIndex + 1) % 3; // 3 gift text options
         });
         _textController.reset();
         Future.delayed(const Duration(milliseconds: 1500), () {
@@ -99,8 +113,9 @@ class _AppDrawerHeaderState extends State<AppDrawerHeader>
     AnalyticsService().logFeatureAdopted('support_button_interaction');
 
     // Log which text was showing when clicked
+    final giftTexts = ['support_us', 'gift_dollar1', 'gift_dollar5'];
     AnalyticsService().logFeatureUsed(
-      'support_clicked_on_${_giftTexts[_currentTextIndex].toLowerCase().replaceAll(' ', '_').replaceAll('\$', 'dollar')}',
+      'support_clicked_on_${giftTexts[_currentTextIndex]}',
     );
 
     final sponsorshipOptions = SponsorshipService.getAllOptions();
@@ -237,9 +252,9 @@ class _AppDrawerHeaderState extends State<AppDrawerHeader>
                                   );
                                 },
                                 child: Text(
-                                  _giftTexts[_currentTextIndex],
+                                  _getCurrentGiftText(context),
                                   key: ValueKey<String>(
-                                    _giftTexts[_currentTextIndex],
+                                    _getCurrentGiftText(context),
                                   ),
                                   style: TextStyle(
                                     color: theme.colorScheme.primary,

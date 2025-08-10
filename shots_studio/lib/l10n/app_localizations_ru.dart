@@ -368,4 +368,37 @@ class AppLocalizationsRu extends AppLocalizations {
 
   @override
   String get pastReminderRemoved => 'Прошедшее напоминание удалено';
+
+  @override
+  String get supportTheProject => 'Поддержать проект';
+
+  @override
+  String get supportShotsStudio => 'Поддержать Shots Studio';
+
+  @override
+  String get supportDescription =>
+      'Ваша поддержка помогает сохранить этот проект живым и позволяет нам добавлять потрясающие новые функции';
+
+  @override
+  String get availableNow => 'Доступно сейчас';
+
+  @override
+  String get comingSoon => 'Скоро';
+
+  @override
+  String get everyContributionMatters => 'Каждый вклад важен';
+
+  @override
+  String get supportFooterDescription =>
+      'Спасибо за рассмотрение возможности поддержки этого проекта. Ваш вклад помогает нам поддерживать и улучшать Shots Studio. Для специальных договоренностей или международных банковских переводов, пожалуйста, свяжитесь с нами через GitHub.';
+
+  @override
+  String get contactOnGitHub => 'Связаться на GitHub';
+
+  @override
+  String get noSponsorshipOptions =>
+      'В настоящее время нет доступных вариантов спонсорства.';
+
+  @override
+  String get close => 'Закрыть';
 }

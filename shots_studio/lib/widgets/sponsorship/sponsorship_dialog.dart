@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../models/sponsorship_option.dart';
 import '../../services/analytics/analytics_service.dart';
+import '../../l10n/app_localizations.dart';
 
 class SponsorshipDialog extends StatelessWidget {
   final List<SponsorshipOption> sponsorshipOptions;
@@ -30,12 +31,18 @@ class SponsorshipDialog extends StatelessWidget {
 
     if (sponsorshipOptions.isEmpty) {
       return AlertDialog(
-        title: Text('Support', style: theme.textTheme.headlineSmall),
-        content: const Text('No sponsorship options are currently available.'),
+        title: Text(
+          AppLocalizations.of(context)?.support ?? 'Support',
+          style: theme.textTheme.headlineSmall,
+        ),
+        content: Text(
+          AppLocalizations.of(context)?.noSponsorshipOptions ??
+              'No sponsorship options are currently available.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('Close'),
+            child: Text(AppLocalizations.of(context)?.close ?? 'Close'),
           ),
         ],
       );
@@ -74,7 +81,8 @@ class SponsorshipDialog extends StatelessWidget {
               },
             ),
             title: Text(
-              'Support the project',
+              AppLocalizations.of(context)?.supportTheProject ??
+                  'Support the project',
               style: theme.textTheme.titleLarge?.copyWith(
                 fontWeight: FontWeight.w600,
                 color: theme.colorScheme.onSurface,
@@ -133,7 +141,10 @@ class SponsorshipDialog extends StatelessWidget {
                             ),
                             const SizedBox(height: 24),
                             Text(
-                              'Support Shots Studio',
+                              AppLocalizations.of(
+                                    context,
+                                  )?.supportShotsStudio ??
+                                  'Support Shots Studio',
                               style: theme.textTheme.headlineMedium?.copyWith(
                                 fontWeight: FontWeight.w700,
                                 color: theme.colorScheme.onSurface,
@@ -142,7 +153,10 @@ class SponsorshipDialog extends StatelessWidget {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              'Your support helps keep this project alive and enables us to add amazing new features',
+                              AppLocalizations.of(
+                                    context,
+                                  )?.supportDescription ??
+                                  'Your support helps keep this project alive and enables us to add amazing new features',
                               style: theme.textTheme.bodyLarge?.copyWith(
                                 color: theme.colorScheme.onSurfaceVariant,
                                 height: 1.5,
@@ -172,7 +186,8 @@ class SponsorshipDialog extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Available now',
+                          AppLocalizations.of(context)?.availableNow ??
+                              'Available now',
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w700,
                             color: theme.colorScheme.primary,
@@ -215,7 +230,8 @@ class SponsorshipDialog extends StatelessWidget {
                         ),
                         const SizedBox(width: 12),
                         Text(
-                          'Coming soon',
+                          AppLocalizations.of(context)?.comingSoon ??
+                              'Coming soon',
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.w600,
                             color: theme.colorScheme.onSurfaceVariant,
@@ -264,7 +280,10 @@ class SponsorshipDialog extends StatelessWidget {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        'Every contribution matters',
+                        AppLocalizations.of(
+                              context,
+                            )?.everyContributionMatters ??
+                            'Every contribution matters',
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w600,
                           color: theme.colorScheme.onSurface,
@@ -273,7 +292,10 @@ class SponsorshipDialog extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Thank you for considering supporting this project. Your contribution helps us maintain and improve Shots Studio. For special arrangements or international wire transfers, please reach out via GitHub.',
+                        AppLocalizations.of(
+                              context,
+                            )?.supportFooterDescription ??
+                            'Thank you for considering supporting this project. Your contribution helps us maintain and improve Shots Studio. For special arrangements or international wire transfers, please reach out via GitHub.',
                         style: theme.textTheme.bodyMedium?.copyWith(
                           color: theme.colorScheme.onSurfaceVariant,
                           height: 1.5,
@@ -294,7 +316,8 @@ class SponsorshipDialog extends StatelessWidget {
                           _launchURL('https://github.com/AnsahMohammad');
                         },
                         child: Text(
-                          'Contact on GitHub',
+                          AppLocalizations.of(context)?.contactOnGitHub ??
+                              'Contact on GitHub',
                           style: theme.textTheme.labelLarge?.copyWith(
                             color: theme.colorScheme.primary,
                             fontWeight: FontWeight.w500,

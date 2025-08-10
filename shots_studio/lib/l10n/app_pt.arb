@@ -124,5 +124,15 @@
   "editReminder": "Editar Lembrete",
   "clearReminder": "Limpar Lembrete",
   "removePastReminder": "Remover",
-  "pastReminderRemoved": "Lembrete passado removido"
+  "pastReminderRemoved": "Lembrete passado removido",
+  "supportTheProject": "Apoiar o projeto",
+  "supportShotsStudio": "Apoiar Shots Studio",
+  "supportDescription": "Seu apoio ajuda a manter este projeto vivo e nos permite adicionar novos recursos incríveis",
+  "availableNow": "Disponível agora",
+  "comingSoon": "Em breve",
+  "everyContributionMatters": "Toda contribuição importa",
+  "supportFooterDescription": "Obrigado por considerar apoiar este projeto. Sua contribuição nos ajuda a manter e melhorar o Shots Studio. Para arranjos especiais ou transferências bancárias internacionais, entre em contato via GitHub.",
+  "contactOnGitHub": "Contato no GitHub",
+  "noSponsorshipOptions": "Nenhuma opção de patrocínio está disponível no momento.",
+  "close": "Fechar"
 }

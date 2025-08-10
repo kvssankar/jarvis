@@ -126,5 +126,15 @@
   "editReminder": "Modifica Promemoria",
   "clearReminder": "Cancella Promemoria",
   "removePastReminder": "Rimuovi",
-  "pastReminderRemoved": "Promemoria passato rimosso"
+  "pastReminderRemoved": "Promemoria passato rimosso",
+  "supportTheProject": "Sostieni il progetto",
+  "supportShotsStudio": "Sostieni Shots Studio",
+  "supportDescription": "Il tuo supporto aiuta a mantenere vivo questo progetto e ci permette di aggiungere nuove fantastiche funzionalità",
+  "availableNow": "Disponibile ora",
+  "comingSoon": "Prossimamente",
+  "everyContributionMatters": "Ogni contributo conta",
+  "supportFooterDescription": "Grazie per aver considerato di sostenere questo progetto. Il tuo contributo ci aiuta a mantenere e migliorare Shots Studio. Per accordi speciali o bonifici bancari internazionali, contattaci tramite GitHub.",
+  "contactOnGitHub": "Contatta su GitHub",
+  "noSponsorshipOptions": "Attualmente non sono disponibili opzioni di sponsorizzazione.",
+  "close": "Chiudi"
 }

@@ -124,5 +124,15 @@
   "editReminder": "编辑提醒",
   "clearReminder": "清除提醒",
   "removePastReminder": "移除",
-  "pastReminderRemoved": "过去的提醒已移除"
+  "pastReminderRemoved": "过去的提醒已移除",
+  "supportTheProject": "支持项目",
+  "supportShotsStudio": "支持 Shots Studio",
+  "supportDescription": "您的支持有助于保持这个项目的活力，并使我们能够添加令人惊叹的新功能",
+  "availableNow": "现在可用",
+  "comingSoon": "即将推出",
+  "everyContributionMatters": "每一份贡献都很重要",
+  "supportFooterDescription": "感谢您考虑支持这个项目。您的贡献帮助我们维护和改进 Shots Studio。如需特殊安排或国际电汇，请通过 GitHub 联系我们。",
+  "contactOnGitHub": "在 GitHub 上联系",
+  "noSponsorshipOptions": "目前没有可用的赞助选项。",
+  "close": "关闭"
 }

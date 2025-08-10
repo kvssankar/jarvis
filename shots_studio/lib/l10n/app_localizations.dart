@@ -817,6 +817,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Past reminder removed'**
   String get pastReminderRemoved;
+
+  /// Title for sponsorship dialog and support button
+  ///
+  /// In en, this message translates to:
+  /// **'Support the project'**
+  String get supportTheProject;
+
+  /// Main title in sponsorship dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Support Shots Studio'**
+  String get supportShotsStudio;
+
+  /// Description text in sponsorship dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Your support helps keep this project alive and enables us to add amazing new features'**
+  String get supportDescription;
+
+  /// Section title for available sponsorship options
+  ///
+  /// In en, this message translates to:
+  /// **'Available now'**
+  String get availableNow;
+
+  /// Section title for upcoming sponsorship options
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get comingSoon;
+
+  /// Footer title in sponsorship dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Every contribution matters'**
+  String get everyContributionMatters;
+
+  /// Footer description in sponsorship dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Thank you for considering supporting this project. Your contribution helps us maintain and improve Shots Studio. For special arrangements or international wire transfers, please reach out via GitHub.'**
+  String get supportFooterDescription;
+
+  /// Button text to contact developer on GitHub
+  ///
+  /// In en, this message translates to:
+  /// **'Contact on GitHub'**
+  String get contactOnGitHub;
+
+  /// Message when no sponsorship options are available
+  ///
+  /// In en, this message translates to:
+  /// **'No sponsorship options are currently available.'**
+  String get noSponsorshipOptions;
+
+  /// Close button text
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
 }
 
 class _AppLocalizationsDelegate

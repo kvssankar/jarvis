@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:shots_studio/services/snackbar_service.dart';
 import 'package:shots_studio/utils/privacy_content_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shots_studio/services/analytics/analytics_service.dart';
 
-class PrivacyScreen extends StatelessWidget {
+class PrivacyScreen extends StatefulWidget {
   final bool isAcknowledgementRequired;
   final VoidCallback? onAgreed;
   final VoidCallback? onDisagreed;
@@ -17,6 +18,36 @@ class PrivacyScreen extends StatelessWidget {
     this.onAgreed,
     this.onDisagreed,
   });
+
+  @override
+  State<PrivacyScreen> createState() => _PrivacyScreenState();
+}
+
+class _PrivacyScreenState extends State<PrivacyScreen> {
+  bool _analyticsEnabled =
+      !kDebugMode; // Default to false in debug mode, true in production
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAnalyticsEnabledPref();
+  }
+
+  void _loadAnalyticsEnabledPref() async {
+    final analyticsService = AnalyticsService();
+    setState(() {
+      _analyticsEnabled = analyticsService.analyticsEnabled;
+    });
+  }
+
+  Future<void> _saveAnalyticsEnabled(bool value) async {
+    final analyticsService = AnalyticsService();
+    if (value) {
+      await analyticsService.enableAnalytics();
+    } else {
+      await analyticsService.disableAnalytics();
+    }
+  }
 
   Future<void> _launchURL(BuildContext context, String urlString) async {
     // Track URL launches from privacy screen
@@ -29,7 +60,7 @@ class PrivacyScreen extends StatelessWidget {
   }
 
   Future<void> _handleAgree(BuildContext context) async {
-    if (isAcknowledgementRequired) {
+    if (widget.isAcknowledgementRequired) {
       // Track privacy agreement
       AnalyticsService().logFeatureUsed('privacy_screen_agreed');
 
@@ -37,8 +68,8 @@ class PrivacyScreen extends StatelessWidget {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(privacyAcknowledgementKey, true);
 
-      if (onAgreed != null) {
-        onAgreed!();
+      if (widget.onAgreed != null) {
+        widget.onAgreed!();
       }
     }
 
@@ -46,12 +77,12 @@ class PrivacyScreen extends StatelessWidget {
   }
 
   void _handleDisagree(BuildContext context) {
-    if (isAcknowledgementRequired) {
+    if (widget.isAcknowledgementRequired) {
       // Track privacy disagreement
       AnalyticsService().logFeatureUsed('privacy_screen_disagreed');
 
-      if (onDisagreed != null) {
-        onDisagreed!();
+      if (widget.onDisagreed != null) {
+        widget.onDisagreed!();
       } else {
         SystemNavigator.pop();
       }
@@ -70,7 +101,7 @@ class PrivacyScreen extends StatelessWidget {
         backgroundColor: theme.colorScheme.surface,
         foregroundColor: theme.colorScheme.onSurface,
         title: Text(
-          isAcknowledgementRequired
+          widget.isAcknowledgementRequired
               ? 'Data Processing Acknowledgment'
               : 'Privacy Notice',
           style: TextStyle(
@@ -79,7 +110,7 @@ class PrivacyScreen extends StatelessWidget {
           ),
         ),
         elevation: 0,
-        automaticallyImplyLeading: !isAcknowledgementRequired,
+        automaticallyImplyLeading: !widget.isAcknowledgementRequired,
       ),
       body: SafeArea(
         child: Column(
@@ -90,7 +121,7 @@ class PrivacyScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    if (isAcknowledgementRequired) ...[
+                    if (widget.isAcknowledgementRequired) ...[
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
@@ -132,7 +163,7 @@ class PrivacyScreen extends StatelessWidget {
                     const SizedBox(height: 20),
 
                     // Additional information for non-acknowledgment screens
-                    if (!isAcknowledgementRequired) ...[
+                    if (!widget.isAcknowledgementRequired) ...[
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
@@ -142,52 +173,84 @@ class PrivacyScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
-                              children: [
-                                Icon(
-                                  Icons.analytics_outlined,
-                                  color: theme.colorScheme.primary,
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  "Analytics & Data Collection",
-                                  style: TextStyle(
-                                    color: theme.colorScheme.primary,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              "Anonymous usage analytics help us improve the app experience. This feature is completely optional and can be disabled at any time in the Advanced Settings. For more details, you can inspect the source code of our analytics implementation here: ",
-                              style: TextStyle(
-                                color: theme.colorScheme.onSurfaceVariant,
+                            SwitchListTile(
+                              secondary: Icon(
+                                Icons.analytics_outlined,
+                                color: theme.colorScheme.primary,
                               ),
-                            ),
-                            GestureDetector(
-                              onTap: () async {
-                                const url =
-                                    'https://github.com/AnsahMohammad/shots-studio/blob/main/shots_studio/lib/services/analytics/posthog_analytics_service.dart';
-                                final Uri uri = Uri.parse(url);
-                                if (await canLaunchUrl(uri)) {
-                                  await launchUrl(
-                                    uri,
-                                    mode: LaunchMode.externalApplication,
-                                  );
-                                } else {
-                                  SnackbarService().showError(
-                                    context,
-                                    'Could not launch $url',
-                                  );
-                                }
-                              },
-                              child: Text(
-                                'Analytics Source Code',
+                              title: Text(
+                                'Analytics & Telemetry',
                                 style: TextStyle(
                                   color: theme.colorScheme.primary,
-                                  decoration: TextDecoration.underline,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              subtitle: Text(
+                                _analyticsEnabled
+                                    ? 'Help improve the app by sharing usage data'
+                                    : 'Analytics and crash reporting disabled',
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              value: _analyticsEnabled,
+                              activeColor: theme.colorScheme.primary,
+                              onChanged: (bool value) {
+                                setState(() {
+                                  _analyticsEnabled = value;
+                                });
+                                _saveAnalyticsEnabled(value);
+
+                                // Track analytics for analytics setting (meta-analytics!)
+                                AnalyticsService().logFeatureUsed(
+                                  'settings_analytics_${value ? 'enabled' : 'disabled'}',
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 8),
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                left: 16.0,
+                                right: 16.0,
+                              ),
+                              child: Text(
+                                "Anonymous usage analytics help us improve the app experience. This feature is completely optional and can be disabled at any time. For more details, you can inspect the source code of our analytics implementation here: ",
+                                style: TextStyle(
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                left: 16.0,
+                                right: 16.0,
+                                top: 4.0,
+                              ),
+                              child: GestureDetector(
+                                onTap: () async {
+                                  const url =
+                                      'https://github.com/AnsahMohammad/shots-studio/blob/main/shots_studio/lib/services/analytics/posthog_analytics_service.dart';
+                                  final Uri uri = Uri.parse(url);
+                                  if (await canLaunchUrl(uri)) {
+                                    await launchUrl(
+                                      uri,
+                                      mode: LaunchMode.externalApplication,
+                                    );
+                                  } else {
+                                    SnackbarService().showError(
+                                      context,
+                                      'Could not launch $url',
+                                    );
+                                  }
+                                },
+                                child: Text(
+                                  'Analytics Source Code',
+                                  style: TextStyle(
+                                    color: theme.colorScheme.primary,
+                                    decoration: TextDecoration.underline,
+                                    fontSize: 12,
+                                  ),
                                 ),
                               ),
                             ),
@@ -216,7 +279,7 @@ class PrivacyScreen extends StatelessWidget {
                 ),
               ),
               child:
-                  isAcknowledgementRequired
+                  widget.isAcknowledgementRequired
                       ? Row(
                         children: [
                           Expanded(

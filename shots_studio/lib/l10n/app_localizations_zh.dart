@@ -360,4 +360,35 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get pastReminderRemoved => '过去的提醒已移除';
+
+  @override
+  String get supportTheProject => '支持项目';
+
+  @override
+  String get supportShotsStudio => '支持 Shots Studio';
+
+  @override
+  String get supportDescription => '您的支持有助于保持这个项目的活力，并使我们能够添加令人惊叹的新功能';
+
+  @override
+  String get availableNow => '现在可用';
+
+  @override
+  String get comingSoon => '即将推出';
+
+  @override
+  String get everyContributionMatters => '每一份贡献都很重要';
+
+  @override
+  String get supportFooterDescription =>
+      '感谢您考虑支持这个项目。您的贡献帮助我们维护和改进 Shots Studio。如需特殊安排或国际电汇，请通过 GitHub 联系我们。';
+
+  @override
+  String get contactOnGitHub => '在 GitHub 上联系';
+
+  @override
+  String get noSponsorshipOptions => '目前没有可用的赞助选项。';
+
+  @override
+  String get close => '关闭';
 }

@@ -124,5 +124,15 @@
   "editReminder": "Modifier le Rappel",
   "clearReminder": "Effacer le Rappel",
   "removePastReminder": "Supprimer",
-  "pastReminderRemoved": "Rappel passé supprimé"
+  "pastReminderRemoved": "Rappel passé supprimé",
+  "supportTheProject": "Soutenir le projet",
+  "supportShotsStudio": "Soutenir Shots Studio",
+  "supportDescription": "Votre soutien aide à maintenir ce projet en vie et nous permet d'ajouter de nouvelles fonctionnalités incroyables",
+  "availableNow": "Disponible maintenant",
+  "comingSoon": "Bientôt disponible",
+  "everyContributionMatters": "Chaque contribution compte",
+  "supportFooterDescription": "Merci d'envisager de soutenir ce projet. Votre contribution nous aide à maintenir et améliorer Shots Studio. Pour des arrangements spéciaux ou des virements bancaires internationaux, contactez-nous via GitHub.",
+  "contactOnGitHub": "Contacter sur GitHub",
+  "noSponsorshipOptions": "Aucune option de parrainage n'est actuellement disponible.",
+  "close": "Fermer"
 }

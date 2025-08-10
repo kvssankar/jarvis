@@ -124,5 +124,15 @@
   "editReminder": "Editar Recordatorio",
   "clearReminder": "Limpiar Recordatorio",
   "removePastReminder": "Eliminar",
-  "pastReminderRemoved": "Recordatorio pasado eliminado"
+  "pastReminderRemoved": "Recordatorio pasado eliminado",
+  "supportTheProject": "Apoyar el proyecto",
+  "supportShotsStudio": "Apoyar Shots Studio",
+  "supportDescription": "Tu apoyo ayuda a mantener vivo este proyecto y nos permite agregar nuevas características increíbles",
+  "availableNow": "Disponible ahora",
+  "comingSoon": "Próximamente",
+  "everyContributionMatters": "Cada contribución importa",
+  "supportFooterDescription": "Gracias por considerar apoyar este proyecto. Tu contribución nos ayuda a mantener y mejorar Shots Studio. Para arreglos especiales o transferencias bancarias internacionales, contáctanos a través de GitHub.",
+  "contactOnGitHub": "Contactar en GitHub",
+  "noSponsorshipOptions": "No hay opciones de patrocinio disponibles actualmente.",
+  "close": "Cerrar"
 }

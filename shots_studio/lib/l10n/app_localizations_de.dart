@@ -368,4 +368,37 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get pastReminderRemoved => 'Vergangene Erinnerung entfernt';
+
+  @override
+  String get supportTheProject => 'Projekt unterstützen';
+
+  @override
+  String get supportShotsStudio => 'Shots Studio unterstützen';
+
+  @override
+  String get supportDescription =>
+      'Ihre Unterstützung hilft dabei, dieses Projekt am Leben zu erhalten und ermöglicht uns, tolle neue Funktionen hinzuzufügen';
+
+  @override
+  String get availableNow => 'Jetzt verfügbar';
+
+  @override
+  String get comingSoon => 'Demnächst';
+
+  @override
+  String get everyContributionMatters => 'Jeder Beitrag zählt';
+
+  @override
+  String get supportFooterDescription =>
+      'Vielen Dank, dass Sie eine Unterstützung dieses Projekts in Betracht ziehen. Ihr Beitrag hilft uns dabei, Shots Studio zu pflegen und zu verbessern. Für spezielle Vereinbarungen oder internationale Überweisungen kontaktieren Sie uns bitte über GitHub.';
+
+  @override
+  String get contactOnGitHub => 'Auf GitHub kontaktieren';
+
+  @override
+  String get noSponsorshipOptions =>
+      'Derzeit sind keine Sponsoring-Optionen verfügbar.';
+
+  @override
+  String get close => 'Schließen';
 }

@@ -362,4 +362,36 @@ class AppLocalizationsJa extends AppLocalizations {
 
   @override
   String get pastReminderRemoved => '過去のリマインダーが削除されました';
+
+  @override
+  String get supportTheProject => 'プロジェクトを支援';
+
+  @override
+  String get supportShotsStudio => 'Shots Studioを支援';
+
+  @override
+  String get supportDescription =>
+      'あなたの支援により、このプロジェクトを維持し、素晴らしい新機能を追加することができます';
+
+  @override
+  String get availableNow => '利用可能';
+
+  @override
+  String get comingSoon => '近日公開';
+
+  @override
+  String get everyContributionMatters => 'すべての貢献が重要です';
+
+  @override
+  String get supportFooterDescription =>
+      'このプロジェクトの支援をご検討いただき、ありがとうございます。あなたの貢献により、Shots Studioの維持と改善ができます。特別な取り決めや国際銀行振込については、GitHubからお問い合わせください。';
+
+  @override
+  String get contactOnGitHub => 'GitHubで連絡する';
+
+  @override
+  String get noSponsorshipOptions => '現在、利用可能なスポンサーシップオプションはありません。';
+
+  @override
+  String get close => '閉じる';
 }

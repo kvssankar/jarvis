@@ -465,5 +465,45 @@
   "pastReminderRemoved": "Past reminder removed",
   "@pastReminderRemoved": {
     "description": "Message shown when a past reminder is removed"
+  },
+  "supportTheProject": "Support the project",
+  "@supportTheProject": {
+    "description": "Title for sponsorship dialog and support button"
+  },
+  "supportShotsStudio": "Support Shots Studio",
+  "@supportShotsStudio": {
+    "description": "Main title in sponsorship dialog"
+  },
+  "supportDescription": "Your support helps keep this project alive and enables us to add amazing new features",
+  "@supportDescription": {
+    "description": "Description text in sponsorship dialog"
+  },
+  "availableNow": "Available now",
+  "@availableNow": {
+    "description": "Section title for available sponsorship options"
+  },
+  "comingSoon": "Coming soon",
+  "@comingSoon": {
+    "description": "Section title for upcoming sponsorship options"
+  },
+  "everyContributionMatters": "Every contribution matters",
+  "@everyContributionMatters": {
+    "description": "Footer title in sponsorship dialog"
+  },
+  "supportFooterDescription": "Thank you for considering supporting this project. Your contribution helps us maintain and improve Shots Studio. For special arrangements or international wire transfers, please reach out via GitHub.",
+  "@supportFooterDescription": {
+    "description": "Footer description in sponsorship dialog"
+  },
+  "contactOnGitHub": "Contact on GitHub",
+  "@contactOnGitHub": {
+    "description": "Button text to contact developer on GitHub"
+  },
+  "noSponsorshipOptions": "No sponsorship options are currently available.",
+  "@noSponsorshipOptions": {
+    "description": "Message when no sponsorship options are available"
+  },
+  "close": "Close",
+  "@close": {
+    "description": "Close button text"
   }
 }
