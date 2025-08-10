@@ -7,7 +7,7 @@ class SponsorshipService {
     SponsorshipOption(
       id: 'github',
       title: 'GitHub Sponsors',
-      subtitle: 'Monthly sponsorship through GitHub platform',
+      subtitle: 'Monthly/One-time sponsorship via GitHub.',
       url: 'https://github.com/sponsors/AnsahMohammad',
       icon: Icons.favorite_rounded,
       iconColor: Colors.redAccent,

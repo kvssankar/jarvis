@@ -64,8 +64,8 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
           onPressed: onRemindersPressed,
         ),
 
-        // Show AI processing buttons when in dev mode OR auto-processing is disabled
-        if (showAIButtons && isProcessingAI)
+        // Show stop button whenever AI is processing (regardless of auto-processing setting)
+        if (isProcessingAI)
           IconButton(
             icon: const Icon(Icons.stop_circle_outlined),
             color:
@@ -77,6 +77,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
                 'Stop Processing',
             onPressed: onStopProcessingAI,
           )
+        // Show AI process button only when auto-processing is disabled and not currently processing
         else if (showAIButtons && onProcessWithAI != null)
           IconButton(
             icon: const Icon(Icons.auto_awesome_outlined),
