@@ -323,17 +323,20 @@ class ScreenshotAnalysisService extends AIService {
                     .split(RegExp(r'[,;|]'))
                     .map((link) => link.trim())
                     .where((link) => link.isNotEmpty)
+                    .map((link) => _normalizeLinkFormat(link))
                     .toList();
           } else if (sanitizedItem['links'] != null) {
-            sanitizedItem['links'] = [sanitizedItem['links'].toString()];
+            sanitizedItem['links'] = [
+              _normalizeLinkFormat(sanitizedItem['links'].toString()),
+            ];
           } else {
             sanitizedItem['links'] = [];
           }
         } else {
-          // Ensure all items in links list are strings
+          // Ensure all items in links list are strings and normalized
           sanitizedItem['links'] =
               (sanitizedItem['links'] as List)
-                  .map((link) => link.toString())
+                  .map((link) => _normalizeLinkFormat(link.toString()))
                   .toList();
         }
 
@@ -346,6 +349,38 @@ class ScreenshotAnalysisService extends AIService {
     return sanitizedResponse;
   }
 
+  /// Normalize link format to ensure consistency
+  String _normalizeLinkFormat(String link) {
+    final cleanLink = link.trim();
+
+    // For phone numbers, ensure they have tel: prefix for consistency
+    if (RegExp(
+          r'^[\+]?[\d\s\-\(\)\.]{7,}$',
+        ).hasMatch(cleanLink.replaceAll(' ', '')) &&
+        !cleanLink.startsWith('tel:')) {
+      return 'tel:$cleanLink';
+    }
+
+    // For emails, ensure they have mailto: prefix for consistency
+    if (RegExp(
+          r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
+        ).hasMatch(cleanLink) &&
+        !cleanLink.startsWith('mailto:')) {
+      return 'mailto:$cleanLink';
+    }
+
+    // For URLs, ensure they have proper protocol
+    if ((RegExp(r'^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}').hasMatch(cleanLink) ||
+            cleanLink.startsWith('www.')) &&
+        !cleanLink.startsWith('http://') &&
+        !cleanLink.startsWith('https://')) {
+      return 'https://$cleanLink';
+    }
+
+    // Return as-is if already properly formatted or doesn't match known patterns
+    return cleanLink;
+  }
+
   Future<String> _getAnalysisPrompt({
     List<Map<String, String?>>? autoAddCollections,
   }) async {
@@ -353,22 +388,18 @@ class ScreenshotAnalysisService extends AIService {
 
     String basePrompt = """
       You are a screenshot analyzer. You will be given single or multiple images.
-      For each image, generate a title and short description${isGeminiModel ? ' and 3-5 relevant tags with which users can search and find later with ease' : ''}.
+      For each image, generate a title and short description ${isGeminiModel ? 'and 3-5 relevant tags' : '1-3 relevant tags'} with which users can search and find later with ease.
     """;
 
-    // Add links extraction instruction for Gemini models only
-    if (isGeminiModel) {
-      basePrompt += """
-      
+    basePrompt += """
+
       Additionally, extract any clickable information from the screenshot such as:
       - Phone numbers (format them properly with country codes when possible)
       - Email addresses
       - Website URLs/links
-      - Social media handles
       - Any other clickable or actionable text that users might want to copy or interact with
-      Include these in a "links" field as a list of strings.
-      """;
-    }
+      Include these in a "links" field as a list of strings. eg : ["tel:+1234567890", "mailto:example@example.com"]
+    """;
 
     if (autoAddCollections != null && autoAddCollections.isNotEmpty) {
       basePrompt += """
@@ -410,8 +441,8 @@ class ScreenshotAnalysisService extends AIService {
     basePrompt += """
       
       Respond strictly in this JSON format:
-      [{"filename": '', "title": '', "desc": ''${isGeminiModel ? ', "tags": []' : ''}${isGeminiModel ? ', "links": []' : ''}, "collections": []}, ...]
-      The "collections" field should contain names of collections that match the image content.${isGeminiModel ? '\n      The "tags" field should contain 3-5 relevant search tags.\n      The "links" field should contain any clickable information like phone numbers, emails, URLs, etc.' : ''}
+      [{"filename": '', "title": '', "desc": '', "tags": [], "links": [], "collections": []}, ...]
+      The "collections" field should contain names of collections that match the image content. The "tags" field should contain relevant search tags. The "links" field should contain any clickable information like phone numbers, emails, URLs, etc.
     """;
 
     return basePrompt;

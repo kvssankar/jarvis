@@ -699,7 +699,26 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   Map<String, dynamic> _getLinkInfo(String link) {
     final cleanLink = link.trim();
 
-    // Email detection
+    // Handle links that already have prefixes
+    if (cleanLink.startsWith('mailto:')) {
+      return {
+        'type': 'email',
+        'icon': Icons.email,
+        'color': Colors.red,
+        'action': () => _launchLink(cleanLink),
+      };
+    }
+
+    if (cleanLink.startsWith('tel:')) {
+      return {
+        'type': 'phone',
+        'icon': Icons.phone,
+        'color': Colors.green,
+        'action': () => _launchLink(cleanLink),
+      };
+    }
+
+    // Email detection (raw email format)
     if (RegExp(
       r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$',
     ).hasMatch(cleanLink)) {
@@ -801,6 +820,8 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
   /// Build a clickable link chip
   Widget _buildLinkChip(String link) {
     final linkInfo = _getLinkInfo(link);
+    final displayText = _getDisplayText(link);
+
     return GestureDetector(
       onTap: linkInfo['action'],
       child: Container(
@@ -820,7 +841,7 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
             const SizedBox(width: 6),
             Flexible(
               child: Text(
-                link,
+                displayText,
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSecondaryContainer,
                   fontSize: 13,
@@ -833,6 +854,23 @@ class _ScreenshotDetailScreenState extends State<ScreenshotDetailScreen> {
         ),
       ),
     );
+  }
+
+  /// Get clean display text for links by removing prefixes
+  String _getDisplayText(String link) {
+    final cleanLink = link.trim();
+
+    if (cleanLink.startsWith('mailto:')) {
+      return cleanLink.substring(7); // Remove 'mailto:' prefix
+    } else if (cleanLink.startsWith('tel:')) {
+      return cleanLink.substring(4); // Remove 'tel:' prefix
+    } else if (cleanLink.startsWith('http://')) {
+      return cleanLink.substring(7); // Remove 'http://' prefix for display
+    } else if (cleanLink.startsWith('https://')) {
+      return cleanLink.substring(8); // Remove 'https://' prefix for display
+    }
+
+    return cleanLink;
   }
 
   /// Build the image widget for the screenshot

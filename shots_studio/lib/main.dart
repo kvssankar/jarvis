@@ -539,8 +539,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     // Manage file watcher based on app lifecycle
     if (!kIsWeb) {
       if (state == AppLifecycleState.resumed) {
-        // Start file watching when app comes to foreground
-        _fileWatcher.startWatching();
+        // Start file watching when app comes to foreground (async to avoid blocking UI)
+        _startFileWatchingAsync();
       } else if (state == AppLifecycleState.paused) {
         // Stop file watching when app goes to background to save resources
         _fileWatcher.stopWatching();
@@ -1566,10 +1566,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       },
     );
 
-    // Start watching for files
-    print("FileWatcher: Starting file watching...");
-    _fileWatcher.startWatching();
-    print("FileWatcher: Setup complete");
+    print("FileWatcher: Starting file watching asynchronously...");
+    _startFileWatchingAsync();
+    print("FileWatcher: Setup complete (async initialization in progress)");
+  }
+
+  Future<void> _startFileWatchingAsync() async {
+    try {
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      await _fileWatcher.startWatching();
+
+      print("FileWatcher: Async initialization completed successfully");
+    } catch (e) {
+      print("FileWatcher: Error during async initialization: $e");
+    }
   }
 
   /// Reset AI processing status for all screenshots
