@@ -5,7 +5,7 @@
 [![Downloads](https://img.shields.io/github/downloads/AnsahMohammad/shots-studio/total)](https://github.com/AnsahMohammad/shots-studio/releases)
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/AnsahMohammad/shots-studio/master/shots_studio/assets/icon/icon.png" width="20%" />
+  <img src="shots_studio/assets/icon/icon.png" width="20%" />
 
 # Shots Studio
 A Screenshot Manager to Declutter Your Gallery
@@ -13,6 +13,15 @@ A Screenshot Manager to Declutter Your Gallery
 
 Shots Studio turns your chaotic screenshot folder into an **intelligent, organized archive**.  
 Now powered by **on-device AI with Gemma**, you can process screenshots **offline** — faster, private, and without internet dependency.
+
+---
+
+# ⚠️ **Temporary Notice**  
+> The GitHub repository is currently **unavailable** due to account issues. We’re working to restore it as soon as possible.  
+> In the meantime, please use our **GitLab mirror**.  
+> Updates will continue to be available on **F-Droid**, and GitHub release builds can be downloaded from GitLab.
+> Thanks,
+> Ansah
 
 ---
 
@@ -39,6 +48,10 @@ With Shots Studio, you can:
 
 [<img src="https://f-droid.org/badge/get-it-on.png"
     alt="Get it on F-Droid" height="80">](https://f-droid.org/en/packages/com.ansah.shots_studio/)
+
+[<img src="docs/assets/get-it-on-gitlab.png"
+    alt="Get it on GitLab" height="80">](https://gitlab.com/AnsahMohammad/shots-studio/-/releases)
+
 
 </div>
 
