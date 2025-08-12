@@ -34,10 +34,6 @@
     native <methods>;
 }
 
-# Keep Flutter classes
--keep class io.flutter.** { *; }
--dontwarn io.flutter.**
-
 # Keep classes with @Keep annotation
 -keep @androidx.annotation.Keep class * { *; }
 -keep @androidx.annotation.Keep interface * { *; }
@@ -71,3 +67,8 @@
 
 # Additional rules for R8 compatibility
 -dontwarn java.lang.invoke.StringConcatFactory
+
+
+# Remove Google Play Core (blocklisted by F-Droid)
+-dontwarn com.google.android.play.core.**
+-assumenosideeffects class com.google.android.play.core.** { *; }

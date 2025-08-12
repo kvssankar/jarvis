@@ -4,8 +4,24 @@
   "messages": [
     {
       "show": true,
+      "id": "github_down",
+      "title": "Github repository in maintanence",
+      "message": "Hey folks, \n\n Sorry for the inconvenience caused, our github repository is temporarily down. We'll be using the GitLab mirror till the issue is resolved. Working on an F-droid release as we speak, and play store too.\n\n Thank you!, \nTeam Shots Studio",
+      "type": "update",
+      "priority": "high",
+      "show_once": true,
+      "valid_until": "2026-08-01T00:00:00Z",
+      "is_notification": false,
+      "version": "ALL",
+      "beta_only": false,
+      "action_text": "Update Now",
+      "dismiss_text": "Later",
+      "action_url": "https://gitlab.com/mohdansah10/shots-studio/-/releases/"
+    },
+    {
+      "show": false,
       "id": "update_teaser_1_8_146",
-      "title": "🚀 Step Into the Future with v1.8.146!",
+      "title": "🚀 Step Into the Future with v1.8.147!",
       "message": "Our most ambitious update is out! You are missing out. 🌟\n\n🌍 Talk to your app in 11 languages – it speaks like you do.\n🤖 Experience blazing-fast, private local-AI right on your device.\n🔔 Notifications that aren’t just alerts.\n\nThe future’s here, and it’s waiting for you. Upgrade now and feel the difference. \n\n With Love, \n Team Shots Studio💙",
       "type": "update",
       "priority": "high",
@@ -16,7 +32,7 @@
       "beta_only": false,
       "action_text": "Update Now",
       "dismiss_text": "Later",
-      "action_url": "https://github.com/AnsahMohammad/shots-studio/releases/tag/v1.8.146"
+      "action_url": "https://gitlab.com/mohdansah10/shots-studio/-/releases/v1.8.147"
     },
     {
       "show": true,
