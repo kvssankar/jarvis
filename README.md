@@ -50,7 +50,7 @@ With Shots Studio, you can:
     alt="Get it on F-Droid" height="80">](https://f-droid.org/en/packages/com.ansah.shots_studio/)
 
 [<img src="docs/assets/get-it-on-gitlab.png"
-    alt="Get it on GitLab" height="80">](https://gitlab.com/AnsahMohammad/shots-studio/-/releases)
+    alt="Get it on GitLab" height="80">](https://gitlab.com/mohdansah10/shots-studio/-/releases)
 
 
 </div>
