@@ -14,7 +14,7 @@
       "is_notification": false,
       "version": "ALL",
       "beta_only": false,
-      "action_text": "Update Now",
+      "action_text": "GitLab source",
       "dismiss_text": "Later",
       "action_url": "https://gitlab.com/mohdansah10/shots-studio/-/releases/"
     },
