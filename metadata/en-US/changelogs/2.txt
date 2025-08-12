@@ -14,3 +14,22 @@ Fixed the edit collection page non-scroll-able issue. Fixes
 Edit Page in Collections only take up 3/4th space #72 .
 Update the message channel for beta users.
 Reorganized settings by categorizing the related fields.
+Multi-Language Experience
+🇬🇧 English · 🇮🇳 Hindi · 🇩🇪 German · 🇨🇳 Chinese · 🇵🇹 Portuguese · 🇸🇦 Arabic · 🇪🇸 Spanish · 🇫🇷 French · 🇮🇹 Italian · 🇯🇵 Japanese · 🇷🇺 Russian
+Customizable AI output language – Your AI assistant now speaks your preferred language.
+On-device AI for all users – Fully private, offline-capable intelligence.
+In-app Gemma model download (gemma-3n-e2b-it) – No manual setup required.
+Clickable info parsing by AI – Instantly interpret links & text from images.
+Seamless in-app updates – Update directly within Shots Studio, no external site visits needed.
+One-tap corrupt image removal – Quickly clean up broken media.
+No update prompts for F-Droid users – Smoother app flow.
+Image-supported notifications for richer alerts.
+Scheduled alarm permission for reliable background wake.
+Unified Notifications Tab – All reminders in one place.
+Fixed auto-categorization issues.
+Zooming now supports full-window view (#87).
+Added bulk deletion inside collections (#88).
+Added wake lock during processing to prevent device sleep interruptions.
+Improved server messaging framework for greater stability.
+Refactored code in AIService & ScreenshotAnalysis for improved modularity (#90).
+Documented Fdroid rollout delay (#94) – fix planned for next release.

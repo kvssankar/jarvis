@@ -1,16 +1,21 @@
-Shots Studio is a screenshots manager that helps you organize, categorize, and manage your device screenshots efficiently.
+Shots Studio is a powerful screenshots manager that helps you organize, categorize, and manage your device screenshots with ease and efficiency.
 
 Key Features:
-• Smart screenshot organization and categorization
-• Advanced search and filtering capabilities
-• Automatic duplicate detection and removal
-• Batch operations for managing multiple screenshots
-• Dark and light theme support with Material You design
-• Privacy-focused with local storage
-• Export and sharing options
-• Background monitoring for new screenshots
-• Custom collections and tagging system
 
-Perfect for users who take many screenshots and need a better way to organize and find them. Keep your screenshot gallery clean and organized with Shots Studio's powerful management tools.
+- On-device AI for fully private processing
+- Optional cloud models for faster performance
+- Smart screenshot organization & categorization
+- Advanced search and filtering
+- Automatic duplicate detection & removal
+- Batch operations for bulk management
+- Material You theming and design
+- Privacy-focused local storage
+- Easy export and sharing
+- Background monitoring for new screenshots
+- Custom collections & tagging system
+- Rich notifications and reminders
+- OCR text recognition for selectable text in screenshots
+- Supports 11 UI languages and more output languages
 
-No ads, completely free and open source.
+Perfect for heavy screenshot users who need a cleaner, more organized gallery.
+No ads, completely free, and open source.
