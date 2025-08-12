@@ -7,8 +7,10 @@ import 'package:shots_studio/services/notification_service.dart';
 // TODO: Add don't show again functionality for messages
 
 class ServerMessageService {
-  static const String baseMessagesUrl =
-      'https://ansahmohammad.github.io/shots-studio/messages';
+  static const List<String> baseUrls = [
+    'https://ansahmohammad.github.io/shots-studio/messages',
+    'https://gitlab.com/mohdansah10/shots-studio/-/raw/main/docs/messages',
+  ];
 
   // Add cooldown for server requests to avoid spamming
   static DateTime? _lastRequestTime;
@@ -33,8 +35,7 @@ class ServerMessageService {
       // Get current app version
       final packageInfo = await PackageInfo.fromPlatform();
       final currentVersion = packageInfo.version;
-
-      // Fetch messages from GitHub Pages
+      // Fetch messages from a list of URLs with fallback
       final messages = await _getServerMessages(currentVersion);
       _lastRequestTime = DateTime.now();
 
@@ -51,52 +52,55 @@ class ServerMessageService {
     }
   }
 
-  /// Fetches messages from GitHub Pages
+  /// Fetches messages from a specific base URL
   static Future<List<dynamic>?> _getServerMessages(String version) async {
-    try {
-      // Construct version-specific messages URL
-      final messagesUrl = '$baseMessagesUrl/$version/messages.json';
-      final uri = Uri.parse(messagesUrl);
+    for (final baseUrl in baseUrls) {
+      try {
+        // Construct version-specific messages URL
+        final messagesUrl = '$baseUrl/$version/messages.json';
+        final uri = Uri.parse(messagesUrl);
+        final response = await http
+            .get(
+              uri,
+              headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'shots_studio_app',
+                'Content-Type': 'application/json',
+              },
+            )
+            .timeout(const Duration(seconds: 10));
 
-      final response = await http
-          .get(
-            uri,
-            headers: {
-              'Accept': 'application/json',
-              'User-Agent': 'shots_studio_app',
-              'Content-Type': 'application/json',
-            },
-          )
-          .timeout(const Duration(seconds: 10));
+        if (response.statusCode == 200) {
+          final data = json.decode(response.body);
+          // Expect an object with a "messages" array
+          if (data is Map<String, dynamic> && data.containsKey('messages')) {
+            return data['messages'] as List<dynamic>;
+          } else if (data is List) {
+            // Fallback: direct array format
+            return data;
+          }
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-
-        // Expect an object with a "messages" array
-        if (data is Map<String, dynamic> && data.containsKey('messages')) {
-          return data['messages'] as List<dynamic>;
-        } else if (data is List) {
-          // Fallback: direct array format
-          return data;
+          return null;
+        } else if (response.statusCode == 404) {
+          // If version-specific messages don't exist, try fallback to general messages.json
+          final fallbackMessages = await _getFallbackMessages(baseUrl);
+          if (fallbackMessages != null) {
+            return fallbackMessages;
+          }
         }
-
-        return null;
-      } else if (response.statusCode == 404) {
-        // If version-specific messages don't exist, try fallback to general messages.json
-        return await _getFallbackMessages();
-      } else {
-        return null;
+      } catch (e) {
+        // Continue to the next URL in the list if an error occurs
+        print("error $e");
+        continue;
       }
-    } catch (e) {
-      // If version-specific request fails, try fallback
-      return await _getFallbackMessages();
     }
+    return null; // Return null if all fallbacks fail
   }
 
   /// Fallback method to get general messages when version-specific messages don't exist
-  static Future<List<dynamic>?> _getFallbackMessages() async {
+  static Future<List<dynamic>?> _getFallbackMessages(String baseUrl) async {
     try {
-      final fallbackUrl = '$baseMessagesUrl.json';
+      final fallbackUrl = '$baseUrl.json';
       final uri = Uri.parse(fallbackUrl);
 
       final response = await http
@@ -285,7 +289,7 @@ class ServerMessageService {
 }
 
 /// Contains information about a server message
-/// 
+///
 /// For URLs, use actionUrl instead of updateRoute (legacy field kept for compatibility).
 class MessageInfo {
   final bool show;

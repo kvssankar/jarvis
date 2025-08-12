@@ -3,6 +3,19 @@ import '../models/sponsorship_option.dart';
 
 class SponsorshipService {
   static const List<SponsorshipOption> _defaultOptions = [
+    // Buy me a coffee (enabled)
+    SponsorshipOption(
+      id: 'buymeacoffee',
+      title: 'Buy Me a Coffee',
+      subtitle: 'A quick and simple way to support the project ☕',
+      url: 'https://www.buymeacoffee.com/ansahk',
+      icon: Icons.coffee_rounded,
+      iconColor: Color(0xFFFFDD00), // Coffee yellow
+      enabled: true,
+      badge: 'Active',
+      badgeColor: Color(0xFF10B981), // Green
+    ),
+
     // GitHub Sponsors (Primary - enabled)
     SponsorshipOption(
       id: 'github',
@@ -16,18 +29,18 @@ class SponsorshipService {
       badgeColor: Color(0xFF10B981), // Emerald green
     ),
 
-    // PayPal (Future option - disabled for now)
-    SponsorshipOption(
-      id: 'paypal',
-      title: 'PayPal',
-      subtitle: 'One-time donation or recurring payments',
-      url: 'https://paypal.me/ansahmohammad',
-      icon: Icons.payment_rounded,
-      iconColor: Color(0xFF3B82F6), // Blue
-      enabled: false,
-      badge: 'Soon',
-      badgeColor: Color(0xFFF59E0B), // Amber
-    ),
+    // // PayPal (Future option - disabled for now)
+    // SponsorshipOption(
+    //   id: 'paypal',
+    //   title: 'PayPal',
+    //   subtitle: 'One-time donation or recurring payments',
+    //   url: 'https://paypal.me/ansahmohammad',
+    //   icon: Icons.payment_rounded,
+    //   iconColor: Color(0xFF3B82F6), // Blue
+    //   enabled: false,
+    //   badge: 'Soon',
+    //   badgeColor: Color(0xFFF59E0B), // Amber
+    // ),
 
     // Ko-fi (Future option - disabled for now)
     SponsorshipOption(

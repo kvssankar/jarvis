@@ -102,7 +102,9 @@ class AboutSection extends StatelessWidget {
             AnalyticsService().logFeatureUsed('github_link_clicked');
 
             Navigator.pop(context);
-            _launchURL('https://github.com/AnsahMohammad/shots-studio');
+            // TODO: uncomment github once available
+            // _launchURL('https://github.com/AnsahMohammad/shots-studio');
+            _launchURL('https://gitlab.com/mohdansah10/shots-studio');
           },
         ),
         ListTile(
@@ -125,6 +127,7 @@ class AboutSection extends StatelessWidget {
             // _launchURL(
             //   'https://Ansahmohammad.github.io/shots-studio/donation.html',
             // );
+            _launchURL('https://shots-studio-854420.gitlab.io/donation.html');
           },
         ),
         Divider(color: theme.colorScheme.outline),

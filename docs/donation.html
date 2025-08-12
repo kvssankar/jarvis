@@ -8,14 +8,12 @@
     <meta name="keywords" content="AI, screenshot management, donations, open source, support, sponsorship">
     <meta name="author" content="Shots Studio Team">
     
-    <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://shotsstudio.com/donation.html">
     <meta property="og:title" content="Support Shots Studio - Donate">
     <meta property="og:description" content="Support the development of Shots Studio through donations. Help us continue to improve this open-source project.">
     <meta property="og:image" content="https://shotsstudio.com/assets/og-image.png">
 
-    <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="https://shotsstudio.com/donation.html">
     <meta property="twitter:title" content="Support Shots Studio - Donate">
@@ -33,7 +31,6 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     
-    <!-- PostHog Analytics -->
     <script>
         !function(t,e){var o,n,p,r;e.__SV||(window.posthog=e,e._i=[],e.init=function(i,s,a){function g(t,e){var o=e.split(".");2==o.length&&(t=t[o[0]],e=o[1]),t[e]=function(){t.push([e].concat(Array.prototype.slice.call(arguments,0)))}}(p=t.createElement("script")).type="text/javascript",p.crossOrigin="anonymous",p.async=!0,p.src=s.api_host.replace(".i.posthog.com","-assets.i.posthog.com")+"/static/array.js",(r=t.getElementsByTagName("script")[0]).parentNode.insertBefore(p,r);var u=e;for(void 0!==a?u=e[a]=[]:a="posthog",u.people=u.people||[],u.toString=function(t){var e="posthog";return"posthog"!==a&&(e+="."+a),t||(e+=" (stub)"),e},u.people.toString=function(){return u.toString(1)+".people (stub)"},o="init Ee Ps Rs xe ks Is capture We calculateEventProperties Cs register register_once register_for_session unregister unregister_for_session Ds getFeatureFlag getFeatureFlagPayload isFeatureEnabled reloadFeatureFlags updateEarlyAccessFeatureEnrollment getEarlyAccessFeatures on onFeatureFlags onSurveysLoaded onSessionId getSurveys getActiveMatchingSurveys renderSurvey canRenderSurvey canRenderSurveyAsync identify setPersonProperties group resetGroups setPersonPropertiesForFlags resetPersonPropertiesForFlags setGroupPropertiesForFlags resetGroupPropertiesForFlags reset get_distinct_id getGroups get_session_id get_session_replay_url alias set_config startSessionRecording stopSessionRecording sessionRecordingStarted captureException loadToolbar get_property getSessionProperty Fs Ms createPersonProfile As Es opt_in_capturing opt_out_capturing has_opted_in_capturing has_opted_out_capturing clear_opt_in_out_capturing Ts debug Os getPageViewId captureTraceFeedback captureTraceMetric".split(" "),n=0;n<o.length;n++)g(u,o[n]);e._i.push([i,s,a])},e.__SV=1)}(document,window.posthog||[]);
         posthog.init('phc_Kx7MpbpBrO88dfLZEzA4FNhQTkNvj0shU18knBeOid8', {
@@ -95,6 +92,11 @@
         
         .donation-icon.github {
             background: linear-gradient(135deg, #333 0%, #24292e 100%);
+            color: white;
+        }
+        
+        .donation-icon.buymeacoffee {
+            background: linear-gradient(135deg, #ff8a00 0%, #ffc000 100%);
             color: white;
         }
         
@@ -283,7 +285,6 @@
     </style>
 </head>
 <body>
-    <!-- Navigation -->
     <nav class="navbar">
         <div class="nav-container">
             <a href="index.html" class="nav-logo">
@@ -327,7 +328,6 @@
         </div>
     </nav>
 
-    <!-- Donation Hero -->
     <section class="donation-hero">
         <div class="container">
             <h1 class="section-title">Support Shots Studio</h1>
@@ -336,6 +336,19 @@
             </p>
             <div id="donation-options" class="donation-cards">
                 <div class="donation-card">
+                    <div class="donation-icon buymeacoffee">
+                        <i class="fas fa-mug-hot"></i>
+                    </div>
+                    <h3 class="donation-title">Buy Me a Coffee</h3>
+                    <p class="donation-description">
+                        Make a one-time or monthly contribution to support the project through a simple and secure platform.
+                    </p>
+                    <a href="https://www.buymeacoffee.com/your-username" class="btn btn-primary">
+                        <i class="fas fa-mug-hot"></i>
+                        Buy Me a Coffee
+                    </a>
+                </div>
+                <div class="donation-card">
                     <div class="donation-icon github">
                         <i class="fab fa-github"></i>
                     </div>
@@ -343,24 +356,13 @@
                     <p class="donation-description">
                         Support the project through GitHub Sponsors. Choose a monthly tier and receive exclusive benefits.
                     </p>
-                    <a href="https://github.com/sponsors/AnsahMohammad" class="btn btn-primary">
+                    <!-- <a href="https://github.com/sponsors/AnsahMohammad" class="btn btn-primary">
                         <i class="fab fa-github"></i>
                         Become a Sponsor
-                    </a>
-                </div>
-                <div class="donation-card">
-                    <div class="donation-icon heart">
-                        <i class="fas fa-heart"></i>
-                    </div>
-                    <h3 class="donation-title">One-time Donation</h3>
-                    <p class="donation-description">
-                        Make a one-time contribution to support the development and maintenance of Shots Studio.
-                        <br><br>
-                        <small>(Coming soon)</small>
-                    </p>
+                    </a> -->
                     <button disabled class="btn btn-secondary">
-                        <i class="fas fa-money-bill-wave"></i>
-                        Donate Once
+                        <i class="fab fa-github"></i>
+                        Become a Sponsor
                     </button>
                 </div>
                 <div class="donation-card">
@@ -382,7 +384,6 @@
         </div>
     </section>
 
-    <!-- Why Donate Section -->
     <section class="why-donate-section">
         <div class="container">
             <div class="section-header">
@@ -450,96 +451,6 @@
         </div>
     </section>
 
-    <!-- Future Goals Section
-    <section class="future-goals">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">What's Next for Shots Studio</h2>
-                <p class="section-description">
-                    Here's what your donations will help us accomplish in the coming months
-                </p>
-            </div>
-            <div class="goal-timeline">
-                <div class="timeline-item">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-content">
-                        <div class="timeline-date">Q3 2025</div>
-                        <h3>Desktop App & Cross-Platform Support</h3>
-                        <p>
-                            We're working to bring Shots Studio to Windows, macOS, and Linux so you can manage screenshots across all your devices.
-                        </p>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-content">
-                        <div class="timeline-date">Q4 2025</div>
-                        <h3>Cloud Sync & Backup</h3>
-                        <p>
-                            Securely sync your organized screenshots and metadata across multiple devices while maintaining our privacy-first approach.
-                        </p>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-content">
-                        <div class="timeline-date">Q1 2026</div>
-                        <h3>Advanced AI Features</h3>
-                        <p>
-                            Implementing more intelligent organization tools, including smart collections, advanced search capabilities, and enhanced metadata extraction.
-                        </p>
-                    </div>
-                </div>
-                <div class="timeline-item">
-                    <div class="timeline-dot"></div>
-                    <div class="timeline-content">
-                        <div class="timeline-date">Q2 2026</div>
-                        <h3>Team Collaboration</h3>
-                        <p>
-                            Share and collaborate on collections with team members, perfect for designers, developers, and other collaborative environments.
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section> -->
-
-    <!-- Supporters Section
-    <section class="supporters-section">
-        <div class="container">
-            <div class="section-header">
-                <h2 class="section-title">Our Supporters</h2>
-                <p class="section-description">
-                    Thank you to these amazing people who make Shots Studio possible
-                </p>
-            </div>
-            <div class="supporter-cards" id="supporters-container">
-                <!-- Placeholder supporter cards, will be replaced by JavaScript -->
-                <!-- <div class="supporter-card">
-                    <img src="https://github.com/github.png" alt="GitHub" class="supporter-avatar">
-                    <h3 class="supporter-name">GitHub</h3>
-                    <span class="supporter-tier">Platinum Sponsor</span>
-                    <p>Supporting open source since 2008</p>
-                </div>
-                <div class="supporter-card">
-                    <img src="https://avatars.githubusercontent.com/u/583231" alt="Octocat" class="supporter-avatar">
-                    <h3 class="supporter-name">Octocat</h3>
-                    <span class="supporter-tier">Gold Sponsor</span>
-                    <p>Passionate about innovative tools</p>
-                </div>
-                <div class="supporter-card">
-                    <div style="width: 80px; height: 80px; margin: 0 auto 16px; display: flex; align-items: center; justify-content: center; background: #f0f0f0; border-radius: 50%; font-size: 2rem; color: #666;">
-                        <i class="fas fa-heart"></i>
-                    </div>
-                    <h3 class="supporter-name">Maybe You?</h3>
-                    <span class="supporter-tier">Become a Sponsor</span>
-                    <p>Join our community of supporters</p>
-                </div>
-            </div>
-        </div>
-    </section> --> -->
-
-    <!-- CTA Section -->
     <section class="download" style="background: linear-gradient(135deg, #e0f2fe, #dbeafe);">
         <div class="container">
             <div class="download-content">
@@ -548,7 +459,7 @@
                     Join our growing community of sponsors and help shape the future of Shots Studio
                 </p>
                 <div class="download-buttons">
-                    <a href="https://github.com/sponsors/AnsahMohammad" class="btn btn-primary btn-large">
+                    <a href="https://buymeacoffee.com/ansahk" class="btn btn-primary btn-large">
                         <i class="fas fa-heart"></i>
                         Become a Sponsor
                     </a>
@@ -561,7 +472,6 @@
         </div>
     </section>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="container">
             <div class="footer-content">
