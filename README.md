@@ -16,15 +16,6 @@ Now powered by **on-device AI with Gemma**, you can process screenshots **offlin
 
 ---
 
-# ⚠️ **Temporary Notice**  
-> The GitHub repository is currently **unavailable** due to account issues. We’re working to restore it as soon as possible.  
-> In the meantime, please use our **GitLab mirror**.  
-> Updates will continue to be available on **F-Droid**, and GitHub release builds can be downloaded from GitLab.
-> Thanks,
-> Ansah
-
----
-
 ## What is Shots Studio?
 
 Drowning in screenshots you can’t find when you need them?  
