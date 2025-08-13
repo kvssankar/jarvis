@@ -40,10 +40,6 @@ With Shots Studio, you can:
 [<img src="https://f-droid.org/badge/get-it-on.png"
     alt="Get it on F-Droid" height="80">](https://f-droid.org/en/packages/com.ansah.shots_studio/)
 
-[<img src="docs/assets/get-it-on-gitlab.png"
-    alt="Get it on GitLab" height="80">](https://gitlab.com/mohdansah10/shots-studio/-/releases)
-
-
 </div>
 
 ---
