@@ -44,11 +44,8 @@ NEW_PATCH=$((PATCH + 1))
 NEW_VERSION_CORE="$MAJOR.$MINOR.$NEW_PATCH"
 
 # Construct new full version string.
-# For this case, we want to keep the build number as +1 or reset it to +1.
-# If there was a build number part (e.g. something after '+'), we'll use +1.
-# If there was no build number part, we'll just use the core.
-# Given the target 1.7.1+1, we'll ensure it's +1.
-NEW_VERSION_FULL="$NEW_VERSION_CORE+1"
+# Preserve the original build number from the current version
+NEW_VERSION_FULL="$NEW_VERSION_CORE+$BUILD_NUMBER_PART"
 
 echo "Auto-incrementing version: $CURRENT_VERSION_FULL -> $NEW_VERSION_FULL"
 
