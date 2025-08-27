@@ -25,6 +25,8 @@ import 'package:sentry_flutter/sentry_flutter.dart';
 import 'package:shots_studio/utils/build_source.dart';
 import 'package:shots_studio/services/message_service.dart';
 import 'package:shots_studio/screens/landing_screen.dart';
+import 'package:shots_studio/screens/home_screen.dart';
+
 import 'package:shots_studio/models/processed_message_model.dart';
 
 void main() async {
@@ -698,6 +700,91 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return const LandingScreen();
+    return FutureBuilder<bool>(
+      future: _checkIfShouldShowLanding(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final showLanding = snapshot.data ?? true;
+
+        if (showLanding) {
+          return LandingScreen(
+            onPermissionsGranted: () {
+              setState(() {
+                // This will trigger a rebuild and show the home screen
+              });
+            },
+          );
+        }
+
+        return HomeScreen(
+          apiKey: _apiKey,
+          modelName: _selectedModelName,
+          maxParallel: _maxParallelAI,
+          devMode: _devMode,
+          autoProcessEnabled: _autoProcessEnabled,
+          analyticsEnabled: _analyticsEnabled,
+          betaTestingEnabled: _betaTestingEnabled,
+          amoledModeEnabled: _amoledModeEnabled,
+          selectedTheme: _selectedTheme,
+          onApiKeyChanged: _updateApiKey,
+          onModelChanged: (String modelName) async {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('modelName', modelName);
+            setState(() {
+              _selectedModelName = modelName;
+            });
+          },
+          onMaxParallelChanged: (int maxParallel) async {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setInt('maxParallel', maxParallel);
+            setState(() {
+              _maxParallelAI = maxParallel;
+            });
+          },
+          onDevModeChanged: (bool devMode) async {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setBool('dev_mode', devMode);
+            setState(() {
+              _devMode = devMode;
+            });
+          },
+          onAutoProcessEnabledChanged: (bool enabled) async {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setBool('auto_process_enabled', enabled);
+            setState(() {
+              _autoProcessEnabled = enabled;
+            });
+          },
+          onAnalyticsEnabledChanged: (bool enabled) async {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setBool('analytics_consent_enabled', enabled);
+            setState(() {
+              _analyticsEnabled = enabled;
+            });
+          },
+          onBetaTestingEnabledChanged: (bool enabled) async {
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setBool('beta_testing_enabled', enabled);
+            setState(() {
+              _betaTestingEnabled = enabled;
+            });
+          },
+          onAmoledModeChanged: widget.onAmoledModeChanged,
+          onThemeChanged: widget.onThemeChanged,
+          onLocaleChanged: widget.onLocaleChanged,
+        );
+      },
+    );
+  }
+
+  Future<bool> _checkIfShouldShowLanding() async {
+    // Check if SMS permission is granted
+    final hasPermission = await _messageService.hasSmsPermission();
+    return !hasPermission;
   }
 }
