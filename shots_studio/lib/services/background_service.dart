@@ -13,6 +13,8 @@ import 'package:shots_studio/services/screenshot_analysis_service.dart';
 import 'package:shots_studio/utils/ai_provider_config.dart';
 import 'package:shots_studio/services/server_message_service.dart';
 import 'package:shots_studio/services/notification_service.dart';
+import 'package:shots_studio/services/message_service.dart';
+import 'package:shots_studio/services/transaction_analysis_service.dart';
 
 @pragma('vm:entry-point')
 class BackgroundProcessingService {
@@ -220,8 +222,8 @@ class BackgroundProcessingService {
         service.stopSelf();
       });
 
-      // Handle processing requests
-      service.on(CHANNEL_PROCESS).listen((event) async {
+      // Handle message processing requests
+      service.on('process_messages').listen((event) async {
         if (event == null) {
           return;
         }
@@ -229,22 +231,20 @@ class BackgroundProcessingService {
         try {
           // Update notification to show processing started
           final data = Map<String, dynamic>.from(event);
-          final screenshotsJson = data['screenshots'] as String;
-          final List<dynamic> screenshotListDynamic = jsonDecode(
-            screenshotsJson,
-          );
-          final totalCount = screenshotListDynamic.length;
+          final messagesJson = data['messages'] as String;
+          final List<dynamic> messageListDynamic = jsonDecode(messagesJson);
+          final totalCount = messageListDynamic.length;
 
           updateCustomNotification(
-            title: 'Processing Screenshots',
-            content: 'Started processing $totalCount screenshots',
+            title: 'Processing Messages',
+            content: 'Started processing $totalCount messages',
             showProgress: true,
             progress: 0,
             maxProgress: totalCount,
             ongoing: true,
           );
 
-          await _processScreenshots(service, event, updateCustomNotification);
+          await _processMessages(service, event, updateCustomNotification);
         } catch (e) {
           updateCustomNotification(
             title: 'Processing Error',
@@ -484,7 +484,149 @@ class BackgroundProcessingService {
     }
   }
 
-  // Process screenshots method
+  // Process messages method
+  static Future<void> _processMessages(
+    ServiceInstance service,
+    Map<dynamic, dynamic> event,
+    Function updateNotification,
+  ) async {
+    try {
+      // Set processing active for safety monitoring
+      _processingActive = true;
+
+      // Extract data from event
+      final String messagesJson = event['messages'] as String;
+      final String apiKey = event['apiKey'] as String;
+      final String modelName = event['modelName'] as String;
+      final int maxParallel = event['maxParallel'] as int;
+
+      // Initialize safety monitoring based on model type
+      final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+          FlutterLocalNotificationsPlugin();
+      _initializeSafetyMonitoring(
+        service,
+        flutterLocalNotificationsPlugin,
+        modelName,
+      );
+
+      final List<dynamic> messageListDynamic = jsonDecode(messagesJson);
+      final List<SmsMessage> messages =
+          messageListDynamic
+              .map((json) => SmsMessage.fromJson(json as Map<String, dynamic>))
+              .toList();
+
+      int processedCount = 0;
+      final totalCount = messages.length;
+
+      // Set up transaction analysis service
+      final config = AIConfig(
+        apiKey: apiKey,
+        modelName: modelName,
+        maxParallel: maxParallel,
+      );
+
+      final analysisService = TransactionAnalysisService(config);
+
+      // Process messages for transactions
+      final result = await analysisService.analyzeMessagesForTransactions(
+        messages: messages,
+        onProgress: (processed, total) {
+          // Check if we should continue processing
+          if (!_serviceRunning || !_processingActive) {
+            if (!_processingActive) {
+              throw Exception("Processing stopped for safety reasons");
+            } else {
+              throw Exception("Processing cancelled by user");
+            }
+          }
+
+          processedCount = processed;
+
+          // Update notification
+          updateNotification(
+            title: 'Processing Messages',
+            content: 'Processing: $processedCount/$totalCount messages',
+            showProgress: true,
+            progress: processedCount,
+            maxProgress: totalCount,
+            ongoing: true,
+          );
+
+          // Send progress update to app
+          service.invoke('messages_processed', {
+            'processedTransactions': jsonEncode(
+              [],
+            ), // Will be filled with actual transactions
+            'processedCount': processedCount,
+            'totalCount': totalCount,
+          });
+        },
+      );
+
+      // Update notification based on final result
+      if (result.success && result.data != null) {
+        final transactions = result.data!;
+
+        updateNotification(
+          title: 'Processing Complete',
+          content:
+              'Found ${transactions.length} transactions from $totalCount messages',
+          ongoing: false,
+        );
+
+        // Send final transactions to app
+        service.invoke('messages_processed', {
+          'processedTransactions': jsonEncode(
+            transactions.map((t) => t.toJson()).toList(),
+          ),
+          'processedCount': totalCount,
+          'totalCount': totalCount,
+        });
+      } else {
+        updateNotification(
+          title: 'Processing Failed',
+          content: 'Error: ${result.error ?? "Unknown error"}',
+          ongoing: false,
+        );
+      }
+
+      // Send final results
+      service.invoke(CHANNEL_COMPLETED, {
+        'success': result.success,
+        'error': result.error,
+        'cancelled': !_serviceRunning,
+        'processedCount': processedCount,
+        'totalCount': totalCount,
+      });
+
+      // Stop the service after processing is complete
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Clean up processing state and safety monitoring
+      _processingActive = false;
+      await _cleanupSafetyMonitoring();
+
+      service.stopSelf();
+    } catch (e) {
+      updateNotification(
+        title: 'Processing Error',
+        content: 'Error: ${e.toString()}',
+        ongoing: false,
+      );
+      service.invoke(CHANNEL_ERROR, {'error': e.toString()});
+
+      // Stop the service on error as well
+      await Future.delayed(const Duration(seconds: 2));
+
+      // Clean up processing state and safety monitoring
+      _processingActive = false;
+      await _cleanupSafetyMonitoring();
+
+      service.stopSelf();
+    }
+  }
+
+  // Process screenshots method (keeping for compatibility)
   static Future<void> _processScreenshots(
     ServiceInstance service,
     Map<dynamic, dynamic> event,
@@ -679,13 +821,12 @@ class BackgroundProcessingService {
     }
   }
 
-  // Start background processing
-  Future<bool> startBackgroundProcessing({
-    required List<Screenshot> screenshots,
+  // Start background message processing
+  Future<bool> startBackgroundMessageProcessing({
+    required List<SmsMessage> messages,
     required String apiKey,
     required String modelName,
     required int maxParallel,
-    List<Map<String, String?>>? autoAddCollections,
   }) async {
     try {
       final service = FlutterBackgroundService();
@@ -700,24 +841,18 @@ class BackgroundProcessingService {
       _serviceRunning = true;
 
       // Prepare payload
-      final screenshotsJson = jsonEncode(
-        screenshots.map((s) => s.toJson()).toList(),
-      );
+      final messagesJson = jsonEncode(messages.map((m) => m.toJson()).toList());
 
       final payload = {
-        'screenshots': screenshotsJson,
+        'messages': messagesJson,
         'apiKey': apiKey,
         'modelName': modelName,
         'maxParallel': maxParallel,
         'timestamp': DateTime.now().millisecondsSinceEpoch,
       };
 
-      if (autoAddCollections != null && autoAddCollections.isNotEmpty) {
-        payload['collections'] = jsonEncode(autoAddCollections);
-      }
-
       // Send processing request
-      service.invoke(CHANNEL_PROCESS, payload);
+      service.invoke('process_messages', payload);
 
       return true;
     } catch (e) {

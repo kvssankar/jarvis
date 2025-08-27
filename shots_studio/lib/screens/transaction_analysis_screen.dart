@@ -46,6 +46,7 @@ class _TransactionAnalysisScreenState extends State<TransactionAnalysisScreen> {
     _checkPermissions();
     _initializeAnalysisService();
     _searchController.addListener(_onSearchChanged);
+    _loadExistingTransactions();
   }
 
   @override
@@ -85,6 +86,23 @@ class _TransactionAnalysisScreenState extends State<TransactionAnalysisScreen> {
     );
 
     _analysisService = TransactionAnalysisService(config);
+  }
+
+  Future<void> _loadExistingTransactions() async {
+    if (_analysisService == null) return;
+
+    try {
+      final transactions = await _analysisService!.getAllTransactions();
+      if (transactions.isNotEmpty) {
+        setState(() {
+          _allTransactions = transactions;
+          _filteredTransactions = List.from(transactions);
+          _applyFilters();
+        });
+      }
+    } catch (e) {
+      // Error loading existing transactions, will show empty state
+    }
   }
 
   Future<void> _checkPermissions() async {
@@ -127,21 +145,42 @@ class _TransactionAnalysisScreenState extends State<TransactionAnalysisScreen> {
     });
 
     try {
-      // Read recent messages (last 90 days)
-      final messages = await _messageService.readRecentMessages(days: 90);
+      // Get analysis metadata to determine incremental analysis
+      final metadata = await _analysisService!.getAnalysisMetadata();
+      final lastAnalyzedDate =
+          metadata?['last_analyzed_message_date'] != null
+              ? DateTime.fromMillisecondsSinceEpoch(
+                metadata!['last_analyzed_message_date'] as int,
+              )
+              : null;
 
-      setState(() {
-        _currentStatus = 'Analyzing ${messages.length} messages...';
-      });
+      // Read messages (incremental if we have previous analysis)
+      final List<SmsMessage> messages;
+      if (lastAnalyzedDate != null) {
+        messages = await _messageService.readMessagesSince(lastAnalyzedDate);
+        setState(() {
+          _currentStatus =
+              'Found ${messages.length} new messages since last analysis...';
+        });
+      } else {
+        messages = await _messageService.readRecentMessages(days: 90);
+        setState(() {
+          _currentStatus = 'Analyzing ${messages.length} messages...';
+        });
+      }
 
-      // Analyze messages for transactions
+      // Analyze messages for transactions (with incremental support)
       final result = await _analysisService!.analyzeMessagesForTransactions(
         messages: messages,
+        incremental: true,
         onProgress: (processed, total) {
           setState(() {
             _processedCount = processed;
             _totalCount = total;
-            _currentStatus = 'Processing batch $processed of $total...';
+            _currentStatus =
+                total > 0
+                    ? 'Processing batch $processed of $total...'
+                    : 'Loading existing transactions...';
           });
         },
       );
@@ -157,10 +196,16 @@ class _TransactionAnalysisScreenState extends State<TransactionAnalysisScreen> {
         });
 
         if (mounted) {
-          SnackbarService().showSuccess(
-            context,
-            'Found ${transactions.length} transactions',
-          );
+          final newTransactionsCount =
+              messages.isNotEmpty
+                  ? transactions.length - _allTransactions.length
+                  : 0;
+          final message =
+              newTransactionsCount > 0
+                  ? 'Found $newTransactionsCount new transactions (${transactions.length} total)'
+                  : 'Analysis complete - ${transactions.length} transactions total';
+
+          SnackbarService().showSuccess(context, message);
         }
       } else {
         if (mounted) {
@@ -314,12 +359,44 @@ class _TransactionAnalysisScreenState extends State<TransactionAnalysisScreen> {
       appBar: AppBar(
         title: const Text('Transaction Analysis'),
         actions: [
-          if (_hasPermission && !_isLoading)
+          if (_hasPermission && !_isLoading) ...[
             IconButton(
               icon: const Icon(Icons.refresh),
               onPressed: _analyzeTransactions,
-              tooltip: 'Analyze Transactions',
+              tooltip: 'Analyze New Messages',
             ),
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                switch (value) {
+                  case 'clear_all':
+                    _showClearDataDialog();
+                    break;
+                  case 'full_analysis':
+                    _performFullAnalysis();
+                    break;
+                }
+              },
+              itemBuilder:
+                  (context) => [
+                    const PopupMenuItem(
+                      value: 'full_analysis',
+                      child: ListTile(
+                        leading: Icon(Icons.analytics),
+                        title: Text('Full Re-analysis'),
+                        subtitle: Text('Analyze all messages again'),
+                      ),
+                    ),
+                    const PopupMenuItem(
+                      value: 'clear_all',
+                      child: ListTile(
+                        leading: Icon(Icons.delete_forever),
+                        title: Text('Clear All Data'),
+                        subtitle: Text('Delete all transactions'),
+                      ),
+                    ),
+                  ],
+            ),
+          ],
         ],
       ),
       body: _buildBody(localizations),
@@ -736,6 +813,79 @@ class _TransactionAnalysisScreenState extends State<TransactionAnalysisScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _performFullAnalysis() async {
+    if (!_hasPermission) {
+      await _requestPermissions();
+      return;
+    }
+
+    if (_analysisService == null) {
+      SnackbarService().showError(context, 'Analysis service not initialized');
+      return;
+    }
+
+    // Clear existing data first
+    await _analysisService!.clearAllData();
+
+    setState(() {
+      _allTransactions = [];
+      _filteredTransactions = [];
+    });
+
+    // Perform full analysis
+    await _analyzeTransactions();
+  }
+
+  void _showClearDataDialog() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Clear All Data'),
+            content: const Text(
+              'This will permanently delete all stored transaction data. This action cannot be undone.\n\nAre you sure you want to continue?',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  await _clearAllData();
+                },
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: const Text('Delete All'),
+              ),
+            ],
+          ),
+    );
+  }
+
+  Future<void> _clearAllData() async {
+    if (_analysisService == null) return;
+
+    try {
+      await _analysisService!.clearAllData();
+      setState(() {
+        _allTransactions = [];
+        _filteredTransactions = [];
+      });
+
+      if (mounted) {
+        SnackbarService().showSuccess(
+          context,
+          'All transaction data has been cleared',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackbarService().showError(context, 'Failed to clear data: $e');
+      }
+    }
   }
 }
 

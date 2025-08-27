@@ -50,6 +50,9 @@ dependencies:
   timezone: ^0.9.4
   battery_plus: ^6.0.2
   connectivity_plus: ^6.0.5
+  sqflite: ^2.3.0
+  path: ^1.8.3
+  crypto: ^3.0.3
 
 dev_dependencies:
   sentry_dart_plugin: ^2.4.1

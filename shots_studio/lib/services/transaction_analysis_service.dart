@@ -3,33 +3,47 @@ import 'dart:convert';
 import 'package:shots_studio/models/transaction_model.dart';
 import 'package:shots_studio/services/ai_service.dart';
 import 'package:shots_studio/services/message_service.dart';
+import 'package:shots_studio/repositories/transaction_repository.dart';
 import 'package:uuid/uuid.dart';
 
 class TransactionAnalysisService extends AIService {
+  final TransactionRepository _repository = TransactionRepository();
+
   TransactionAnalysisService(super.config);
 
-  /// Analyze messages and extract transactions using LLM
+  /// Analyze messages and extract transactions using LLM with incremental support
   Future<AIResult<List<Transaction>>> analyzeMessagesForTransactions({
     required List<SmsMessage> messages,
     required Function(int processed, int total) onProgress,
+    bool incremental = true,
   }) async {
     if (isCancelled) {
       return AIResult.cancelled();
     }
 
     try {
+      // Filter out already processed messages if incremental
+      List<SmsMessage> messagesToProcess = messages;
+      if (incremental) {
+        messagesToProcess = await _filterUnprocessedMessages(messages);
+      }
+
       // Filter messages that might contain transaction information
-      final potentialTransactionMessages = _filterTransactionMessages(messages);
+      final potentialTransactionMessages = _filterTransactionMessages(
+        messagesToProcess,
+      );
 
       if (potentialTransactionMessages.isEmpty) {
-        return AIResult.success([]);
+        // Still return existing transactions from database
+        final existingTransactions = await _repository.getAllTransactions();
+        return AIResult.success(existingTransactions);
       }
 
       onProgress(0, potentialTransactionMessages.length);
 
       // Process messages in batches to avoid overwhelming the LLM
       const batchSize = 10;
-      final List<Transaction> allTransactions = [];
+      final List<Transaction> newTransactions = [];
 
       for (int i = 0; i < potentialTransactionMessages.length; i += batchSize) {
         if (isCancelled) {
@@ -41,16 +55,89 @@ class TransactionAnalysisService extends AIService {
 
         final batchResult = await _processBatch(batch);
         if (batchResult.success && batchResult.data != null) {
-          allTransactions.addAll(batchResult.data!);
+          newTransactions.addAll(batchResult.data!);
         }
 
         onProgress(i + batch.length, potentialTransactionMessages.length);
       }
 
+      // Save new transactions to database
+      if (newTransactions.isNotEmpty) {
+        await _repository.insertTransactions(
+          newTransactions.cast<Transaction>(),
+        );
+      }
+
+      // Update analysis metadata
+      final lastMessageDate =
+          potentialTransactionMessages.isNotEmpty
+              ? potentialTransactionMessages
+                  .map((m) => m.date)
+                  .reduce((a, b) => a.isAfter(b) ? a : b)
+              : null;
+
+      await _repository.updateAnalysisMetadata(
+        lastAnalyzedMessageDate: lastMessageDate,
+        totalMessagesAnalyzed: potentialTransactionMessages.length,
+        totalTransactionsFound: newTransactions.length,
+      );
+
+      // Return all transactions (existing + new)
+      final allTransactions = await _repository.getAllTransactions();
       return AIResult.success(allTransactions);
     } catch (e) {
       return AIResult.error('Failed to analyze messages: $e');
     }
+  }
+
+  /// Filter out messages that have already been processed
+  Future<List<SmsMessage>> _filterUnprocessedMessages(
+    List<SmsMessage> messages,
+  ) async {
+    final List<SmsMessage> unprocessedMessages = [];
+
+    for (final message in messages) {
+      final isProcessed = await _repository.isMessageProcessed(message.body);
+      if (!isProcessed) {
+        unprocessedMessages.add(message);
+      }
+    }
+
+    return unprocessedMessages;
+  }
+
+  /// Get all stored transactions
+  Future<List<Transaction>> getAllTransactions() async {
+    final transactions = await _repository.getAllTransactions();
+    return transactions.cast<Transaction>();
+  }
+
+  /// Get transactions within date range
+  Future<List<Transaction>> getTransactionsByDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    final transactions = await _repository.getTransactionsByDateRange(
+      startDate,
+      endDate,
+    );
+    return transactions.cast<Transaction>();
+  }
+
+  /// Search transactions
+  Future<List<Transaction>> searchTransactions(String query) async {
+    final transactions = await _repository.searchTransactions(query);
+    return transactions.cast<Transaction>();
+  }
+
+  /// Get analysis metadata
+  Future<Map<String, dynamic>?> getAnalysisMetadata() async {
+    return await _repository.getAnalysisMetadata();
+  }
+
+  /// Clear all transaction data
+  Future<void> clearAllData() async {
+    await _repository.deleteAllTransactions();
   }
 
   /// Filter messages that likely contain transaction information

@@ -96,6 +96,12 @@ class MessageService {
 
     return readMessagesFromDateRange(startDate: startDate, endDate: endDate);
   }
+
+  /// Read SMS messages since a specific date (for incremental analysis)
+  Future<List<SmsMessage>> readMessagesSince(DateTime sinceDate) async {
+    final endDate = DateTime.now();
+    return readMessagesFromDateRange(startDate: sinceDate, endDate: endDate);
+  }
 }
 
 class SmsMessage {

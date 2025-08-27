@@ -1,7 +1,9 @@
 class Transaction {
   final String id;
-  final String fromAccount; // Source Account/Entity
-  final String toAccount; // Destination Account/Entity
+  final String
+  fromAccount; // Source Account/Entity (maps to requestor_name in DB)
+  final String
+  toAccount; // Destination Account/Entity (maps to payee_name in DB)
   final String transactionType; // DEBIT/CREDIT
   final double amount; // Transaction Amount
   final String category; // Expense/Income Category
@@ -25,8 +27,27 @@ class Transaction {
     this.currency = 'INR',
   });
 
-  // Method to convert a Transaction instance to a Map (JSON)
+  // Getters for database compatibility
+  String get payeeName => toAccount;
+  String get requestorName => fromAccount;
+
+  // Method to convert a Transaction instance to a Map (JSON) for database storage
   Map<String, dynamic> toJson() {
+    return {
+      'payee_name': toAccount,
+      'requestor_name': fromAccount,
+      'transaction_type': transactionType,
+      'amount': amount,
+      'category': category,
+      'payment_mode': paymentMode,
+      'original_message': originalMessage,
+      'description': description,
+      'currency': currency ?? 'INR',
+    };
+  }
+
+  // Method for API/service compatibility
+  Map<String, dynamic> toApiJson() {
     return {
       'id': id,
       'fromAccount': fromAccount,
@@ -44,19 +65,43 @@ class Transaction {
 
   // Factory constructor to create a Transaction instance from a Map (JSON)
   factory Transaction.fromJson(Map<String, dynamic> json) {
-    return Transaction(
-      id: json['id'] as String,
-      fromAccount: json['fromAccount'] as String,
-      toAccount: json['toAccount'] as String,
-      transactionType: json['transactionType'] as String,
-      amount: (json['amount'] as num).toDouble(),
-      category: json['category'] as String,
-      transactionDate: DateTime.parse(json['transactionDate'] as String),
-      paymentMode: json['paymentMode'] as String,
-      originalMessage: json['originalMessage'] as String,
-      description: json['description'] as String?,
-      currency: json['currency'] as String? ?? 'INR',
-    );
+    // Handle both database format and API format
+    final isDbFormat = json.containsKey('payee_name');
+
+    if (isDbFormat) {
+      return Transaction(
+        id: json['id']?.toString() ?? '',
+        fromAccount: json['requestor_name'] as String,
+        toAccount: json['payee_name'] as String,
+        transactionType: json['transaction_type'] as String,
+        amount: (json['amount'] as num).toDouble(),
+        category: json['category'] as String,
+        transactionDate:
+            json['transaction_date'] is int
+                ? DateTime.fromMillisecondsSinceEpoch(
+                  json['transaction_date'] as int,
+                )
+                : DateTime.parse(json['transaction_date'] as String),
+        paymentMode: json['payment_mode'] as String,
+        originalMessage: json['original_message'] as String,
+        description: json['description'] as String?,
+        currency: json['currency'] as String? ?? 'INR',
+      );
+    } else {
+      return Transaction(
+        id: json['id'] as String,
+        fromAccount: json['fromAccount'] as String,
+        toAccount: json['toAccount'] as String,
+        transactionType: json['transactionType'] as String,
+        amount: (json['amount'] as num).toDouble(),
+        category: json['category'] as String,
+        transactionDate: DateTime.parse(json['transactionDate'] as String),
+        paymentMode: json['paymentMode'] as String,
+        originalMessage: json['originalMessage'] as String,
+        description: json['description'] as String?,
+        currency: json['currency'] as String? ?? 'INR',
+      );
+    }
   }
 
   Transaction copyWith({
