@@ -152,6 +152,7 @@ class _AppDrawerState extends State<AppDrawer> {
               ),
               const PerformanceSection(),
             ],
+            const FeaturesSection(),
             AboutSection(
               appVersion: _appVersion,
               onTap: _handleAboutTap,
